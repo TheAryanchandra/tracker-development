@@ -15,7 +15,7 @@ const jobListingSchema = new mongoose.Schema({
   source:     { type: String }, // "RemoteOK", "TheMuse", "Adzuna"
   postedAt:   { type: Date },
   fetchedAt:  { type: Date, default: Date.now },
-  isNew:      { type: Boolean, default: true }, // flag as new until user has seen it
+  newFlag:    { type: Boolean, default: true }, // flag as new until user has seen it
 });
 
 // TTL index: auto-delete after 24 hours

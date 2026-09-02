@@ -15,12 +15,34 @@ try {
   GoogleGenerativeAI = require('@google/generative-ai').GoogleGenerativeAI;
 } catch (e) {}
 
-let pdfParse;
+let PDFParse;
 try {
-  pdfParse = require('pdf-parse');
+  ({ PDFParse } = require('pdf-parse'));
 } catch (e) {}
 
 const vectorStore = require('./vectorStore');
+const JarvisDocument = require('../models/JarvisDocument');
+
+async function persistDocument(filename, text, docType, metadata = {}) {
+  if (!text || text.length < 2) return;
+  try {
+    const saved = await JarvisDocument.create({
+      filename,
+      content: text.slice(0, 100000),
+      docType,
+      metadata,
+    });
+    // Keep the in-process index hot for the current request and persist it for restarts.
+    vectorStore.addChunk({
+      id: `document-${saved._id}`,
+      text: `[Saved ${docType}: ${filename}]\n${text.slice(0, 100000)}`,
+      metadata: { type: 'uploaded_document', filename, docType, ...metadata },
+    });
+  } catch (err) {
+    // Uploads should still be answerable if Mongo is temporarily unavailable.
+    console.warn('[OCR] Could not persist document:', err.message);
+  }
+}
 
 /**
  * Detect file type from extension
@@ -107,11 +129,7 @@ SUMMARY:
 
     // Add to RAG vector store for future queries
     const chunkId = `ocr-${Date.now()}`;
-    vectorStore.addChunk({
-      id: chunkId,
-      text: `[Uploaded ${docType}] ${extractedText}\n\nKey info: ${entities}\nSummary: ${summary}`,
-      metadata: { type: 'uploaded_document', docType, filename, uploadedAt: new Date().toISOString() },
-    });
+    await persistDocument(filename, `[Uploaded ${docType}] ${extractedText}\n\nKey info: ${entities}\nSummary: ${summary}`, docType, { source: 'Gemini Vision OCR' });
 
     return {
       text: extractedText,
@@ -132,14 +150,15 @@ SUMMARY:
  * Extract text from PDF using pdf-parse
  */
 async function extractTextFromPDF(filePath, filename) {
-  if (!pdfParse) {
+  if (!PDFParse) {
     return { text: 'PDF uploaded (pdf-parse not available)', type: 'pdf', entities: {} };
   }
 
   try {
     const buffer = fs.readFileSync(filePath);
-    const data = await pdfParse(buffer);
-    const text = data.text.trim();
+    const parser = new PDFParse({ data: buffer });
+    const data = await parser.getText();
+    const text = (data.text || '').trim();
 
     // If we have Gemini, also analyze the PDF content
     let analysis = { type: 'pdf', entities: '', summary: '' };
@@ -157,16 +176,12 @@ async function extractTextFromPDF(filePath, filename) {
 
     // Add to RAG vector store
     const chunkId = `pdf-${Date.now()}`;
-    vectorStore.addChunk({
-      id: chunkId,
-      text: `[Uploaded PDF: ${filename}]\n${text}`,
-      metadata: { type: 'uploaded_pdf', filename, pages: data.numpages, uploadedAt: new Date().toISOString() },
-    });
+    await persistDocument(filename, `[Uploaded PDF: ${filename}]\n${text}`, 'pdf', { pages: data.total, source: 'pdf-parse' });
 
     return {
       text,
       type: 'pdf',
-      pages: data.numpages,
+      pages: data.total,
       ...analysis,
       source: 'pdf-parse',
     };
@@ -183,11 +198,7 @@ async function extractTextFromPDF(filePath, filename) {
 async function extractTextFromText(filePath, filename) {
   const text = fs.readFileSync(filePath, 'utf-8');
   const chunkId = `txt-${Date.now()}`;
-  vectorStore.addChunk({
-    id: chunkId,
-    text: `[Uploaded text file: ${filename}]\n${text}`,
-    metadata: { type: 'uploaded_text', filename, uploadedAt: new Date().toISOString() },
-  });
+  await persistDocument(filename, `[Uploaded text file: ${filename}]\n${text}`, 'text', { source: 'direct-read' });
   return { text, type: 'text', source: 'direct-read' };
 }
 

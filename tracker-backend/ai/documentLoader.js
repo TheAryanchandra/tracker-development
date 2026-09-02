@@ -8,6 +8,7 @@ const DsaLecture = require('../models/DsaLecture');
 const DailyTracker = require('../models/DailyTracker');
 const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
+const JarvisDocument = require('../models/JarvisDocument');
 const vectorStore = require('./vectorStore');
 
 /**
@@ -17,11 +18,12 @@ async function loadAndBuild() {
   if (!vectorStore.needsRebuild()) return;
 
   try {
-    const [lectures, dailyLogs, dsaProgress, applications] = await Promise.all([
+    const [lectures, dailyLogs, dsaProgress, applications, savedDocuments] = await Promise.all([
       DsaLecture.find().maxTimeMS(2500).lean().catch(() => []),
       DailyTracker.find().sort({ date: -1 }).limit(60).maxTimeMS(2500).lean().catch(() => []),
       DsaProgress.find().maxTimeMS(2500).lean().catch(() => []),
       ApplicationTracker.find().sort({ dateApplied: -1 }).maxTimeMS(2500).lean().catch(() => []),
+      JarvisDocument.find().sort({ uploadedAt: -1 }).limit(100).maxTimeMS(2500).lean().catch(() => []),
     ]);
 
   const chunks = [];
@@ -113,6 +115,15 @@ async function loadAndBuild() {
       id: `app-${a._id}`,
       text: `Job application: ${a.company} for ${a.role} role on ${a.dateApplied}. Platform: ${a.platform || 'LinkedIn'}. Status: ${a.status}. Notes: ${a.notes || 'none'}.`,
       metadata: { type: 'application', company: a.company, role: a.role, status: a.status },
+    });
+  });
+
+  // Uploaded PDFs, notes, spreadsheets and OCR text survive restarts and remain searchable.
+  savedDocuments.forEach(doc => {
+    chunks.push({
+      id: `document-${doc._id}`,
+      text: doc.content,
+      metadata: { type: 'uploaded_document', filename: doc.filename, docType: doc.docType, ...doc.metadata },
     });
   });
 

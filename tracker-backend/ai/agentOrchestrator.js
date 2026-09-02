@@ -19,7 +19,10 @@ try {
   GoogleGenerativeAI = require('@google/generative-ai').GoogleGenerativeAI;
 } catch (e) {}
 
-const { searchWeb, formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = require('./webScraper');
+// Keep the module namespace so deployments with a cached/older export cannot
+// turn a web-search request into an unhandled ReferenceError.
+const webScraper = require('./webScraper');
+const { formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = webScraper;
 const { searchJobsPaginated, formatJobsForResponse } = require('./jobSearcher');
 const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture } = require('./actionExecutor');
 const { getLearnedFactsContext, getAllFacts } = require('./longTermMemory');
@@ -118,7 +121,10 @@ async function executeTool(toolName, toolArgs) {
 
   switch (toolName) {
     case 'search_web': {
-      const results = await searchWeb(toolArgs.query || '', 5);
+      if (typeof webScraper.searchWeb !== 'function') {
+        return 'Live web search is temporarily unavailable. I can still search your tracker database and memory.';
+      }
+      const results = await webScraper.searchWeb(toolArgs.query || '', 5);
       return formatSearchResults(toolArgs.query || '', results);
     }
 

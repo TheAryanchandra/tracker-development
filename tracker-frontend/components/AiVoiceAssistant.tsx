@@ -42,7 +42,9 @@ interface Message {
   ts: string;
 }
 
-const STORAGE_KEY = 'jarvis_chat_history_v2';
+// Bump the local transcript version so stale runtime-error bubbles from the
+// broken scraper build are not shown as if they were new responses.
+const STORAGE_KEY = 'jarvis_chat_history_v3';
 const SESSION_ID = `session-aryan-tracker`;
 
 const QUICK_ACTIONS = [
@@ -73,6 +75,9 @@ export const AiVoiceAssistant: React.FC = () => {
   const animFrameRef = useRef<number>(0);
   const streamRef = useRef<EventSource | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const voiceSessionRef = useRef(false);
+  const restartVoiceRef = useRef<number | null>(null);
+  const speakingRef = useRef(false);
 
   // Initialize and load persistent history
   useEffect(() => {
@@ -99,6 +104,17 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
     }
   }, []);
 
+  useEffect(() => {
+    const openFromDashboard = (event: Event) => {
+      const detail = (event as CustomEvent<{ prompt?: string; openFile?: boolean }>).detail;
+      setOpen(true);
+      if (detail?.prompt) setInput(detail.prompt);
+      if (detail?.openFile) window.setTimeout(() => fileInputRef.current?.click(), 0);
+    };
+    window.addEventListener('atlas:open-assistant', openFromDashboard);
+    return () => window.removeEventListener('atlas:open-assistant', openFromDashboard);
+  }, []);
+
   // Save conversation turns to localStorage
   useEffect(() => {
     if (messages.length > 0) {
@@ -119,22 +135,38 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
     const r = new SR();
-    r.continuous = false;
+    // Keep interim results visible while Android Chrome is listening.
+    r.continuous = true;
     r.interimResults = true;
     r.lang = 'en-US';
     r.onresult = (e: any) => {
-      const t = Array.from(e.results)
-        .map((res: any) => res[0].transcript)
-        .join('');
-      setTranscript(t);
-      if (e.results[e.results.length - 1].isFinal) {
-        setTranscript('');
-        handleSend(t);
-        stopListening();
+      const interim = Array.from(e.results)
+        .filter((res: any) => !res.isFinal)
+        .map((res: any) => res[0].transcript).join('');
+      setTranscript(interim);
+      // Barge-in: a new spoken phrase immediately interrupts the current TTS reply.
+      if (speakingRef.current && interim.trim()) {
+        window.speechSynthesis.cancel();
+        speakingRef.current = false;
+      }
+      for (let i = e.resultIndex; i < e.results.length; i += 1) {
+        if (e.results[i].isFinal) {
+          const turn = e.results[i][0].transcript.trim();
+          if (turn) handleSend(turn);
+        }
       }
     };
-    r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
+    r.onend = () => {
+      if (voiceSessionRef.current && !speakingRef.current) {
+        restartVoiceRef.current = window.setTimeout(() => {
+          try { recognitionRef.current?.start(); setListening(true); } catch {}
+        }, 180);
+      } else setListening(false);
+    };
+    r.onerror = () => {
+      setListening(false);
+      setTranscript('');
+    };
     recognitionRef.current = r;
   }, []);
 
@@ -167,6 +199,10 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
   }, []);
 
   const stopListening = useCallback(() => {
+    voiceSessionRef.current = false;
+    speakingRef.current = false;
+    if (restartVoiceRef.current) window.clearTimeout(restartVoiceRef.current);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
     setListening(false);
     recognitionRef.current?.stop();
     cancelAnimationFrame(animFrameRef.current);
@@ -179,7 +215,10 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceSessionRef.current = true;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       const audioCtx = new AudioContext();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
@@ -190,6 +229,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       recognitionRef.current.start();
       drawVisualizer();
     } catch {
+      voiceSessionRef.current = true;
       setListening(true);
       recognitionRef.current.start();
     }
@@ -198,19 +238,30 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
   // Voice synthesis
   const speak = useCallback(
     (text: string) => {
-      if (!tts || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      if ((!tts && !voiceSessionRef.current) || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
+      if (voiceSessionRef.current) {
+        speakingRef.current = true;
+      }
       const clean = text.replace(/[*_#`•🔗[\]()]/g, '').replace(/\n/g, '. ');
       const utt = new SpeechSynthesisUtterance(clean);
       const voices = window.speechSynthesis.getVoices();
+      const maleVoiceHints = ['david', 'mark', 'guy', 'daniel', 'alex', 'james', 'aaron', 'george', 'microsoft david', 'google us english'];
       const best =
-        voices.find(
-          (v) =>
-            (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Siri')) &&
-            v.lang.startsWith('en')
-        ) || voices.find((v) => v.lang.startsWith('en'));
+        voices.find((v) => v.lang.startsWith('en') && maleVoiceHints.some((hint) => v.name.toLowerCase().includes(hint))) ||
+        voices.find((v) => v.lang.startsWith('en') && !/female|zira|samantha|karen|susan/i.test(v.name)) ||
+        voices.find((v) => v.lang.startsWith('en'));
       if (best) utt.voice = best;
       utt.rate = 1.05;
+      utt.pitch = 0.92;
+      utt.onend = () => {
+        speakingRef.current = false;
+        if (voiceSessionRef.current) {
+          restartVoiceRef.current = window.setTimeout(() => {
+            try { recognitionRef.current?.start(); setListening(true); } catch {}
+          }, 220);
+        }
+      };
       window.speechSynthesis.speak(utt);
     },
     [tts]
@@ -266,7 +317,12 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       const previewUrl = filePreview;
 
       if (!query && !fileToSend) return;
-      if (loading) return;
+      // Let a new voice turn barge in and replace a slow/in-flight answer.
+      if (loading) {
+        streamRef.current?.close();
+        streamRef.current = null;
+        setLoading(false);
+      }
 
       // Reset inputs
       setInput('');

@@ -20,7 +20,7 @@ try {
 /**
  * Main RAG query function
  */
-async function ragQuery(query, conversationHistory = '', learnedFacts = '') {
+async function ragQuery(query, conversationHistory = '', learnedFacts = '', externalContext = '') {
   // Step 1: Ensure vector store is fresh
   await loadAndBuild();
 
@@ -36,7 +36,7 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '') {
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const systemPrompt = buildSystemPrompt(contextText, conversationHistory, learnedFacts);
+      const systemPrompt = buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts);
       const result = await model.generateContent(systemPrompt + '\n\nUser: ' + query);
       const text = result.response.text();
       if (text) {
@@ -61,7 +61,7 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '') {
           messages: [
             {
               role: 'system',
-              content: buildSystemPrompt(contextText, conversationHistory, learnedFacts),
+              content: buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts),
             },
             { role: 'user', content: query },
           ],
@@ -87,8 +87,8 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '') {
   }
 
   // Step 5: Humanoid Local Engine (Instant, zero cost, smart contextual answers)
-  const reply = humanoidLocalSynthesis(query, relevantChunks, learnedFacts);
-  return { reply, source: 'Jarvis Core Engine', chunks: relevantChunks };
+  const reply = humanoidLocalSynthesis(query, relevantChunks, learnedFacts, externalContext);
+  return { reply, source: externalContext ? 'Jarvis Web + Memory' : 'Jarvis Core Engine', chunks: relevantChunks };
 }
 
 /**
@@ -118,8 +118,14 @@ ${conversationHistory || 'Fresh session.'}
  * Humanoid Local Synthesis Engine
  * Provides intelligent, natural responses for all queries without an external API key.
  */
-function humanoidLocalSynthesis(query, chunks, learnedFacts = '') {
+function humanoidLocalSynthesis(query, chunks, learnedFacts = '', externalContext = '') {
   const lower = query.toLowerCase().trim();
+
+  // Even without an LLM key, answer general questions from the live retrieval
+  // layer instead of falling back to a generic capability prompt.
+  if (externalContext && !chunks.length) {
+    return `I checked the live web for you. Here’s the useful signal I found:\n\n${externalContext.slice(0, 3500)}\n\nIf you want, I can compare these results or verify a specific source.`;
+  }
 
   // 1. Greetings & Small Talk
   if (/^(hi|hello|hey|yo|sup|hola|namaste|good\s+(morning|afternoon|evening|night|day)|wassup|greetings)/i.test(lower)) {

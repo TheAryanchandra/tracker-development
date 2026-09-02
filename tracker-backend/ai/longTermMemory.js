@@ -55,7 +55,7 @@ async function autoLearnFromMessage(message, role = 'user') {
         await LearnedFact.findOneAndUpdate(
           { key },
           { category, key, value: value.slice(0, 500), source: 'auto-extract', updatedAt: new Date() },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: 'after' }
         );
         learnedKeys.push({ key, value, category });
       } catch (e) { /* skip dupe key errors */ }
@@ -77,7 +77,7 @@ async function teachFact(key, value, category = 'custom') {
   await LearnedFact.findOneAndUpdate(
     { key: key.toLowerCase().replace(/\s+/g, '_') },
     { category, key: key.toLowerCase().replace(/\s+/g, '_'), value, source: 'user-taught', updatedAt: new Date() },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
   vectorStore.lastBuilt = null;
 }

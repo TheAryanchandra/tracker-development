@@ -30,7 +30,7 @@ exports.createLecture = async (req, res) => {
 exports.updateLecture = async (req, res) => {
   try {
     const lecture = await DsaLecture.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (!lecture) return res.status(404).json({ success: false, message: 'Lecture not found' });

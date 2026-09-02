@@ -24,7 +24,7 @@ exports.createDailyLog = async (req, res) => {
 exports.updateDailyLog = async (req, res) => {
   try {
     const log = await DailyTracker.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (!log) return res.status(404).json({ success: false, message: 'Log not found' });

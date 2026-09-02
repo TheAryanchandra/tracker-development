@@ -18,6 +18,16 @@ const clients = new Set();
 function initWebSocket(server) {
   wss = new WebSocket.Server({ server, path: '/ws' });
 
+  // ws emits its own error when the HTTP server cannot bind. Handle it so a
+  // duplicate local start never becomes an unhandled Node.js exception.
+  wss.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[WS] Port is already in use. Reuse the existing server or stop it before restarting.`);
+      return;
+    }
+    console.warn('[WS] Server error:', err.message);
+  });
+
   wss.on('connection', (ws, req) => {
     clients.add(ws);
     console.log(`[WS] Client connected. Total: ${clients.size}`);

@@ -55,7 +55,6 @@ const server = http.createServer(app);
 
 // ── Initialize WebSocket server ───────────────────────────────
 const { initWebSocket } = require('./services/websocketService');
-initWebSocket(server);
 
 // ── Seed default DSA Topics ───────────────────────────────────
 const DsaProgress = require('./models/DsaProgress');
@@ -86,9 +85,18 @@ const scheduleNotifications = () => {
 const { startSheetsCron } = require('./services/googleSheetsService');
 
 const PORT = process.env.PORT || 5000;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[Server] Port ${PORT} is already in use. The existing Aryan Tracker backend is likely already running.`);
+    console.error(`[Server] Stop the process using port ${PORT}, then run npm start again.`);
+    return;
+  }
+  console.error('[Server] Unable to start:', err.message);
+});
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[Server] Running on port ${PORT}`);
   console.log(`[Server] WebSocket available at ws://localhost:${PORT}/ws`);
+  initWebSocket(server);
   seedDefaultDsaTopics();
   scheduleNotifications();
   startSheetsCron();

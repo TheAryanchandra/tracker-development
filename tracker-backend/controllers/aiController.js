@@ -11,7 +11,7 @@ const { classify, INTENTS } = require('../ai/intentClassifier');
 const { ragQuery } = require('../ai/ragEngine');
 const { runAgentLoop } = require('../ai/agentOrchestrator');
 const { processUploadedFile } = require('../ai/ocrEngine');
-const { scrapeUrl, formatScrapeResult, extractUrls } = require('../ai/webScraper');
+const { searchWeb, formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = require('../ai/webScraper');
 const memoryStore = require('../ai/memoryStore');
 const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture } = require('../ai/actionExecutor');
 const {
@@ -120,9 +120,20 @@ exports.handleAiChat = async (req, res) => {
             broadcast(WS_EVENTS.AI_ACTION, { action: agentResult.actionExecuted });
             broadcast(WS_EVENTS.STATS_REFRESH, { reason: 'agent_action' });
           }
-        } else {
-          // Fallback to RAG
-          const ragResult = await ragQuery(augmentedPrompt, history, learnedFacts);
+      } else {
+        // Fallback to RAG
+          let externalContext = '';
+          // If no agent model is configured, still retrieve live public web
+          // context so ordinary questions receive an answer, not a menu of
+          // capabilities. LLM-backed runs keep their tool-driven path.
+          if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+            const webResults = await searchWeb(prompt, 5);
+            externalContext = formatSearchResults(prompt, webResults);
+          }
+          const ragPrompt = externalContext
+            ? `${augmentedPrompt}\n\nLive web search context:\n${externalContext}`
+            : augmentedPrompt;
+          const ragResult = await ragQuery(ragPrompt, history, learnedFacts);
           result = { reply: ragResult.reply, source: ragResult.source };
         }
         break;
@@ -225,7 +236,15 @@ exports.handleAiStream = async (req, res) => {
         }
       } else {
         // Fallback to RAG
-        const r = await ragQuery(String(prompt), history, learnedFacts);
+        let externalContext = '';
+        if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+          const webResults = await searchWeb(String(prompt), 5);
+          externalContext = formatSearchResults(String(prompt), webResults);
+        }
+        const ragPrompt = externalContext
+          ? `${String(prompt)}\n\nLive web search context:\n${externalContext}`
+          : String(prompt);
+        const r = await ragQuery(ragPrompt, history, learnedFacts);
         fullReply = r.reply;
       }
     }

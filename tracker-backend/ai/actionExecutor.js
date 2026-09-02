@@ -37,7 +37,7 @@ async function logDailyUpdate(entities, rawPrompt) {
   await DailyTracker.findOneAndUpdate(
     { date: { $regex: date } },
     update,
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   );
 
   // If specific company was mentioned, also log application

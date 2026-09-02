@@ -225,7 +225,7 @@ async function syncDailyTracker(rows, headers = []) {
     await DailyTracker.findOneAndUpdate(
       { date: { $regex: date } },
       data,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     if (!existing) changes++;
   }
@@ -291,7 +291,7 @@ async function syncDsaProgress(rows) {
     await DsaProgress.findOneAndUpdate(
       { topic: new RegExp(topic, 'i') },
       { topic, totalProblems, problemsSolved, percentComplete: percent, status },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     if (wasChanged) changes++;
   }
@@ -318,7 +318,7 @@ async function syncLectures(rows) {
     await DsaLecture.findOneAndUpdate(
       { title: new RegExp(title.slice(0, 20), 'i') },
       { title, url, duration, status, srNo: parseInt(getVal(row, 'sr', 'no', '#') || String(i + 1)) || i + 1 },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     if (wasChanged) changes++;
   }

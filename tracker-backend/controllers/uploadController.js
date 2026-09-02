@@ -119,7 +119,7 @@ exports.uploadExcel = async (req, res) => {
             await DsaProgress.findOneAndUpdate(
               { topic: item.topic },
               item,
-              { upsert: true, new: true }
+              { upsert: true, returnDocument: 'after' }
             );
           }
           summaryResults.dsaProgress = progressItems.length;
@@ -181,7 +181,7 @@ exports.uploadResume = async (req, res) => {
       updatedApplication = await ApplicationTracker.findByIdAndUpdate(
         applicationId,
         { resumeUrl: fileUrl, attachmentName: req.file.originalname },
-        { new: true }
+        { returnDocument: 'after' }
       );
     }
 

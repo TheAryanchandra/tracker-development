@@ -34,7 +34,7 @@ exports.createApplication = async (req, res) => {
 exports.updateApplication = async (req, res) => {
   try {
     const app = await ApplicationTracker.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
     if (!app) return res.status(404).json({ success: false, message: 'Application not found' });

@@ -10,6 +10,7 @@
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const vectorStore = require('./vectorStore');
+const assistantCache = require('../services/assistantCache');
 
 const scrapeCache = new Map();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
@@ -19,6 +20,9 @@ const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
  */
 async function searchWeb(query, maxResults = 5) {
   try {
+    const cacheKey = `jarvis:web:${query.toLowerCase().trim()}:${maxResults}`;
+    const cached = await assistantCache.get(cacheKey);
+    if (cached) return JSON.parse(cached);
     const encoded = encodeURIComponent(query);
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encoded}`;
 
@@ -74,6 +78,7 @@ async function searchWeb(query, maxResults = 5) {
       });
     }
 
+    await assistantCache.set(cacheKey, JSON.stringify(results), 600);
     return results;
   } catch (err) {
     console.warn(`[WebSearch] Search error for "${query}":`, err.message);

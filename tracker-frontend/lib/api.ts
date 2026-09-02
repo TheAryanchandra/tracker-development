@@ -3,6 +3,11 @@ import axios from 'axios';
 // Automatically choose production Render URL or environment variable or localhost for dev
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  // Local HTTPS dev proxies should still use the local backend, not the stale
+  // production deployment. This also makes the error source obvious in dev.
+  if (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    return 'http://127.0.0.1:5000/api';
+  }
   if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
     return 'https://tracker-backend-rnec.onrender.com/api';
   }

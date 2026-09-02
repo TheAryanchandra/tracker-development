@@ -1,23 +1,25 @@
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
-import { AiVoiceAssistant } from '@/components/AiVoiceAssistant';
+
+const AiVoiceAssistant = dynamic(
+  () => import('@/components/AiVoiceAssistant').then((mod) => mod.AiVoiceAssistant),
+  { ssr: false, loading: () => null }
+);
 
 export const metadata: Metadata = {
-  title: 'Daily Tracker — Aryan Chandra',
-  description: 'Personal career & DSA tracking dashboard with AI assistant',
+  title: 'Aryan Tracker',
+  description: "Aryan's personal command center with an AI assistant",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ background: '#080b0f', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
-          <main
-            className="page-main flex-1 overflow-y-auto"
-            style={{ padding: '24px 20px', minWidth: 0 }}
-          >
+          <main className="page-main flex-1 overflow-y-auto" style={{ padding: '24px 20px', minWidth: 0 }}>
             {children}
           </main>
         </div>

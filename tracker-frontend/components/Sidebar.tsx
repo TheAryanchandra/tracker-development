@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Youtube,
@@ -30,6 +30,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [excelOpen, setExcelOpen] = useState(false);
 
+  useEffect(() => {
+    const open = () => setExcelOpen(true);
+    window.addEventListener('atlas:open-excel', open);
+    return () => window.removeEventListener('atlas:open-excel', open);
+  }, []);
+
   return (
     <>
       {/* ── Desktop Sidebar ─────────────────────────── */}
@@ -56,7 +62,7 @@ export default function Sidebar() {
               </div>
               <div>
                 <div className="text-xs font-extrabold text-[var(--text-primary)] tracking-tight leading-none">
-                  Daily Tracker
+                  Aryan Tracker
                 </div>
                 <div className="text-[10px] text-[var(--text-tertiary)] font-medium mt-0.5">
                   Aryan Chandra

@@ -28,14 +28,17 @@ async function push(type, title, body, icon = '🔔', url = '/', data = {}) {
  */
 async function checkNewJobs() {
   try {
-    const { jobs, fromCache } = await searchJobs('software engineer fullstack', false);
+    const { jobs, fromCache } = await searchJobs('software engineer', false);
     if (fromCache || jobs.length === 0) return 0;
 
-    // Create a single digest notification instead of one per job
-    const topJobs = jobs.slice(0, 3);
-    const body = topJobs.map(j => `• ${j.title} @ ${j.company}`).join('\n');
-    await push('job_alert', `🆕 ${jobs.length} New Jobs Found`, body, '💼', '/jobs');
-    console.log(`[Notify] Created job alert: ${jobs.length} new jobs`);
+    // Group the digest by source so each alert explains where matches came from.
+    const grouped = jobs.reduce((acc, job) => { (acc[job.source || 'Job board'] ||= []).push(job); return acc; }, {});
+    const body = Object.entries(grouped).map(([source, sourceJobs]) => {
+      const preview = sourceJobs.slice(0, 2).map(j => `${j.title} @ ${j.company}`).join('\n');
+      return `${source} · ${sourceJobs.length}\n${preview}`;
+    }).join('\n\n');
+    await push('job_alert', `New role matches · ${jobs.length}`, body, '💼', '/jobs', { groups: Object.fromEntries(Object.entries(grouped).map(([source, sourceJobs]) => [source, sourceJobs.length])) });
+    console.log(`[Notify] Created grouped job alert: ${jobs.length} relevant jobs`);
     return jobs.length;
   } catch (e) {
     console.error('[Notify] checkNewJobs error:', e.message);
