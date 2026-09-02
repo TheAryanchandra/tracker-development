@@ -271,14 +271,28 @@ body {
     height: 48px !important; 
   }
   
-  .jarvis-panel { 
-    bottom: 136px !important; 
-    right: 12px !important; 
-    left: 12px !important; 
-    width: auto !important; 
-    height: min(540px, calc(100vh - 170px)) !important; 
-    border-radius: 26px !important; 
+  .jarvis-panel {
+    bottom: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: min(760px, calc(100dvh - 58px)) !important;
+    border-radius: 24px 24px 0 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: 0 -18px 55px rgba(25, 15, 8, .22) !important;
   }
+  .jarvis-header { min-height: 64px; padding: 10px 14px !important; }
+  .jarvis-header button, .jarvis-input-bar > button { width: 44px !important; height: 44px !important; }
+  .jarvis-quick-actions { padding: 10px 14px !important; scrollbar-width: none; }
+  .jarvis-quick-actions button { min-height: 36px; padding-inline: 13px; font-size: 12px; }
+  .jarvis-messages { padding: 14px !important; gap: 14px; }
+  .jarvis-messages .max-w-\[90\%\] { max-width: 92%; padding: 12px 13px; font-size: 14px; line-height: 1.5; }
+  .jarvis-messages .text-\[10px\] { font-size: 11px; }
+  .jarvis-input-bar { padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important; gap: 7px; }
+  .jarvis-input-bar input { min-height: 44px; padding-inline: 13px; font-size: 14px; }
+  .jarvis-input-bar input::placeholder { font-size: 12px; }
+  .jarvis-input-bar > button:last-child { background: var(--accent); }
+  .jarvis-panel .prose { font-size: 14px; }
   
 .page-main {
     padding-bottom: 92px !important; 

@@ -522,7 +522,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       {open && (
         <div className="jarvis-panel flex flex-col shadow-2xl">
           {/* Header */}
-          <div className="p-3.5 border-b border-[var(--card-border)] flex items-center justify-between gap-3 bg-[var(--card-flat)]">
+          <div className="jarvis-header p-3.5 border-b border-[var(--card-border)] flex items-center justify-between gap-3 bg-[var(--card-flat)]">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-700 dark:from-indigo-600 dark:to-purple-600 flex items-center justify-center shadow-md">
                 <Sparkles size={15} className="text-white" />
@@ -563,7 +563,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
           </div>
 
           {/* Quick Action Suggestions */}
-          <div className="px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01] scrollbar-none">
+          <div className="jarvis-quick-actions px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01] scrollbar-none">
             {QUICK_ACTIONS.map((action) => (
               <button
                 key={action.label}
@@ -576,7 +576,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5">
+          <div className="jarvis-messages flex-1 overflow-y-auto p-3.5 space-y-3.5">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -712,7 +712,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
           />
 
           {/* Input Area */}
-          <div className="p-3 border-t border-[var(--card-border)] flex items-center gap-2 bg-[var(--card-flat)]">
+          <div className="jarvis-input-bar p-3 border-t border-[var(--card-border)] flex items-center gap-2 bg-[var(--card-flat)]">
             {/* Attachment Button */}
             <button
               onClick={() => fileInputRef.current?.click()}

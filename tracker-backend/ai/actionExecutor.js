@@ -9,6 +9,7 @@ const DailyTracker = require('../models/DailyTracker');
 const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
 const vectorStore = require('./vectorStore');
+const Task = require('../models/Task');
 
 const dateToday = () => new Date().toISOString().split('T')[0];
 
@@ -146,4 +147,28 @@ async function updateLecture(entities, rawPrompt) {
   };
 }
 
-module.exports = { logDailyUpdate, logApplication, updateDsaProgress, updateLecture };
+async function createTask(entities, rawPrompt) {
+  const title = (entities.taskTitle || rawPrompt.replace(/^(remind me to|add (a )?task|create (a )?task|assign (a )?task|i need to)\s*/i, '')).trim();
+  if (!title) return { reply: 'What should I add as the task?', actionExecuted: null };
+  const task = await Task.create({ title, priority: entities.priority || 'medium', dueAt: entities.date ? new Date(entities.date) : null, source: 'assistant' });
+  vectorStore.lastBuilt = null;
+  return { reply: `✅ Task saved: **${task.title}**${task.dueAt ? `\nDue: **${task.dueAt.toLocaleDateString('en-IN')}**` : ''}\nPriority: **${task.priority}**`, actionExecuted: 'TASK_CREATED', task };
+}
+
+async function listTasks() {
+  const tasks = await Task.find({ status: { $ne: 'completed' } }).sort({ dueAt: 1, createdAt: -1 }).limit(20).lean();
+  if (!tasks.length) return { reply: 'You have no open tasks right now. Nice and clear.', actionExecuted: null };
+  return { reply: `📋 **Your open tasks:**\n\n${tasks.map((task, i) => `${i + 1}. **${task.title}** — ${task.priority} priority${task.dueAt ? ` · due ${new Date(task.dueAt).toLocaleDateString('en-IN')}` : ''}`).join('\n')}`, actionExecuted: null, tasks };
+}
+
+async function completeTask(entities, rawPrompt) {
+  const needle = (entities.taskTitle || rawPrompt.replace(/(?:complete|finish|done|mark)(?: the)?(?: task| todo| reminder)?/i, '')).trim();
+  let task = null;
+  if (needle) task = await Task.findOne({ status: { $ne: 'completed' }, title: new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).sort({ createdAt: -1 });
+  if (!task) return { reply: `I couldn't find an open task matching **${needle || 'that'}**. Say “show my tasks” to see them.`, actionExecuted: null };
+  task.status = 'completed';
+  await task.save();
+  return { reply: `✅ Done — **${task.title}** is marked complete.`, actionExecuted: 'TASK_COMPLETED', task };
+}
+
+module.exports = { logDailyUpdate, logApplication, updateDsaProgress, updateLecture, createTask, listTasks, completeTask };

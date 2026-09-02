@@ -13,7 +13,7 @@ const { runAgentLoop } = require('../ai/agentOrchestrator');
 const { processUploadedFile } = require('../ai/ocrEngine');
 const { searchWeb, formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = require('../ai/webScraper');
 const memoryStore = require('../ai/memoryStore');
-const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture } = require('../ai/actionExecutor');
+const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture, createTask, listTasks, completeTask } = require('../ai/actionExecutor');
 const {
   autoLearnFromMessage, teachFact, persistConversation,
   getLearnedFactsContext, getAllFacts, forgetFact,
@@ -118,6 +118,22 @@ exports.handleAiChat = async (req, res) => {
         break;
       }
 
+      case INTENTS.CREATE_TASK:
+        result = await createTask(entities, prompt);
+        broadcast(WS_EVENTS.AI_ACTION, { action: result.actionExecuted, entities });
+        broadcast(WS_EVENTS.STATS_REFRESH, { reason: 'task_created' });
+        break;
+      case INTENTS.LIST_TASKS:
+        result = await listTasks();
+        break;
+      case INTENTS.COMPLETE_TASK:
+        result = await completeTask(entities, prompt);
+        if (result.actionExecuted) {
+          broadcast(WS_EVENTS.AI_ACTION, { action: result.actionExecuted, entities });
+          broadcast(WS_EVENTS.STATS_REFRESH, { reason: 'task_completed' });
+        }
+        break;
+
       default: {
         // Try agentic loop first (handles complex multi-step + URL scraping)
         const augmentedPrompt = urlContext
@@ -208,6 +224,9 @@ exports.handleAiStream = async (req, res) => {
       [INTENTS.ADD_APPLICATION]: () => logApplication(entities, String(prompt)),
       [INTENTS.UPDATE_DSA]: () => updateDsaProgress(entities, String(prompt)),
       [INTENTS.UPDATE_LECTURE]: () => updateLecture(entities, String(prompt)),
+      [INTENTS.CREATE_TASK]: () => createTask(entities, String(prompt)),
+      [INTENTS.LIST_TASKS]: () => listTasks(),
+      [INTENTS.COMPLETE_TASK]: () => completeTask(entities, String(prompt)),
     };
 
     if (directActionMap[intent]) {

@@ -11,13 +11,16 @@ const Notification = require('../models/Notification');
 const { searchJobs } = require('../ai/jobSearcher');
 const DailyTracker = require('../models/DailyTracker');
 const ApplicationTracker = require('../models/ApplicationTracker');
+const { broadcast, WS_EVENTS } = require('./websocketService');
 
 /**
  * Push a notification into MongoDB
  */
 async function push(type, title, body, icon = '🔔', url = '/', data = {}) {
   try {
-    return await Notification.create({ type, title, body, icon, url, data });
+    const notification = await Notification.create({ type, title, body, icon, url, data });
+    broadcast(WS_EVENTS.NOTIFICATION_CREATED, { notification });
+    return notification;
   } catch (e) {
     console.error('[Notify] push error:', e.message);
   }
@@ -28,18 +31,20 @@ async function push(type, title, body, icon = '🔔', url = '/', data = {}) {
  */
 async function checkNewJobs() {
   try {
-    const { jobs, fromCache } = await searchJobs('software engineer', false);
+    const { jobs, fromCache } = await searchJobs('software engineer entry junior backend full stack', false);
     if (fromCache || jobs.length === 0) return 0;
+    const matches = jobs.filter(job => (job.matchScore || 0) >= 8).slice(0, 12);
+    if (matches.length === 0) return 0;
 
     // Group the digest by source so each alert explains where matches came from.
-    const grouped = jobs.reduce((acc, job) => { (acc[job.source || 'Job board'] ||= []).push(job); return acc; }, {});
+    const grouped = matches.reduce((acc, job) => { (acc[job.source || 'Job board'] ||= []).push(job); return acc; }, {});
     const body = Object.entries(grouped).map(([source, sourceJobs]) => {
       const preview = sourceJobs.slice(0, 2).map(j => `${j.title} @ ${j.company}`).join('\n');
       return `${source} · ${sourceJobs.length}\n${preview}`;
     }).join('\n\n');
-    await push('job_alert', `New role matches · ${jobs.length}`, body, '💼', '/jobs', { groups: Object.fromEntries(Object.entries(grouped).map(([source, sourceJobs]) => [source, sourceJobs.length])) });
-    console.log(`[Notify] Created grouped job alert: ${jobs.length} relevant jobs`);
-    return jobs.length;
+    await push('job_alert', `Resume-matched roles · ${matches.length}`, body, '💼', '/jobs', { groups: Object.fromEntries(Object.entries(grouped).map(([source, sourceJobs]) => [source, sourceJobs.length])) });
+    console.log(`[Notify] Created grouped job alert: ${matches.length} resume-matched jobs`);
+    return matches.length;
   } catch (e) {
     console.error('[Notify] checkNewJobs error:', e.message);
     return 0;

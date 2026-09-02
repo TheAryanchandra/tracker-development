@@ -43,6 +43,7 @@ app.use('/api/dashboard',           require('./routes/dashboardRoutes'));
 app.use('/api/ai',                  require('./routes/aiRoutes'));
 app.use('/api/notifications',       require('./routes/notificationRoutes'));
 app.use('/api/sheets',              require('./routes/sheetsRoutes'));
+app.use('/api/tasks',               require('./routes/taskRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {

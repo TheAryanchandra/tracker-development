@@ -24,7 +24,7 @@ try {
 const webScraper = require('./webScraper');
 const { formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = webScraper;
 const { searchJobsPaginated, formatJobsForResponse } = require('./jobSearcher');
-const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture } = require('./actionExecutor');
+const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture, createTask, listTasks, completeTask } = require('./actionExecutor');
 const { getLearnedFactsContext, getAllFacts } = require('./longTermMemory');
 const { loadAndBuild } = require('./documentLoader');
 const vectorStore = require('./vectorStore');
@@ -111,6 +111,21 @@ const TOOLS = [
       properties: {},
     },
   },
+  {
+    name: 'create_task',
+    description: 'Persist a task or reminder for Aryan. Use when he asks to remember, remind, assign, or add something to do.',
+    parameters: { type: 'object', properties: { title: { type: 'string' }, priority: { type: 'string', description: 'low, medium, or high' }, dueAt: { type: 'string', description: 'ISO date if known' } }, required: ['title'] },
+  },
+  {
+    name: 'list_tasks',
+    description: 'List Aryan\'s currently open tasks and reminders.',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
+    name: 'complete_task',
+    description: 'Mark one of Aryan\'s open tasks complete.',
+    parameters: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] },
+  },
 ];
 
 /**
@@ -173,6 +188,19 @@ async function executeTool(toolName, toolArgs) {
       const facts = await getAllFacts();
       if (!facts.length) return 'No learned facts yet.';
       return facts.map(f => `${f.category}: ${f.value}`).join('\n');
+    }
+
+    case 'create_task': {
+      const result = await createTask({ taskTitle: toolArgs.title, priority: toolArgs.priority, date: toolArgs.dueAt }, toolArgs.title);
+      return result.reply;
+    }
+    case 'list_tasks': {
+      const result = await listTasks();
+      return result.reply;
+    }
+    case 'complete_task': {
+      const result = await completeTask({ taskTitle: toolArgs.title }, toolArgs.title);
+      return result.reply;
     }
 
     default:
@@ -258,7 +286,7 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
           const toolResult = await executeTool(call.name, call.args);
           toolsUsed.push({ tool: call.name, args: call.args });
 
-          if (['log_daily_activity', 'log_application'].includes(call.name)) {
+          if (['log_daily_activity', 'log_application', 'create_task', 'complete_task'].includes(call.name)) {
             actionExecuted = call.name.toUpperCase();
           }
 

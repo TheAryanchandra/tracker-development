@@ -14,9 +14,24 @@ const INTENTS = {
   QUERY_STATS:     'QUERY_STATS',
   GREETING:        'GREETING',
   GENERAL:         'GENERAL',
+  CREATE_TASK:     'CREATE_TASK',
+  LIST_TASKS:      'LIST_TASKS',
+  COMPLETE_TASK:   'COMPLETE_TASK',
 };
 
 const INTENT_RULES = [
+  {
+    intent: INTENTS.COMPLETE_TASK,
+    patterns: [/(?:complete|finish|done|mark) (?:the )?(?:task|todo|reminder)\b/i, /(?:complete|finish|mark) .+ (?:as )?(?:done|complete|finished)/i],
+  },
+  {
+    intent: INTENTS.LIST_TASKS,
+    patterns: [/(?:show|list|give|get|what are) (?:me )?(?:my )?(?:open )?(?:tasks?|todos?|to-dos?|reminders?)/i, /what do i need to do/i],
+  },
+  {
+    intent: INTENTS.CREATE_TASK,
+    patterns: [/(?:remind|remember) me to\s+(.+)/i, /(?:add|create|assign|make) (?:a )?(?:task|todo|to-do|reminder)\s*(?:to|for|:)?\s*(.+)/i, /i need to\s+(.+)/i],
+  },
   // ── Job search ──────────────────────────────────────────────
   {
     intent: INTENTS.SEARCH_JOBS,
@@ -139,6 +154,13 @@ function classify(prompt) {
 
 function extractEntities(text) {
   const entities = {};
+
+  const taskMatch = text.match(/(?:remind me to|add (?:a )?task (?:to|for)?|create (?:a )?task (?:to|for)?|assign (?:a )?task (?:to|for)?|i need to)\s+(.+)/i);
+  if (taskMatch) entities.taskTitle = taskMatch[1].trim();
+  const completeTaskMatch = text.match(/(?:complete|finish|done|mark)(?: the)?(?: task| todo| reminder)?\s+(.+?)(?:\s+as\s+(?:done|complete|finished))?$/i);
+  if (completeTaskMatch && !entities.taskTitle && /complete|finish|done|mark/i.test(text)) entities.taskTitle = completeTaskMatch[1].trim();
+  const priorityMatch = text.match(/\b(high|medium|low)\s+priority\b/i);
+  if (priorityMatch) entities.priority = priorityMatch[1].toLowerCase();
 
   const companyMatch = text.match(/(?:applied to|at|for|company:|to)\s+([A-Z][a-zA-Z0-9\s&.]+?)(?:\s+as|\s+for|\s+on|\s*[,.]|$)/);
   if (companyMatch) entities.company = companyMatch[1].trim();

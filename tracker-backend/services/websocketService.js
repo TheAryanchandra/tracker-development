@@ -107,6 +107,8 @@ const WS_EVENTS = {
   JOBS_UPDATED:   'JOBS_UPDATED',    // New job listings fetched
   SYNC_ERROR:     'SYNC_ERROR',      // Sheets sync failed
   PING:           'PING',
+  TASK_UPDATED:   'TASK_UPDATED',
+  NOTIFICATION_CREATED: 'NOTIFICATION_CREATED',
 };
 
 module.exports = { initWebSocket, broadcast, getClientCount, WS_EVENTS };

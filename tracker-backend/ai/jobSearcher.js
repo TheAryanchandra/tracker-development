@@ -20,6 +20,8 @@ const DEFAULT_TAGS = ['javascript', 'typescript', 'node', 'react', 'next.js', 'f
 const TARGET_ROLES = ['sde', 'swe', 'software engineer', 'full stack', 'fullstack', 'backend engineer', 'software developer'];
 const TARGET_COMPANIES = ['mnc', 'gcc', 'product', 'startup', 'start-up'];
 const TARGET_MARKERS = ['sde', 'swe', 'software engineer', 'software developer', 'full stack', 'fullstack', 'backend', 'frontend', 'web developer', 'application developer'];
+const RESUME_SIGNALS = ['node', 'express', 'react', 'next.js', 'typescript', 'javascript', 'java', 'spring boot', 'mongodb', 'redis', 'aws', 'docker', 'kafka', 'websockets', 'rag', 'gemini', 'python', 'microservices', 'rest api'];
+const TARGET_LEVELS = ['entry', 'junior', 'associate', 'software engineer i', 'sde 1', 'sde i', 'swe 1', 'swe i', 'mid-level'];
 const FEED_TIMEOUT = 4500;
 
 /**
@@ -168,9 +170,12 @@ async function fetchAdzuna(search = 'software engineer') {
 function jobMatchScore(job, profileText = '') {
   const haystack = `${job.title} ${job.company} ${(job.tags || []).join(' ')} ${job.location}`.toLowerCase();
   let score = 0;
-  TARGET_ROLES.forEach(role => { if (haystack.includes(role)) score += 5; });
-  TARGET_COMPANIES.forEach(kind => { if (haystack.includes(kind)) score += 1; });
-  DEFAULT_TAGS.forEach(skill => { if (profileText.includes(skill) && haystack.includes(skill)) score += 2; });
+  TARGET_ROLES.forEach(role => { if (haystack.includes(role)) score += 8; });
+  TARGET_LEVELS.forEach(level => { if (haystack.includes(level)) score += 4; });
+  TARGET_COMPANIES.forEach(kind => { if (haystack.includes(kind)) score += 2; });
+  RESUME_SIGNALS.forEach(skill => { if (profileText.includes(skill) && haystack.includes(skill)) score += 3; });
+  if (/india|delhi|noida|gurgaon|gurugram|remote|worldwide/i.test(haystack)) score += 1;
+  if (/intern|internship|senior|lead|principal|manager|director|architect/i.test(haystack)) score -= 7;
   return score;
 }
 
@@ -261,7 +266,8 @@ async function searchJobsPaginated({ query = '', source = '', page = 1, limit = 
   const facts = await getAllFacts().catch(() => []);
   const documents = await JarvisDocument.find().sort({ uploadedAt: -1 }).limit(3).lean().catch(() => []);
   const profileText = `${facts.map(f => f.value).join(' ')} ${documents.map(d => d.content || '').join(' ')}`.toLowerCase();
-  jobs.sort((a, b) => jobMatchScore(b, profileText) - jobMatchScore(a, profileText) || new Date(b.postedAt) - new Date(a.postedAt));
+  jobs.forEach(job => { job.matchScore = jobMatchScore(job, profileText); });
+  jobs.sort((a, b) => b.matchScore - a.matchScore || new Date(b.postedAt) - new Date(a.postedAt));
   const pageJobs = jobs.slice((p - 1) * l, p * l);
   const totalPages = Math.ceil(totalCount / l) || 1;
 
