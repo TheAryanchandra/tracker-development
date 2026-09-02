@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Default API healthcheck route
-app.get(['/api', '/api/health'], (req, res) => {
+app.get(['/', '/api', '/api/health'], (req, res) => {
   res.json({ status: 'OK', message: 'Daily Tracker API is operational 🚀' });
 });
 
