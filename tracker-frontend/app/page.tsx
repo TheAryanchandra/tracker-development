@@ -413,16 +413,13 @@ export default function DashboardPage() {
           <div className="w-full grid grid-cols-2 gap-2 pt-3 border-t border-[var(--card-border)] text-xs">
             <div>
               <div className="font-bold text-amber-700 dark:text-indigo-400">
-                {stats?.solvedDsaProblems || 0}
+                {solvedCount}
               </div>
               <div className="text-[10px] text-[var(--text-tertiary)]">Solved</div>
             </div>
             <div>
               <div className="font-bold text-[var(--text-secondary)]">
-                {Math.max(
-                  (stats?.totalDsaProblems || 0) - (stats?.solvedDsaProblems || 0),
-                  0
-                )}
+                {Math.max(totalCount - solvedCount, 0)}
               </div>
               <div className="text-[10px] text-[var(--text-tertiary)]">Remaining</div>
             </div>
