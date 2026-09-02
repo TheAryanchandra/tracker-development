@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+// Automatically choose production Render URL or environment variable or localhost for dev
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return 'https://tracker-backend-rnec.onrender.com/api';
+  }
+  return 'http://127.0.0.1:5000/api';
+};
+
+const API_BASE_URL = getBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -22,8 +31,17 @@ export const fetchDashboardStats = async () => {
     const res = await api.get('/dashboard/stats');
     return res.data;
   } catch (err) {
-    const res = await axios.get('http://127.0.0.1:5000/api/dashboard/stats');
-    return res.data;
+    console.warn('Primary API fetch failed, retrying fallback...', err);
+    try {
+      const fallbackUrl = (typeof window !== 'undefined' && window.location.protocol === 'https:')
+        ? 'https://tracker-backend-rnec.onrender.com/api/dashboard/stats'
+        : 'http://127.0.0.1:5000/api/dashboard/stats';
+      const res = await axios.get(fallbackUrl);
+      return res.data;
+    } catch (fallbackErr) {
+      console.error('All dashboard stat fetches failed:', fallbackErr);
+      return { success: false, data: null };
+    }
   }
 };
 
@@ -33,8 +51,7 @@ export const fetchLectures = async (status?: string, search?: string) => {
     const res = await api.get('/dsa-lectures', { params: { status, search } });
     return extractArray(res.data);
   } catch (err) {
-    const res = await axios.get('http://127.0.0.1:5000/api/dsa-lectures', { params: { status, search } });
-    return extractArray(res.data);
+    return [];
   }
 };
 
@@ -59,8 +76,7 @@ export const fetchDailyLogs = async () => {
     const res = await api.get('/daily-tracker');
     return extractArray(res.data);
   } catch (err) {
-    const res = await axios.get('http://127.0.0.1:5000/api/daily-tracker');
-    return extractArray(res.data);
+    return [];
   }
 };
 
@@ -85,8 +101,7 @@ export const fetchDsaProgress = async () => {
     const res = await api.get('/dsa-progress');
     return extractArray(res.data);
   } catch (err) {
-    const res = await axios.get('http://127.0.0.1:5000/api/dsa-progress');
-    return extractArray(res.data);
+    return [];
   }
 };
 
@@ -111,8 +126,7 @@ export const fetchApplications = async (status?: string, search?: string) => {
     const res = await api.get('/application-tracker', { params: { status, search } });
     return extractArray(res.data);
   } catch (err) {
-    const res = await axios.get('http://127.0.0.1:5000/api/application-tracker', { params: { status, search } });
-    return extractArray(res.data);
+    return [];
   }
 };
 
@@ -137,17 +151,10 @@ export const uploadExcelFile = async (file: File, mode: 'replace' | 'append' = '
   formData.append('file', file);
   formData.append('mode', mode);
 
-  try {
-    const res = await api.post('/upload/excel', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  } catch (err) {
-    const res = await axios.post('http://127.0.0.1:5000/api/upload/excel', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  }
+  const res = await api.post('/upload/excel', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
 };
 
 // Resume / File Upload API
@@ -156,37 +163,20 @@ export const uploadResumeFile = async (file: File, applicationId?: string) => {
   formData.append('file', file);
   if (applicationId) formData.append('applicationId', applicationId);
 
-  try {
-    const res = await api.post('/upload/resume', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  } catch (err) {
-    const res = await axios.post('http://127.0.0.1:5000/api/upload/resume', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  }
+  const res = await api.post('/upload/resume', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
 };
 
 // AI Chat RAG API with sessionId support
 export const sendAiChat = async (prompt: string, sessionId = 'default') => {
-  try {
-    const res = await api.post('/ai/chat', { prompt, sessionId });
-    return res.data;
-  } catch (err) {
-    try {
-      const res = await axios.post('http://127.0.0.1:5000/api/ai/chat', { prompt, sessionId });
-      return res.data;
-    } catch (fallbackErr) {
-      throw err;
-    }
-  }
+  const res = await api.post('/ai/chat', { prompt, sessionId });
+  return res.data;
 };
 
 // SSE stream URL builder — used for EventSource streaming
 export const getStreamUrl = (prompt: string, sessionId = 'default') => {
-  const base = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+  const base = getBaseUrl();
   return `${base}/ai/stream?prompt=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}`;
 };
-

@@ -64,7 +64,16 @@ exports.getDashboardStats = async (req, res) => {
         offersReceived,
         solvedDsaProblems,
         totalDsaProblems,
+        solvedProblems: solvedDsaProblems,
+        totalProblems: totalDsaProblems,
         overallDsaPercent,
+        dsaProgress: {
+          totalProblems: totalDsaProblems,
+          solvedProblems: solvedDsaProblems,
+          problemsSolved: solvedDsaProblems,
+          percent: overallDsaPercent,
+          percentComplete: overallDsaPercent,
+        },
         dsaLectures: {
           total: totalLectures,
           completed: completedLectures,

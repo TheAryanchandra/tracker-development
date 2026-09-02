@@ -25,7 +25,15 @@ import {
   Pie,
 } from 'recharts';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+const getBaseUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    return 'https://tracker-backend-rnec.onrender.com/api';
+  }
+  return 'http://127.0.0.1:5000/api';
+};
+
+const API = getBaseUrl();
 
 interface MetricWidgetProps {
   title: string;
@@ -85,15 +93,42 @@ function MetricWidget({
   );
 }
 
+const defaultStats = {
+  startDate: '31-Aug-2026',
+  daysElapsed: 1,
+  currentDsaStreak: 0,
+  longestDsaStreak: 0,
+  totalAppsLogged: 0,
+  avgAppsPerLoggedDay: 0.0,
+  interviewsInProgress: 0,
+  offersReceived: 0,
+  solvedDsaProblems: 0,
+  totalDsaProblems: 100,
+  overallDsaPercent: 0,
+  dsaLectures: { total: 35, completed: 0, percent: 0 },
+  applications: {
+    total: 0,
+    byStatus: { Applied: 0, Interviewing: 0, Offer: 0, Rejected: 0 },
+  },
+  dailyTracker: {
+    daysTracked: 0,
+    dsaDoneDays: 0,
+    projectDoneDays: 0,
+    aiLearningDays: 0,
+  },
+};
+
 export default function DashboardPage() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<any>(defaultStats);
   const [jobs, setJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
 
   useEffect(() => {
     fetchDashboardStats()
       .then((r) => {
-        if (r?.success) setStats(r.data);
+        if (r?.success && r.data) {
+          setStats(r.data);
+        }
       })
       .catch(() => {});
 
@@ -114,14 +149,14 @@ export default function DashboardPage() {
     { name: 'Rejected', count: stats?.applications?.byStatus?.Rejected || 0, color: '#ef4444' },
   ];
 
+  const solvedCount = stats?.solvedDsaProblems ?? stats?.solvedProblems ?? stats?.dsaProgress?.solvedProblems ?? 0;
+  const totalCount = stats?.totalDsaProblems ?? stats?.totalProblems ?? stats?.dsaProgress?.totalProblems ?? 100;
+
   const dsaRing = [
-    { name: 'Solved', value: stats?.solvedDsaProblems || 0, color: '#da7756' },
+    { name: 'Solved', value: solvedCount, color: '#da7756' },
     {
       name: 'Remaining',
-      value: Math.max(
-        (stats?.totalDsaProblems || 100) - (stats?.solvedDsaProblems || 0),
-        0
-      ),
+      value: Math.max(totalCount - solvedCount, 0),
       color: 'rgba(150, 150, 150, 0.15)',
     },
   ];
@@ -247,8 +282,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <MetricWidget
           title="DSA Solved"
-          value={stats?.solvedDsaProblems || 0}
-          subtitle={`Goal: ${stats?.totalDsaProblems || 0}`}
+          value={solvedCount}
+          subtitle={`Goal: ${totalCount}`}
           badge={`${stats?.overallDsaPercent || 0}%`}
           badgeType="indigo"
           icon={<Zap size={15} className="text-amber-700 dark:text-indigo-400" />}
@@ -268,32 +303,32 @@ export default function DashboardPage() {
         <MetricWidget
           title="Daily Apps Pace"
           value={stats?.avgAppsPerLoggedDay || '0.0'}
-          subtitle="Submissions / day"
-          badge="Average"
+          subtitle="Avg/Day"
+          badge="Target: 5"
           badgeType="green"
           icon={<TrendingUp size={15} className="text-emerald-600 dark:text-emerald-400" />}
           iconBg="rgba(34, 197, 94, 0.15)"
         />
 
         <MetricWidget
-          title="Offers / Stages"
-          value={stats?.offersReceived || 0}
-          subtitle={`${stats?.interviewsInProgress || 0} in progress`}
-          badge="Stages"
+          title="Interviews Active"
+          value={stats?.interviewsInProgress || 0}
+          subtitle={`${stats?.offersReceived || 0} Offers`}
+          badge="Pipeline"
           badgeType="purple"
           icon={<Trophy size={15} className="text-purple-600 dark:text-purple-400" />}
           iconBg="rgba(168, 85, 247, 0.15)"
         />
       </div>
 
-      {/* ── Charts & Visualizers Grid ─────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Application Funnel Chart */}
-        <div className="md:col-span-2 apple-card p-5 md:p-6 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
+      {/* ── 2 Chart Bento Visualizations ──────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        {/* Application Stage Funnel */}
+        <div className="lg:col-span-2 apple-card p-5 md:p-6 space-y-4">
+          <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
-                Application Pipeline
+                Application Pipeline Funnel
               </h3>
               <p className="text-[11px] text-[var(--text-secondary)]">
                 Distribution across recruitment stages
