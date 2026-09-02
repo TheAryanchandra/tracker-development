@@ -35,12 +35,12 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
   if (process.env.GEMINI_API_KEY && GoogleGenerativeAI) {
     try {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview' });
       const systemPrompt = buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts);
       const result = await model.generateContent(systemPrompt + '\n\nUser: ' + query);
       const text = result.response.text();
       if (text) {
-        return { reply: text, source: 'Gemini 1.5 Flash (RAG)', chunks: relevantChunks };
+        return { reply: text, source: `${process.env.GEMINI_MODEL || 'Gemini'} (RAG)`, chunks: relevantChunks };
       }
     } catch (err) {
       console.warn('[RAG] Gemini generation failed:', err.message);
@@ -57,7 +57,7 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -86,7 +86,36 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
     }
   }
 
-  // Step 5: Humanoid Local Engine (Instant, zero cost, smart contextual answers)
+  // Step 5: Anthropic fallback. This is reached when Gemini/OpenAI are absent,
+  // rate-limited, or out of quota, while retaining the same RAG/web context.
+  if (process.env.ANTHROPIC_API_KEY) {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
+          max_tokens: 2048,
+          system: buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts),
+          messages: [{ role: 'user', content: query }],
+        }),
+      });
+      const data = await response.json();
+      const text = data.content?.filter((part) => part.type === 'text').map((part) => part.text).join('\n');
+      if (response.ok && text) {
+        return { reply: text, source: 'Claude (RAG fallback)', chunks: relevantChunks };
+      }
+      console.warn('[RAG] Anthropic fallback unavailable:', data.error?.message || response.status);
+    } catch (err) {
+      console.warn('[RAG] Anthropic request failed:', err.message);
+    }
+  }
+
+  // Step 6: Humanoid Local Engine (Instant, zero cost, smart contextual answers)
   const reply = humanoidLocalSynthesis(query, relevantChunks, learnedFacts, externalContext);
   return { reply, source: externalContext ? 'Jarvis Web + Memory' : 'Jarvis Core Engine', chunks: relevantChunks };
 }
@@ -120,6 +149,10 @@ ${conversationHistory || 'Fresh session.'}
  */
 function humanoidLocalSynthesis(query, chunks, learnedFacts = '', externalContext = '') {
   const lower = query.toLowerCase().trim();
+
+  if (/\b(email|inbox|mail|gmail|outlook)\b/i.test(lower)) {
+    return `I can help with email after an authenticated email provider is connected. I won't pretend to read or send private mail without your authorization. Your tracker memory and public web search are available right now.`;
+  }
 
   // Even without an LLM key, answer general questions from the live retrieval
   // layer instead of falling back to a generic capability prompt.

@@ -87,7 +87,7 @@ async function extractTextFromImage(filePath, filename) {
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview' });
 
     const imageData = fileToBase64(filePath);
     const mimeType = getMimeType(filename);
@@ -165,7 +165,7 @@ async function extractTextFromPDF(filePath, filename) {
     if (process.env.GEMINI_API_KEY && GoogleGenerativeAI && text.length > 50) {
       try {
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview' });
         const result = await model.generateContent(
           `Analyze this PDF text and identify: document type, key entities (company, role, dates, skills), and provide a 2-sentence summary.\n\nText:\n${text.slice(0, 3000)}`
         );

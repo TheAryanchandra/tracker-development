@@ -21,6 +21,14 @@ const {
 const { searchJobsPaginated, formatJobsForResponse } = require('../ai/jobSearcher');
 const { broadcast, WS_EVENTS } = require('../services/websocketService');
 
+// Search only when the question needs fresh public information. Casual chat,
+// memory, and tracker questions should stay fast and use the local RAG model.
+function needsLiveWeb(prompt) {
+  const text = String(prompt || '').toLowerCase();
+  if (/^(hi|hello|hey|yo|sup|namaste|good morning|good afternoon|good evening|how are you|how's it going)\b/.test(text)) return false;
+  return /\b(today|tonight|tomorrow|current|currently|latest|recent|news|weather|temperature|forecast|price|stock|score|live|search|look up|find online|documentation|what happened|who is|when is)\b/.test(text);
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 const now = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -102,6 +110,14 @@ exports.handleAiChat = async (req, res) => {
         break;
       }
 
+      case INTENTS.GREETING:
+      case INTENTS.QUERY_STATS: {
+        // Do not invoke function-calling for simple conversation or a direct
+        // tracker read; the model/RAG path is faster and more reliable.
+        result = await ragQuery(prompt, history, learnedFacts);
+        break;
+      }
+
       default: {
         // Try agentic loop first (handles complex multi-step + URL scraping)
         const augmentedPrompt = urlContext
@@ -126,14 +142,11 @@ exports.handleAiChat = async (req, res) => {
           // If no agent model is configured, still retrieve live public web
           // context so ordinary questions receive an answer, not a menu of
           // capabilities. LLM-backed runs keep their tool-driven path.
-          if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+          if (needsLiveWeb(prompt)) {
             const webResults = await searchWeb(prompt, 5);
             externalContext = formatSearchResults(prompt, webResults);
           }
-          const ragPrompt = externalContext
-            ? `${augmentedPrompt}\n\nLive web search context:\n${externalContext}`
-            : augmentedPrompt;
-          const ragResult = await ragQuery(ragPrompt, history, learnedFacts);
+          const ragResult = await ragQuery(augmentedPrompt, history, learnedFacts, externalContext);
           result = { reply: ragResult.reply, source: ragResult.source };
         }
         break;
@@ -209,6 +222,9 @@ exports.handleAiStream = async (req, res) => {
       const q = entities.jobQuery || '';
       const { jobs } = await searchJobsPaginated({ query: q, limit: 6, forceRefresh: true });
       fullReply = `🔍 **Live Jobs matching "${q || 'Tech & Engineering'}":**\n\n${formatJobsForResponse(jobs)}\n\n💡 Open [/jobs](/jobs) for pagination, search & filters!`;
+    } else if ([INTENTS.GREETING, INTENTS.QUERY_STATS].includes(intent)) {
+      const result = await ragQuery(String(prompt), history, learnedFacts);
+      fullReply = result.reply;
     } else {
       // Agentic loop with streaming indicator
       send({ token: '🤔 ', done: false });
@@ -237,14 +253,11 @@ exports.handleAiStream = async (req, res) => {
       } else {
         // Fallback to RAG
         let externalContext = '';
-        if (!process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+        if (needsLiveWeb(String(prompt))) {
           const webResults = await searchWeb(String(prompt), 5);
           externalContext = formatSearchResults(String(prompt), webResults);
         }
-        const ragPrompt = externalContext
-          ? `${String(prompt)}\n\nLive web search context:\n${externalContext}`
-          : String(prompt);
-        const r = await ragQuery(ragPrompt, history, learnedFacts);
+        const r = await ragQuery(String(prompt), history, learnedFacts, externalContext);
         fullReply = r.reply;
       }
     }

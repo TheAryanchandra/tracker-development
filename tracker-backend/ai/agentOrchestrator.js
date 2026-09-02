@@ -213,7 +213,7 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
       generationConfig: {
         temperature: 0.75,
         topK: 40,

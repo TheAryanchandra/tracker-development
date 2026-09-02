@@ -21,6 +21,7 @@ import {
   Search,
   RefreshCw,
   Eye,
+  StopCircle,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -307,6 +308,16 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
         },
       ]);
     }
+  };
+
+  const stopResponse = () => {
+    streamRef.current?.close();
+    streamRef.current = null;
+    setLoading(false);
+    setStatusMessage(null);
+    setMessages((prev) => prev.map((message) => (
+      message.streaming ? { ...message, streaming: false, text: message.text || 'Response stopped.' } : message
+    )));
   };
 
   // Main Send Function (handles file OCR upload + real-time streaming)
@@ -734,14 +745,21 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
               className="flex-1 bg-[var(--input-bg)] border border-[var(--card-border)] text-xs text-[var(--text-primary)] placeholder-gray-400 rounded-xl px-3.5 py-2 focus:outline-none focus:border-amber-500 dark:focus:border-indigo-500 transition"
             />
 
-            {/* Send Button */}
-            <button
-              onClick={() => handleSend()}
-              disabled={(!input.trim() && !selectedFile) || loading}
-              className="w-9 h-9 rounded-xl bg-amber-700 dark:bg-indigo-600 hover:bg-amber-600 dark:hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md transition flex-shrink-0 cursor-pointer"
-            >
-              <Send size={14} />
-            </button>
+            {/* Send / stop control */}
+            {loading ? (
+              <button onClick={stopResponse} className="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-md transition flex-shrink-0" title="Stop response" aria-label="Stop response">
+                <StopCircle size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleSend()}
+                disabled={!input.trim() && !selectedFile}
+                className="w-9 h-9 rounded-xl bg-amber-700 dark:bg-indigo-600 hover:bg-amber-600 dark:hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md transition flex-shrink-0 cursor-pointer"
+                title="Send message"
+              >
+                <Send size={14} />
+              </button>
+            )}
           </div>
         </div>
       )}
