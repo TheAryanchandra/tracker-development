@@ -163,6 +163,10 @@ exports.uploadExcel = async (req, res) => {
     });
   } catch (error) {
     console.error('Excel Upload Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 exports.uploadResume = async (req, res) => {
   try {
     if (!req.file) {
@@ -194,4 +198,3 @@ exports.uploadResume = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
