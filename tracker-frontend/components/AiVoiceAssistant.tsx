@@ -1,8 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Mic, MicOff, Send, X, Volume2, VolumeX, Zap, Sparkles } from 'lucide-react';
-import { getStreamUrl } from '../lib/api';
+import {
+  Bot,
+  Mic,
+  MicOff,
+  Send,
+  X,
+  Volume2,
+  VolumeX,
+  Zap,
+  Sparkles,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Copy,
+  Check,
+  Globe,
+  Database,
+  Search,
+  RefreshCw,
+  Eye,
+} from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { getStreamUrl, uploadAiFile } from '../lib/api';
 
 interface Message {
   id: string;
@@ -11,33 +33,40 @@ interface Message {
   streaming?: boolean;
   intent?: string;
   actionExecuted?: string | null;
+  toolsUsed?: Array<{ tool: string; args?: any }>;
+  fileAttachment?: {
+    name: string;
+    type: string;
+    previewUrl?: string;
+  };
   ts: string;
 }
 
-const SESSION_ID = `session-${Date.now()}`;
+const STORAGE_KEY = 'jarvis_chat_history_v2';
+const SESSION_ID = `session-aryan-tracker`;
 
 const QUICK_ACTIONS = [
-  { label: '📊 Status Report', prompt: "Give me an overview of my current DSA streak, applications, and progress." },
-  { label: '💼 Find Tech Jobs', prompt: 'Search and find recent fullstack and backend software engineer jobs for me.' },
-  { label: '📝 Log Daily DSA', prompt: 'Log today I solved 3 DSA questions on Dynamic Programming and did 2 job applications.' },
-  { label: '🎯 Weak Areas', prompt: 'What are my weakest DSA topics and what should I focus on next?' },
+  { label: '📊 Status Report', prompt: 'Give me an overview of my current DSA streak, applications, and progress from my tracker.' },
+  { label: '🌐 Search Web', prompt: 'Search the web and tell me the latest news on tech hiring and software engineer market trends.' },
+  { label: '💼 Find Tech Jobs', prompt: 'Search and find live software engineer job openings for me.' },
+  { label: '📝 Log Daily DSA', prompt: 'Log today: I solved 3 DSA problems on Dynamic Programming and sent 2 applications.' },
+  { label: '🎯 Weak Areas', prompt: 'What are my weakest DSA topics in my tracker and what should I solve next?' },
 ];
 
 export const AiVoiceAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '0',
-      sender: 'ai',
-      text: "Jarvis active. I'm connected to your live database, learned preferences, and real-time job feeds. How can I help you today?",
-      ts: now(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [tts, setTts] = useState(true);
+  const [tts, setTts] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -45,10 +74,44 @@ export const AiVoiceAssistant: React.FC = () => {
   const streamRef = useRef<EventSource | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto scroll to bottom
+  // Initialize and load persistent history
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      } else {
+        setMessages([
+          {
+            id: 'welcome-0',
+            sender: 'ai',
+            text: `👋 Hey Aryan! I'm **Jarvis**, your continuous AI copilot.
+
+I'm equipped with **live internet web search**, **Google Sheets live sync**, **OCR for uploaded images/documents**, and direct database actions. 
+
+You can talk to me about anything, upload screenshots of LeetCode/job descriptions, or tell me to log your daily progress!`,
+            ts: now(),
+          },
+        ]);
+      }
+    } catch {
+      // Fallback
+    }
+  }, []);
+
+  // Save conversation turns to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-30)));
+      } catch {}
+    }
+  }, [messages]);
+
+  // Auto-scroll on new tokens/messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, statusMessage]);
 
   // Speech Recognition Init
   useEffect(() => {
@@ -112,7 +175,7 @@ export const AiVoiceAssistant: React.FC = () => {
 
   const startListening = useCallback(async () => {
     if (!recognitionRef.current) {
-      alert('Speech Recognition is not supported in this browser. You can still type queries to Jarvis!');
+      alert('Speech Recognition not supported in this browser. You can type queries to Jarvis!');
       return;
     }
     try {
@@ -132,11 +195,12 @@ export const AiVoiceAssistant: React.FC = () => {
     }
   }, [drawVisualizer]);
 
+  // Voice synthesis
   const speak = useCallback(
     (text: string) => {
       if (!tts || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
-      const clean = text.replace(/[*_#`•🔗]/g, '').replace(/\n/g, '. ');
+      const clean = text.replace(/[*_#`•🔗[\]()]/g, '').replace(/\n/g, '. ');
       const utt = new SpeechSynthesisUtterance(clean);
       const voices = window.speechSynthesis.getVoices();
       const best =
@@ -147,28 +211,146 @@ export const AiVoiceAssistant: React.FC = () => {
         ) || voices.find((v) => v.lang.startsWith('en'));
       if (best) utt.voice = best;
       utt.rate = 1.05;
-      utt.pitch = 1.0;
       window.speechSynthesis.speak(utt);
     },
     [tts]
   );
 
+  // File selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedFile(file);
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setFilePreview(url);
+    } else {
+      setFilePreview(null);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Copy message to clipboard
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Clear history
+  const handleClearHistory = () => {
+    if (confirm('Clear chat history?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      setMessages([
+        {
+          id: 'welcome-0',
+          sender: 'ai',
+          text: `Chat cleared. Ready for your next request, Aryan!`,
+          ts: now(),
+        },
+      ]);
+    }
+  };
+
+  // Main Send Function (handles file OCR upload + real-time streaming)
   const handleSend = useCallback(
     async (customPrompt?: string) => {
       const query = (customPrompt ?? input).trim();
-      if (!query || loading) return;
+      const fileToSend = selectedFile;
+      const previewUrl = filePreview;
+
+      if (!query && !fileToSend) return;
+      if (loading) return;
+
+      // Reset inputs
+      setInput('');
+      setSelectedFile(null);
+      setFilePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
 
       const userMsg: Message = {
         id: `u-${Date.now()}`,
         sender: 'user',
-        text: query,
+        text: query || (fileToSend ? `Attached ${fileToSend.name}` : ''),
+        fileAttachment: fileToSend
+          ? {
+              name: fileToSend.name,
+              type: fileToSend.type,
+              previewUrl: previewUrl || undefined,
+            }
+          : undefined,
         ts: now(),
       };
+
       setMessages((prev) => [...prev, userMsg]);
-      setInput('');
       setLoading(true);
 
       const aiId = `a-${Date.now()}`;
+
+      // Case A: File upload with OCR
+      if (fileToSend) {
+        setStatusMessage('📄 Analyzing document with OCR & Gemini Vision...');
+        setMessages((prev) => [
+          ...prev,
+          { id: aiId, sender: 'ai', text: '', streaming: true, ts: now() },
+        ]);
+
+        try {
+          const res = await uploadAiFile(fileToSend, query, SESSION_ID);
+          setStatusMessage(null);
+          setLoading(false);
+
+          if (res?.success) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiId
+                  ? {
+                      ...m,
+                      text: res.reply || 'File processed and stored in memory!',
+                      streaming: false,
+                    }
+                  : m
+              )
+            );
+            speak(res.reply);
+          } else {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiId
+                  ? {
+                      ...m,
+                      text: `⚠️ Could not process file: ${res?.message || 'Upload error'}`,
+                      streaming: false,
+                    }
+                  : m
+              )
+            );
+          }
+        } catch (err: any) {
+          setStatusMessage(null);
+          setLoading(false);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId
+                ? {
+                    ...m,
+                    text: `⚠️ Upload error: ${err.message}`,
+                    streaming: false,
+                  }
+                : m
+            )
+          );
+        }
+        return;
+      }
+
+      // Case B: Streaming Agent Query
       setMessages((prev) => [
         ...prev,
         { id: aiId, sender: 'ai', text: '', streaming: true, ts: now() },
@@ -181,13 +363,14 @@ export const AiVoiceAssistant: React.FC = () => {
 
       es.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
         if (data.error) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === aiId
                 ? {
                     ...m,
-                    text: '⚠️ Could not reach Jarvis server. Please verify backend is active on port 5000.',
+                    text: `⚠️ Error: ${data.error}`,
                     streaming: false,
                   }
                 : m
@@ -195,10 +378,21 @@ export const AiVoiceAssistant: React.FC = () => {
           );
           es.close();
           setLoading(false);
+          setStatusMessage(null);
           return;
         }
 
         fullText += data.token || '';
+
+        // Detect tool status
+        if (data.token?.includes('Searching live job boards')) {
+          setStatusMessage('🔍 Searching live job boards (RemoteOK, Remotive)...');
+        } else if (data.token?.includes('Reading')) {
+          setStatusMessage('🌐 Scraping web URLs...');
+        } else if (data.toolsUsed && data.toolsUsed.length > 0) {
+          setStatusMessage(`⚡ Agent used tools: ${data.toolsUsed.map((t: any) => t.tool).join(', ')}`);
+        }
+
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiId
@@ -208,6 +402,7 @@ export const AiVoiceAssistant: React.FC = () => {
                   streaming: !data.done,
                   intent: data.intent,
                   actionExecuted: data.actionExecuted,
+                  toolsUsed: data.toolsUsed,
                 }
               : m
           )
@@ -216,22 +411,21 @@ export const AiVoiceAssistant: React.FC = () => {
         if (data.done) {
           es.close();
           setLoading(false);
+          setStatusMessage(null);
           speak(fullText);
-          if (data.actionExecuted) {
-            setTimeout(() => window.location.reload(), 1800);
-          }
         }
       };
 
       es.onerror = () => {
         es.close();
         setLoading(false);
+        setStatusMessage(null);
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiId
               ? {
                   ...m,
-                  text: '⚡ Connection interrupted. Please ensure backend is active on port 5000.',
+                  text: fullText || '⚡ Connection interrupted. Please ensure backend is active on port 5000.',
                   streaming: false,
                 }
               : m
@@ -239,16 +433,16 @@ export const AiVoiceAssistant: React.FC = () => {
         );
       };
     },
-    [input, loading, speak]
+    [input, selectedFile, filePreview, loading, speak]
   );
 
   return (
     <>
-      {/* ── Floating Action Trigger ────────────────────────────── */}
+      {/* ── Floating Action Button ────────────────────────────── */}
       <button
         className="jarvis-trigger group"
         onClick={() => setOpen((o) => !o)}
-        title="Open Jarvis AI Assistant"
+        title="Open Jarvis AI Copilot"
       >
         {open ? (
           <X size={20} className="transition group-hover:rotate-90" />
@@ -257,9 +451,9 @@ export const AiVoiceAssistant: React.FC = () => {
         )}
       </button>
 
-      {/* ── Claude-Themed Jarvis Window ─────────────────────────── */}
+      {/* ── Chatbot Window ─────────────────────────────────────── */}
       {open && (
-        <div className="jarvis-panel">
+        <div className="jarvis-panel flex flex-col shadow-2xl">
           {/* Header */}
           <div className="p-3.5 border-b border-[var(--card-border)] flex items-center justify-between gap-3 bg-[var(--card-flat)]">
             <div className="flex items-center gap-2.5">
@@ -268,20 +462,27 @@ export const AiVoiceAssistant: React.FC = () => {
               </div>
               <div>
                 <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                  Jarvis Copilot
+                  Jarvis Agentic Copilot
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <div className="text-[10px] text-[var(--text-tertiary)] font-medium">
-                  RAG · Cross-Session Memory · Real-time Jobs
+                <div className="text-[10px] text-[var(--text-tertiary)] font-medium flex items-center gap-1">
+                  <span>Web Search</span> • <span>Vision OCR</span> • <span>Memory</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
               <button
+                onClick={handleClearHistory}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition"
+                title="Clear Chat History"
+              >
+                <RefreshCw size={13} />
+              </button>
+              <button
                 onClick={() => setTts((t) => !t)}
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition"
-                title={tts ? 'Mute speech voice' : 'Enable speech voice'}
+                title={tts ? 'Mute Speech Voice' : 'Enable Speech Voice'}
               >
                 {tts ? <Volume2 size={14} className="text-amber-700 dark:text-amber-400" /> : <VolumeX size={14} />}
               </button>
@@ -294,13 +495,13 @@ export const AiVoiceAssistant: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Actions Pills */}
-          <div className="px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01]">
+          {/* Quick Action Suggestions */}
+          <div className="px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01] scrollbar-none">
             {QUICK_ACTIONS.map((action) => (
               <button
                 key={action.label}
                 onClick={() => handleSend(action.prompt)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--card-flat)] hover:bg-amber-500/15 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] hover:border-amber-500/30 whitespace-nowrap transition duration-150 flex-shrink-0"
+                className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--card-flat)] hover:bg-amber-500/15 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] hover:border-amber-500/30 whitespace-nowrap transition duration-150 flex-shrink-0 cursor-pointer"
               >
                 {action.label}
               </button>
@@ -308,32 +509,64 @@ export const AiVoiceAssistant: React.FC = () => {
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-3.5 space-y-3">
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex flex-col ${
                   msg.sender === 'user' ? 'items-end' : 'items-start'
-                } gap-1`}
+                } gap-1 group`}
               >
+                {/* User file preview if uploaded */}
+                {msg.fileAttachment && (
+                  <div className="mb-1 p-2 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] border border-[var(--card-border)] flex items-center gap-2 max-w-[85%] text-xs">
+                    {msg.fileAttachment.previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={msg.fileAttachment.previewUrl}
+                        alt="attachment"
+                        className="w-10 h-10 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <FileText size={18} className="text-amber-700 dark:text-indigo-400" />
+                    )}
+                    <span className="truncate font-medium text-[var(--text-secondary)]">
+                      {msg.fileAttachment.name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Message Bubble */}
                 <div
-                  className={`p-3 text-xs leading-relaxed max-w-[88%] ${
+                  className={`p-3 text-xs leading-relaxed max-w-[90%] relative ${
                     msg.sender === 'user'
                       ? 'bg-amber-700 dark:bg-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-md'
-                      : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm backdrop-blur-md whitespace-pre-wrap'
+                      : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-primary)] rounded-2xl rounded-tl-sm backdrop-blur-md'
                   }`}
                 >
-                  {msg.text ||
-                    (msg.streaming ? (
-                      <span className="text-[var(--text-tertiary)] italic flex items-center gap-1.5">
-                        <Sparkles size={11} className="animate-spin text-amber-700 dark:text-amber-400" />
-                        Thinking...
-                      </span>
-                    ) : (
-                      ''
-                    ))}
+                  {msg.sender === 'ai' ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-xs space-y-2">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.text || (msg.streaming ? '...' : '')}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                  )}
+
+                  {/* Copy Button */}
+                  {msg.sender === 'ai' && msg.text && !msg.streaming && (
+                    <button
+                      onClick={() => handleCopy(msg.id, msg.text)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 rounded-md bg-black/5 dark:bg-white/10 hover:bg-black/10 text-[var(--text-secondary)]"
+                      title="Copy response"
+                    >
+                      {copiedId === msg.id ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                    </button>
+                  )}
                 </div>
 
+                {/* Subtitle Details */}
                 <div className="flex items-center gap-2 px-1 text-[10px] text-[var(--text-tertiary)] font-medium">
                   <span>{msg.ts}</span>
                   {msg.actionExecuted && (
@@ -341,25 +574,34 @@ export const AiVoiceAssistant: React.FC = () => {
                       <Zap size={10} /> Saved to Database
                     </span>
                   )}
-                  {msg.intent && msg.sender === 'ai' && !msg.actionExecuted && (
-                    <span className="text-[var(--text-tertiary)]">
-                      ({msg.intent.toLowerCase().replace('_', ' ')})
+                  {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                    <span className="text-blue-500 flex items-center gap-1">
+                      <Globe size={10} /> Tools used ({msg.toolsUsed.length})
                     </span>
                   )}
                 </div>
               </div>
             ))}
+
+            {/* Live Status Indicator */}
+            {statusMessage && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 animate-pulse">
+                <Sparkles size={13} className="animate-spin" />
+                <span>{statusMessage}</span>
+              </div>
+            )}
+
             <div ref={bottomRef} />
           </div>
 
-          {/* Transcript live preview */}
+          {/* Voice transcript preview */}
           {transcript && (
             <div className="px-3.5 py-1.5 bg-amber-500/10 border-t border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 italic flex items-center gap-2">
               <Mic size={12} className="animate-pulse" /> &quot;{transcript}&quot;
             </div>
           )}
 
-          {/* Audio Visualizer Bar */}
+          {/* Voice Visualizer */}
           {listening && (
             <div className="px-3.5 py-2 bg-black/5 dark:bg-black/40 border-t border-[var(--card-border)] flex items-center justify-between gap-3">
               <canvas ref={canvasRef} width={260} height={22} className="rounded" />
@@ -369,8 +611,51 @@ export const AiVoiceAssistant: React.FC = () => {
             </div>
           )}
 
-          {/* Input Control Area */}
+          {/* File Attachment Chip */}
+          {selectedFile && (
+            <div className="px-3 py-2 bg-black/[0.03] dark:bg-white/[0.03] border-t border-[var(--card-border)] flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 truncate text-xs text-[var(--text-secondary)]">
+                {filePreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={filePreview} alt="thumb" className="w-6 h-6 object-cover rounded" />
+                ) : (
+                  <FileText size={14} className="text-amber-600" />
+                )}
+                <span className="truncate font-medium">{selectedFile.name}</span>
+                <span className="text-[10px] text-[var(--text-tertiary)]">
+                  ({(selectedFile.size / 1024).toFixed(0)} KB)
+                </span>
+              </div>
+              <button
+                onClick={removeSelectedFile}
+                className="w-5 h-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          )}
+
+          {/* Hidden File Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.doc,.docx"
+            className="hidden"
+          />
+
+          {/* Input Area */}
           <div className="p-3 border-t border-[var(--card-border)] flex items-center gap-2 bg-[var(--card-flat)]">
+            {/* Attachment Button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--input-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] transition"
+              title="Upload image / document for OCR"
+            >
+              <Paperclip size={15} />
+            </button>
+
+            {/* Mic Button */}
             <button
               onClick={listening ? stopListening : startListening}
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${
@@ -383,19 +668,21 @@ export const AiVoiceAssistant: React.FC = () => {
               {listening ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
 
+            {/* Text Input */}
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              placeholder="Ask anything or speak to Jarvis..."
+              placeholder={selectedFile ? 'Add notes for this file or press Send...' : 'Ask Jarvis anything, paste URLs, or give commands...'}
               className="flex-1 bg-[var(--input-bg)] border border-[var(--card-border)] text-xs text-[var(--text-primary)] placeholder-gray-400 rounded-xl px-3.5 py-2 focus:outline-none focus:border-amber-500 dark:focus:border-indigo-500 transition"
             />
 
+            {/* Send Button */}
             <button
               onClick={() => handleSend()}
-              disabled={!input.trim() || loading}
-              className="w-9 h-9 rounded-xl bg-amber-700 dark:bg-indigo-600 hover:bg-amber-600 dark:hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md transition flex-shrink-0"
+              disabled={(!input.trim() && !selectedFile) || loading}
+              className="w-9 h-9 rounded-xl bg-amber-700 dark:bg-indigo-600 hover:bg-amber-600 dark:hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md transition flex-shrink-0 cursor-pointer"
             >
               <Send size={14} />
             </button>
@@ -409,3 +696,5 @@ export const AiVoiceAssistant: React.FC = () => {
 function now() {
   return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
+export default AiVoiceAssistant;

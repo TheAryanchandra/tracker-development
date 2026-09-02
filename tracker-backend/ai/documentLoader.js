@@ -16,12 +16,13 @@ const vectorStore = require('./vectorStore');
 async function loadAndBuild() {
   if (!vectorStore.needsRebuild()) return;
 
-  const [lectures, dailyLogs, dsaProgress, applications] = await Promise.all([
-    DsaLecture.find().lean(),
-    DailyTracker.find().sort({ date: -1 }).limit(60).lean(),
-    DsaProgress.find().lean(),
-    ApplicationTracker.find().sort({ dateApplied: -1 }).lean(),
-  ]);
+  try {
+    const [lectures, dailyLogs, dsaProgress, applications] = await Promise.all([
+      DsaLecture.find().maxTimeMS(2500).lean().catch(() => []),
+      DailyTracker.find().sort({ date: -1 }).limit(60).maxTimeMS(2500).lean().catch(() => []),
+      DsaProgress.find().maxTimeMS(2500).lean().catch(() => []),
+      ApplicationTracker.find().sort({ dateApplied: -1 }).maxTimeMS(2500).lean().catch(() => []),
+    ]);
 
   const chunks = [];
 
@@ -116,6 +117,9 @@ async function loadAndBuild() {
   });
 
   vectorStore.build(chunks);
+  } catch (err) {
+    console.warn('[DocLoader Error]:', err.message);
+  }
 }
 
 module.exports = { loadAndBuild };

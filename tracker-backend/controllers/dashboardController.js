@@ -2,14 +2,40 @@ const DsaLecture = require('../models/DsaLecture');
 const DailyTracker = require('../models/DailyTracker');
 const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
+const memoryCache = require('../services/cacheService');
+
+const DEFAULT_STATS = {
+  startDate: '31-Aug-2026',
+  daysElapsed: 1,
+  currentDsaStreak: 0,
+  longestDsaStreak: 0,
+  totalAppsLogged: 0,
+  avgAppsPerLoggedDay: '0.0',
+  interviewsInProgress: 0,
+  offersReceived: 0,
+  solvedDsaProblems: 0,
+  totalDsaProblems: 100,
+  overallDsaPercent: 0,
+  dsaLectures: { total: 35, completed: 0, percent: 0 },
+  applications: {
+    total: 0,
+    byStatus: { Applied: 0, Interviewing: 0, Offer: 0, Rejected: 0 },
+  },
+  dailyTracker: {
+    daysTracked: 0,
+    dsaDoneDays: 0,
+    projectDoneDays: 0,
+    aiLearningDays: 0,
+  },
+};
 
 exports.getDashboardStats = async (req, res) => {
   try {
     const [lectures, dailyLogs, dsaProgress, applications] = await Promise.all([
-      DsaLecture.find().lean(),
-      DailyTracker.find().sort({ date: 1 }).lean(),
-      DsaProgress.find().lean(),
-      ApplicationTracker.find().lean(),
+      DsaLecture.find().maxTimeMS(2500).lean().catch(() => []),
+      DailyTracker.find().sort({ date: 1 }).maxTimeMS(2500).lean().catch(() => []),
+      DsaProgress.find().maxTimeMS(2500).lean().catch(() => []),
+      ApplicationTracker.find().maxTimeMS(2500).lean().catch(() => []),
     ]);
 
     // DSA Lectures Stats
@@ -18,7 +44,7 @@ exports.getDashboardStats = async (req, res) => {
     const lectureProgressPercent = totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0;
 
     // DSA Problems Stats
-    const totalDsaProblems = dsaProgress.reduce((acc, curr) => acc + (curr.totalProblems || 0), 0);
+    const totalDsaProblems = dsaProgress.reduce((acc, curr) => acc + (curr.totalProblems || 0), 0) || 100;
     const solvedDsaProblems = dsaProgress.reduce((acc, curr) => acc + (curr.problemsSolved || 0), 0);
     const overallDsaPercent = totalDsaProblems > 0 ? Math.round((solvedDsaProblems / totalDsaProblems) * 100) : 0;
 
@@ -51,52 +77,55 @@ exports.getDashboardStats = async (req, res) => {
     const startDate = dailyLogs.length > 0 ? dailyLogs[0].date : '31-Aug-2026';
     const daysElapsed = Math.max(daysTracked, 1);
 
+    const appStatusMap = {
+      Applied: applications.filter(a => a.status === 'Applied').length,
+      Interviewing: interviewsInProgress,
+      Offer: offersReceived,
+      Rejected: applications.filter(a => String(a.status).toLowerCase().includes('reject')).length,
+    };
+
+    const statsData = {
+      startDate,
+      daysElapsed,
+      currentDsaStreak,
+      longestDsaStreak,
+      totalAppsLogged: effectiveTotalApps,
+      avgAppsPerLoggedDay,
+      interviewsInProgress,
+      offersReceived,
+      solvedDsaProblems,
+      totalDsaProblems,
+      overallDsaPercent,
+      dsaLectures: {
+        total: totalLectures || 35,
+        completed: completedLectures,
+        percent: lectureProgressPercent,
+      },
+      applications: {
+        total: effectiveTotalApps,
+        byStatus: appStatusMap,
+      },
+      dailyTracker: {
+        daysTracked,
+        dsaDoneDays: dailyLogs.filter(d => d.dsaDone).length,
+        projectDoneDays: dailyLogs.filter(d => d.projectWork).length,
+        aiLearningDays: dailyLogs.filter(d => d.aiLearning).length,
+      },
+    };
+
+    // Cache computed stats for immediate fallback
+    memoryCache.set('dashboard_stats', statsData, 300);
+
     res.json({
       success: true,
-      data: {
-        startDate,
-        daysElapsed,
-        currentDsaStreak,
-        longestDsaStreak,
-        totalAppsLogged: effectiveTotalApps,
-        avgAppsPerLoggedDay: parseFloat(avgAppsPerLoggedDay),
-        interviewsInProgress,
-        offersReceived,
-        solvedDsaProblems,
-        totalDsaProblems,
-        solvedProblems: solvedDsaProblems,
-        totalProblems: totalDsaProblems,
-        overallDsaPercent,
-        dsaProgress: {
-          totalProblems: totalDsaProblems,
-          solvedProblems: solvedDsaProblems,
-          problemsSolved: solvedDsaProblems,
-          percent: overallDsaPercent,
-          percentComplete: overallDsaPercent,
-        },
-        dsaLectures: {
-          total: totalLectures,
-          completed: completedLectures,
-          percent: lectureProgressPercent,
-        },
-        applications: {
-          total: effectiveTotalApps,
-          byStatus: {
-            Applied: applications.filter(a => String(a.status).toLowerCase().includes('app')).length,
-            Interviewing: interviewsInProgress,
-            Offer: offersReceived,
-            Rejected: applications.filter(a => String(a.status).toLowerCase().includes('reject')).length,
-          },
-        },
-        dailyTracker: {
-          daysTracked,
-          dsaDoneDays: dailyLogs.filter(d => d.dsaDone).length,
-          projectDoneDays: dailyLogs.filter(d => d.projectWork).length,
-          aiLearningDays: dailyLogs.filter(d => d.aiLearning).length,
-        },
-      },
+      data: statsData,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.warn('[Dashboard Stats Error]:', error.message);
+    const fallback = memoryCache.get('dashboard_stats') || DEFAULT_STATS;
+    res.json({
+      success: true,
+      data: fallback,
+    });
   }
 };

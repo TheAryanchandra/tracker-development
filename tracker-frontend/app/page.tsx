@@ -24,6 +24,8 @@ import {
   PieChart,
   Pie,
 } from 'recharts';
+import { useWebSocket } from '@/lib/websocket';
+import { SheetSyncStatus } from '@/components/SheetSyncStatus';
 
 const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
@@ -123,7 +125,7 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
 
-  useEffect(() => {
+  const refreshStats = () => {
     fetchDashboardStats()
       .then((r) => {
         if (r?.success && r.data) {
@@ -131,7 +133,9 @@ export default function DashboardPage() {
         }
       })
       .catch(() => {});
+  };
 
+  const refreshJobs = () => {
     setLoadingJobs(true);
     fetch(`${API}/notifications/jobs?limit=4`)
       .then((res) => res.json())
@@ -140,6 +144,30 @@ export default function DashboardPage() {
       })
       .catch(() => {})
       .finally(() => setLoadingJobs(false));
+  };
+
+  // Listen to live WebSocket events across backend
+  const { connected } = useWebSocket({
+    SHEET_SYNCED: () => {
+      refreshStats();
+    },
+    DATA_UPDATED: () => {
+      refreshStats();
+    },
+    STATS_REFRESH: () => {
+      refreshStats();
+    },
+    AI_ACTION: () => {
+      refreshStats();
+    },
+    JOBS_UPDATED: () => {
+      refreshJobs();
+    },
+  });
+
+  useEffect(() => {
+    refreshStats();
+    refreshJobs();
   }, []);
 
   const appFunnel = [
@@ -222,6 +250,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Google Sheets Real-Time Sync Banner ───────────────── */}
+      <SheetSyncStatus />
 
       {/* ── Hero Activity Bento Card ──────────────────────────── */}
       <div className="apple-card p-6 md:p-8 relative overflow-hidden">

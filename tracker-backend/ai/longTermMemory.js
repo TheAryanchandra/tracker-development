@@ -91,68 +91,94 @@ async function persistConversation(sessionId, role, content, intent = null, acti
   } catch (e) { /* non-fatal */ }
 }
 
+const memoryCache = require('../services/cacheService');
+
 /**
  * Load recent conversation history from MongoDB for a session
  */
 async function loadSessionHistory(sessionId, limit = 12) {
-  const logs = await ConversationLog.find({ sessionId })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
-  return logs.reverse(); // oldest first
+  try {
+    const logs = await ConversationLog.find({ sessionId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    return logs.reverse();
+  } catch (e) {
+    return memoryCache.get(`chat_${sessionId}`) || [];
+  }
 }
 
 /**
  * Load ALL learned facts as a formatted string for the LLM system prompt
  */
 async function getLearnedFactsContext() {
-  const facts = await LearnedFact.find().sort({ updatedAt: -1 }).lean();
-  if (facts.length === 0) return '';
+  try {
+    const facts = await LearnedFact.find().sort({ updatedAt: -1 }).maxTimeMS(2500).lean();
+    if (facts.length === 0) return memoryCache.get('learned_facts_str') || '';
 
-  const grouped = {};
-  facts.forEach(f => {
-    if (!grouped[f.category]) grouped[f.category] = [];
-    grouped[f.category].push(f.value);
-  });
+    const grouped = {};
+    facts.forEach(f => {
+      if (!grouped[f.category]) grouped[f.category] = [];
+      grouped[f.category].push(f.value);
+    });
 
-  const lines = [];
-  if (grouped.personal)    lines.push(`Personal: ${grouped.personal.join('; ')}`);
-  if (grouped.skill)       lines.push(`Skills: ${grouped.skill.join('; ')}`);
-  if (grouped.goal)        lines.push(`Goals: ${grouped.goal.join('; ')}`);
-  if (grouped.preference)  lines.push(`Preferences: ${grouped.preference.join('; ')}`);
-  if (grouped.achievement) lines.push(`Achievements: ${grouped.achievement.join('; ')}`);
-  if (grouped.custom)      lines.push(`Learned notes: ${grouped.custom.join('; ')}`);
-  if (grouped.context)     lines.push(`Context: ${grouped.context.join('; ')}`);
+    const lines = [];
+    if (grouped.personal)    lines.push(`Personal: ${grouped.personal.join('; ')}`);
+    if (grouped.skill)       lines.push(`Skills: ${grouped.skill.join('; ')}`);
+    if (grouped.goal)        lines.push(`Goals: ${grouped.goal.join('; ')}`);
+    if (grouped.preference)  lines.push(`Preferences: ${grouped.preference.join('; ')}`);
+    if (grouped.achievement) lines.push(`Achievements: ${grouped.achievement.join('; ')}`);
+    if (grouped.custom)      lines.push(`Learned notes: ${grouped.custom.join('; ')}`);
+    if (grouped.context)     lines.push(`Context: ${grouped.context.join('; ')}`);
 
-  return lines.join('\n');
+    const result = lines.join('\n');
+    memoryCache.set('learned_facts_str', result, 3600);
+    return result;
+  } catch (err) {
+    return memoryCache.get('learned_facts_str') || 'Aryan Chandra — Software Engineering student working on DSA mastery and tech job search.';
+  }
 }
 
 /**
  * Build long-term memory document chunks for vector store inclusion
  */
 async function getMemoryChunks() {
-  const facts = await LearnedFact.find().lean();
-  if (facts.length === 0) return [];
+  try {
+    const facts = await LearnedFact.find().maxTimeMS(2500).lean();
+    if (facts.length === 0) return [];
 
-  return facts.map(f => ({
-    id: `memory-${f._id}`,
-    text: `Jarvis learned about Aryan — ${f.category}: ${f.value}`,
-    metadata: { type: 'long_term_memory', category: f.category, key: f.key },
-  }));
+    return facts.map(f => ({
+      id: `memory-${f._id}`,
+      text: `Jarvis learned about Aryan — ${f.category}: ${f.value}`,
+      metadata: { type: 'long_term_memory', category: f.category, key: f.key },
+    }));
+  } catch (e) {
+    return [];
+  }
 }
 
 /**
  * Get all facts (for listing to user)
  */
 async function getAllFacts() {
-  return LearnedFact.find().sort({ category: 1, updatedAt: -1 }).lean();
+  try {
+    const facts = await LearnedFact.find().sort({ category: 1, updatedAt: -1 }).maxTimeMS(2500).lean();
+    memoryCache.set('all_facts', facts, 3600);
+    return facts;
+  } catch (e) {
+    return memoryCache.get('all_facts') || [];
+  }
 }
 
 /**
  * Delete a learned fact by key
  */
 async function forgetFact(key) {
-  return LearnedFact.deleteOne({ key });
+  try {
+    return await LearnedFact.deleteOne({ key });
+  } catch (e) {
+    return null;
+  }
 }
 
 module.exports = {

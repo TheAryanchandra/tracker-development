@@ -175,6 +175,34 @@ export const sendAiChat = async (prompt: string, sessionId = 'default') => {
   return res.data;
 };
 
+// AI File / Image Upload (OCR + RAG)
+export const uploadAiFile = async (file: File, prompt = '', sessionId = 'default') => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('prompt', prompt);
+  formData.append('sessionId', sessionId);
+
+  const res = await api.post('/ai/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
+
+// Google Sheets Live Sync APIs
+export const syncGoogleSheets = async () => {
+  const res = await api.post('/sheets/sync');
+  return res.data;
+};
+
+export const fetchSheetsStatus = async () => {
+  try {
+    const res = await api.get('/sheets/status');
+    return res.data;
+  } catch (err) {
+    return { success: false, data: null };
+  }
+};
+
 // SSE stream URL builder — used for EventSource streaming
 export const getStreamUrl = (prompt: string, sessionId = 'default') => {
   const base = getBaseUrl();

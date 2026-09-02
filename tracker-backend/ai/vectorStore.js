@@ -111,6 +111,40 @@ class VectorStore {
       .slice(0, topK)
       .filter(d => d.score > 0);
   }
+
+  /**
+   * Add a single chunk dynamically (OCR, web scrape, etc.)
+   * without rebuilding the entire store
+   */
+  addChunk(chunk) {
+    // Remove existing chunk with same id if it exists
+    this.documents = this.documents.filter(d => d.id !== chunk.id);
+
+    // Add to TF-IDF engine
+    this.tfidf.addDocument(chunk.text);
+    const newDocIndex = this.documents.length;
+
+    // Tokenize into vocabulary
+    const tokens = chunk.text.toLowerCase().split(/\W+/).filter(t => t.length > 2);
+    tokens.forEach(t => this.vocabulary.add(t));
+    this.vocabArray = Array.from(this.vocabulary);
+
+    // Compute vector for the new chunk
+    const vector = {};
+    this.tfidf.listTerms(newDocIndex).forEach(term => {
+      vector[term.term] = term.tfidf;
+    });
+
+    this.documents.push({ ...chunk, vector });
+    console.log(`[VectorStore] Added chunk "${chunk.id}" (total: ${this.documents.length})`);
+  }
+
+  /**
+   * Get the total number of indexed chunks
+   */
+  getChunkCount() {
+    return this.documents.length;
+  }
 }
 
 // Singleton instance

@@ -1,34 +1,48 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-
+const http = require('http');
 const path = require('path');
+const connectDB = require('./config/db');
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health
 app.get(['/', '/api', '/api/health'], (req, res) => {
-  res.json({ status: 'OK', message: 'Daily Tracker API is operational 🚀' });
+  const { getClientCount } = require('./services/websocketService');
+  const { getSyncStatus } = require('./services/googleSheetsService');
+  const vectorStore = require('./ai/vectorStore');
+  res.json({
+    status: 'OK',
+    message: 'Daily Tracker API is operational 🚀',
+    websocketClients: getClientCount(),
+    ragChunks: vectorStore.getChunkCount(),
+    sheetsSync: getSyncStatus(),
+  });
 });
 
 // Routes
-app.use('/api/dsa-lectures',       require('./routes/dsaLectureRoutes'));
-app.use('/api/daily-tracker',      require('./routes/dailyTrackerRoutes'));
-app.use('/api/dsa-progress',       require('./routes/dsaProgressRoutes'));
-app.use('/api/application-tracker',require('./routes/applicationTrackerRoutes'));
-app.use('/api/upload',             require('./routes/uploadRoutes'));
-app.use('/api/dashboard',          require('./routes/dashboardRoutes'));
-app.use('/api/ai',                 require('./routes/aiRoutes'));
-app.use('/api/notifications',      require('./routes/notificationRoutes'));
+app.use('/api/dsa-lectures',        require('./routes/dsaLectureRoutes'));
+app.use('/api/daily-tracker',       require('./routes/dailyTrackerRoutes'));
+app.use('/api/dsa-progress',        require('./routes/dsaProgressRoutes'));
+app.use('/api/application-tracker', require('./routes/applicationTrackerRoutes'));
+app.use('/api/upload',              require('./routes/uploadRoutes'));
+app.use('/api/dashboard',           require('./routes/dashboardRoutes'));
+app.use('/api/ai',                  require('./routes/aiRoutes'));
+app.use('/api/notifications',       require('./routes/notificationRoutes'));
+app.use('/api/sheets',              require('./routes/sheetsRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -36,7 +50,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-// ── Seed default DSA Topics ──────────────────────────────────
+// ── Create HTTP server (needed for WebSocket upgrade) ─────────
+const server = http.createServer(app);
+
+// ── Initialize WebSocket server ───────────────────────────────
+const { initWebSocket } = require('./services/websocketService');
+initWebSocket(server);
+
+// ── Seed default DSA Topics ───────────────────────────────────
 const DsaProgress = require('./models/DsaProgress');
 const seedDefaultDsaTopics = async () => {
   try {
@@ -54,23 +75,21 @@ const seedDefaultDsaTopics = async () => {
   } catch (err) { console.error('[Seed Error]:', err.message); }
 };
 
-// ── Notification Scheduler ───────────────────────────────────
+// ── Notification Scheduler ────────────────────────────────────
 const { runAllChecks } = require('./services/notificationService');
 const scheduleNotifications = () => {
-  // Run once 30s after startup (give DB time to connect)
-  setTimeout(async () => {
-    await runAllChecks();
-  }, 30000);
-
-  // Then every 6 hours
-  setInterval(async () => {
-    await runAllChecks();
-  }, 6 * 60 * 60 * 1000);
+  setTimeout(async () => { await runAllChecks(); }, 30000);
+  setInterval(async () => { await runAllChecks(); }, 6 * 60 * 60 * 1000);
 };
 
+// ── Google Sheets Cron ────────────────────────────────────────
+const { startSheetsCron } = require('./services/googleSheetsService');
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[Server] Running on port ${PORT}`);
+  console.log(`[Server] WebSocket available at ws://localhost:${PORT}/ws`);
   seedDefaultDsaTopics();
   scheduleNotifications();
+  startSheetsCron();
 });

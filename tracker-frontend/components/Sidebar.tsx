@@ -34,7 +34,7 @@ export default function Sidebar() {
     <>
       {/* ── Desktop Sidebar ─────────────────────────── */}
       <aside
-        className="desktop-sidebar border-r border-black/[0.08] dark:border-white/[0.06] bg-[var(--sidebar-bg)] transition-colors duration-200"
+        className="desktop-sidebar border-r border-[var(--card-border)] bg-[var(--sidebar-bg)] transition-colors duration-200"
         style={{
           width: 220,
           minHeight: '100vh',
@@ -48,10 +48,10 @@ export default function Sidebar() {
         }}
       >
         {/* Brand Header */}
-        <div className="p-4 border-b border-black/[0.08] dark:border-white/[0.06]">
+        <div className="p-4 border-b border-[var(--card-border)]">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-tr from-amber-600 to-indigo-600 shadow-md">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gradient-to-tr from-amber-600 via-amber-700 to-amber-800 shadow-md">
                 <Zap size={16} className="text-white" />
               </div>
               <div>
@@ -68,7 +68,7 @@ export default function Sidebar() {
 
           <button
             onClick={() => setExcelOpen(true)}
-            className="w-full py-1.5 px-2.5 rounded-xl bg-amber-500/10 dark:bg-indigo-500/10 border border-amber-500/20 dark:border-indigo-500/20 text-amber-700 dark:text-indigo-400 text-xs font-semibold hover:bg-amber-500/20 dark:hover:bg-indigo-500/20 transition flex items-center justify-center gap-1.5"
+            className="w-full py-1.5 px-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <UploadCloud size={13} /> Sync Excel Sheet
           </button>
@@ -85,8 +85,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 no-underline ${
                   active
-                    ? 'bg-amber-500/15 dark:bg-indigo-500/15 text-amber-800 dark:text-indigo-300 border border-amber-500/20 dark:border-indigo-500/30'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+                    ? 'bg-amber-600/15 text-amber-800 dark:text-amber-300 border border-amber-600/25 shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
                 }`}
               >
                 <Icon size={16} />
@@ -97,7 +97,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-black/[0.08] dark:border-white/[0.06] flex items-center justify-between">
+        <div className="p-3 border-t border-[var(--card-border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-medium text-[var(--text-tertiary)]">
@@ -108,7 +108,7 @@ export default function Sidebar() {
       </aside>
 
       {/* ── Mobile Bottom Nav ───────────────────────── */}
-      <nav className="mobile-nav flex items-center justify-around border-t border-black/[0.08] dark:border-white/[0.08] bg-[var(--sidebar-bg)]">
+      <nav className="mobile-nav flex items-center justify-around border-t border-[var(--card-border)] bg-[var(--sidebar-bg)]">
         {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
@@ -118,7 +118,7 @@ export default function Sidebar() {
               href={item.href}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 gap-1 text-[10px] font-bold no-underline transition ${
                 active
-                  ? 'text-amber-700 dark:text-indigo-400'
+                  ? 'text-amber-700 dark:text-amber-400'
                   : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
               }`}
             >
