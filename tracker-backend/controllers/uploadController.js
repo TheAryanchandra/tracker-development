@@ -163,6 +163,35 @@ exports.uploadExcel = async (req, res) => {
     });
   } catch (error) {
     console.error('Excel Upload Error:', error);
+exports.uploadResume = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload a resume or document file' });
+    }
+
+    const fileUrl = `/uploads/resumes/${req.file.filename}`;
+    const { applicationId } = req.body;
+
+    let updatedApplication = null;
+    if (applicationId) {
+      updatedApplication = await ApplicationTracker.findByIdAndUpdate(
+        applicationId,
+        { resumeUrl: fileUrl, attachmentName: req.file.originalname },
+        { new: true }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Resume / Document uploaded successfully',
+      fileUrl,
+      fileName: req.file.originalname,
+      size: req.file.size,
+      application: updatedApplication,
+    });
+  } catch (error) {
+    console.error('Resume Upload Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
+

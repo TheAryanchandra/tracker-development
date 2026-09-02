@@ -1,327 +1,494 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { fetchDashboardStats, fetchDsaProgress } from '@/lib/api';
+import React, { useEffect, useState } from 'react';
+import { fetchDashboardStats } from '@/lib/api';
 import {
-  Youtube,
-  BarChart3,
+  Flame,
   Briefcase,
-  CalendarCheck,
+  Trophy,
   TrendingUp,
-  Award,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  UploadCloud,
+  Zap,
+  ArrowUpRight,
+  Sparkles,
+  ChevronRight,
+  Compass,
 } from 'lucide-react';
-import Link from 'next/link';
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
+  ResponsiveContainer,
+  Cell,
   PieChart,
   Pie,
-  Cell,
 } from 'recharts';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+
+interface MetricWidgetProps {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  badge?: string;
+  badgeType?: 'green' | 'blue' | 'indigo' | 'orange' | 'purple';
+  icon: React.ReactNode;
+  iconBg: string;
+}
+
+function MetricWidget({
+  title,
+  value,
+  subtitle,
+  badge,
+  badgeType = 'indigo',
+  icon,
+  iconBg,
+}: MetricWidgetProps) {
+  const badgeClasses = {
+    green: 'badge-green',
+    blue: 'badge-blue',
+    indigo: 'badge-indigo',
+    orange: 'badge-orange',
+    purple: 'badge-purple',
+  }[badgeType];
+
+  return (
+    <div className="apple-card p-5 flex flex-col justify-between group">
+      <div className="flex items-start justify-between">
+        <span className="text-[13px] font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition">
+          {title}
+        </span>
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition group-hover:scale-105"
+          style={{ background: iconBg }}
+        >
+          {icon}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight leading-none">
+          {value}
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          {subtitle && (
+            <span className="text-[11px] text-[var(--text-tertiary)] font-medium">{subtitle}</span>
+          )}
+          {badge && (
+            <span className={`apple-badge ${badgeClasses}`}>{badge}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
-  const [progressData, setProgressData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
 
   useEffect(() => {
-    loadData();
+    fetchDashboardStats()
+      .then((r) => {
+        if (r?.success) setStats(r.data);
+      })
+      .catch(() => {});
+
+    setLoadingJobs(true);
+    fetch(`${API}/notifications/jobs?limit=4`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setJobs(data.data?.slice(0, 4) || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingJobs(false));
   }, []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [statsRes, progressRes] = await Promise.all([
-        fetchDashboardStats(),
-        fetchDsaProgress(),
-      ]);
-      if (statsRes.success) setStats(statsRes.data);
-      if (progressRes.success) setProgressData(progressRes.data);
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const appFunnel = [
+    { name: 'Applied', count: stats?.applications?.byStatus?.Applied || 0, color: '#3b82f6' },
+    { name: 'Interview', count: stats?.interviewsInProgress || 0, color: '#a855f7' },
+    { name: 'Offer', count: stats?.offersReceived || 0, color: '#22c55e' },
+    { name: 'Rejected', count: stats?.applications?.byStatus?.Rejected || 0, color: '#ef4444' },
+  ];
 
-  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
+  const dsaRing = [
+    { name: 'Solved', value: stats?.solvedDsaProblems || 0, color: '#da7756' },
+    {
+      name: 'Remaining',
+      value: Math.max(
+        (stats?.totalDsaProblems || 100) - (stats?.solvedDsaProblems || 0),
+        0
+      ),
+      color: 'rgba(150, 150, 150, 0.15)',
+    },
+  ];
 
-  const applicationChartData = stats
-    ? [
-        { name: 'Applied', value: stats.applications.byStatus.Applied || 0 },
-        { name: 'Interviewing', value: stats.applications.byStatus.Interviewing || 0 },
-        { name: 'Offer', value: stats.applications.byStatus.Offer || 0 },
-        { name: 'Rejected', value: stats.applications.byStatus.Rejected || 0 },
-      ]
-    : [];
+  const quickNav = [
+    {
+      title: 'DSA Lectures',
+      meta: `${stats?.dsaLectures?.completed || 0} / ${stats?.dsaLectures?.total || 35} Done`,
+      href: '/dsa-lectures',
+      gradient: 'linear-gradient(135deg, rgba(218, 119, 86, 0.12), rgba(218, 119, 86, 0.03))',
+      border: 'rgba(218, 119, 86, 0.25)',
+      accent: '#da7756',
+    },
+    {
+      title: 'Daily Log',
+      meta: `${stats?.dailyTracker?.daysTracked || 0} Logs Tracked`,
+      href: '/daily-tracker',
+      gradient: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(168, 85, 247, 0.03))',
+      border: 'rgba(168, 85, 247, 0.25)',
+      accent: '#a855f7',
+    },
+    {
+      title: 'DSA Progress',
+      meta: `${stats?.overallDsaPercent || 0}% Completed`,
+      href: '/dsa-progress',
+      gradient: 'linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.03))',
+      border: 'rgba(34, 197, 94, 0.25)',
+      accent: '#22c55e',
+    },
+    {
+      title: 'Applications',
+      meta: `${stats?.totalAppsLogged || 0} Jobs Logged`,
+      href: '/applications',
+      gradient: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.03))',
+      border: 'rgba(59, 130, 246, 0.25)',
+      accent: '#3b82f6',
+    },
+  ];
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900/60 via-slate-900 to-slate-900 border border-slate-800 p-8">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-0"></div>
+    <div style={{ maxWidth: 1040, margin: '0 auto' }} className="space-y-6 animate-fade-up">
+      {/* ── Header ────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-semibold tracking-wider uppercase text-[var(--text-tertiary)]">
+              Overview
+            </span>
+            <span className="w-1 h-1 rounded-full bg-[var(--text-tertiary)]" />
+            <span className="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
+              <Sparkles size={11} /> Day {stats?.daysElapsed || 1}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+            Welcome back, Aryan
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="apple-card-flat px-3.5 py-1.5 flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>DB Synchronized</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Hero Activity Bento Card ──────────────────────────── */}
+      <div className="apple-card p-6 md:p-8 relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold mb-3">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>Career & Learning Command Center</span>
+          {/* Left Hero Content */}
+          <div className="space-y-2 max-w-lg">
+            <div className="apple-badge badge-orange font-semibold">
+              <Flame size={12} /> Active DSA Streak
             </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              Welcome Back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Aryan!</span> 👋
-            </h1>
-            <p className="text-sm text-slate-400 mt-2 max-w-xl">
-              Track your daily DSA lectures, problem-solving progress, job application pipeline, and daily work logs all in one place.
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl md:text-6xl font-black text-[var(--text-primary)] tracking-tighter">
+                {stats?.currentDsaStreak || 0}
+              </span>
+              <span className="text-lg text-[var(--text-secondary)] font-medium">
+                Days in a row
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+              All-time record is{' '}
+              <span className="text-[var(--text-primary)] font-semibold">
+                {stats?.longestDsaStreak || 0} days
+              </span>
+              . Consistent problem solving and daily logging keeps the streak alive.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Link
-              href="/admin"
-              className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition shadow-lg shadow-indigo-600/30 flex items-center gap-2"
-            >
-              <UploadCloud className="w-4 h-4" />
-              Import Excel Data
-            </Link>
-          </div>
-        </div>
-      </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Card 1: DSA Lectures */}
-        <div className="glass-card p-6 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              DSA Lectures
-            </span>
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <Youtube className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">
-                {stats?.dsaLectures.completed || 0}
-              </span>
-              <span className="text-sm text-slate-400 font-medium">
-                / {stats?.dsaLectures.total || 0} Videos
-              </span>
-            </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div
-                className="bg-indigo-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${stats?.dsaLectures.percent || 0}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 flex justify-between">
-              <span>Completion Rate</span>
-              <span className="text-indigo-400 font-semibold">{stats?.dsaLectures.percent || 0}%</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Card 2: DSA Problems Solved */}
-        <div className="glass-card p-6 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              DSA Problems
-            </span>
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">
-                {stats?.dsaProgress.solvedProblems || 0}
-              </span>
-              <span className="text-sm text-slate-400 font-medium">
-                / {stats?.dsaProgress.totalProblems || 0} Solved
-              </span>
-            </div>
-            <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-500"
-                style={{ width: `${stats?.dsaProgress.percent || 0}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 flex justify-between">
-              <span>Overall Coverage</span>
-              <span className="text-emerald-400 font-semibold">{stats?.dsaProgress.percent || 0}%</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3: Job Applications */}
-        <div className="glass-card p-6 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Job Applications
-            </span>
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-              <Briefcase className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">
-                {stats?.applications.total || 0}
-              </span>
-              <span className="text-sm text-slate-400 font-medium">Total Applied</span>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <div className="flex-1 bg-slate-800/80 p-2 rounded-lg text-center">
-                <p className="text-[10px] text-slate-400">Interview</p>
-                <p className="text-sm font-bold text-indigo-400">
-                  {stats?.applications.byStatus.Interviewing || 0}
-                </p>
+          {/* Right Quick Summary Numbers */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-[var(--card-border)]">
+            <div className="text-center px-3 py-2">
+              <div className="text-xl md:text-2xl font-black text-blue-600 dark:text-blue-400">
+                {stats?.totalAppsLogged || 0}
               </div>
-              <div className="flex-1 bg-slate-800/80 p-2 rounded-lg text-center">
-                <p className="text-[10px] text-slate-400">Offers</p>
-                <p className="text-sm font-bold text-emerald-400">
-                  {stats?.applications.byStatus.Offer || 0}
-                </p>
+              <div className="text-[10px] text-[var(--text-tertiary)] font-semibold mt-0.5 uppercase tracking-wider">
+                Apps
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Card 4: Daily Work Activity */}
-        <div className="glass-card p-6 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              Tracked Days
-            </span>
-            <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400">
-              <CalendarCheck className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">
-                {stats?.dailyTracker.daysTracked || 0}
-              </span>
-              <span className="text-sm text-slate-400 font-medium">Days Logged</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 mt-3 text-center">
-              <div className="bg-slate-800/60 py-1.5 rounded-md">
-                <p className="text-[10px] text-slate-400">DSA</p>
-                <p className="text-xs font-semibold text-indigo-400">
-                  {stats?.dailyTracker.dsaDoneDays || 0}d
-                </p>
+            <div className="text-center px-3 py-2 border-x border-[var(--card-border)]">
+              <div className="text-xl md:text-2xl font-black text-purple-600 dark:text-purple-400">
+                {stats?.interviewsInProgress || 0}
               </div>
-              <div className="bg-slate-800/60 py-1.5 rounded-md">
-                <p className="text-[10px] text-slate-400">Project</p>
-                <p className="text-xs font-semibold text-emerald-400">
-                  {stats?.dailyTracker.projectDoneDays || 0}d
-                </p>
+              <div className="text-[10px] text-[var(--text-tertiary)] font-semibold mt-0.5 uppercase tracking-wider">
+                Interviews
               </div>
-              <div className="bg-slate-800/60 py-1.5 rounded-md">
-                <p className="text-[10px] text-slate-400">AI</p>
-                <p className="text-xs font-semibold text-amber-400">
-                  {stats?.dailyTracker.aiLearningDays || 0}d
-                </p>
+            </div>
+            <div className="text-center px-3 py-2">
+              <div className="text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                {stats?.overallDsaPercent || 0}%
+              </div>
+              <div className="text-[10px] text-[var(--text-tertiary)] font-semibold mt-0.5 uppercase tracking-wider">
+                DSA Done
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Analytics Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: DSA Category Solved Chart */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800">
-          <div className="flex items-center justify-between mb-6">
+      {/* ── 4 Modular Metric Bento Cards ──────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <MetricWidget
+          title="DSA Solved"
+          value={stats?.solvedDsaProblems || 0}
+          subtitle={`Goal: ${stats?.totalDsaProblems || 0}`}
+          badge={`${stats?.overallDsaPercent || 0}%`}
+          badgeType="indigo"
+          icon={<Zap size={15} className="text-amber-700 dark:text-indigo-400" />}
+          iconBg="rgba(218, 119, 86, 0.15)"
+        />
+
+        <MetricWidget
+          title="Applications"
+          value={stats?.totalAppsLogged || 0}
+          subtitle="Pipeline count"
+          badge="Active"
+          badgeType="blue"
+          icon={<Briefcase size={15} className="text-blue-600 dark:text-blue-400" />}
+          iconBg="rgba(59, 130, 246, 0.15)"
+        />
+
+        <MetricWidget
+          title="Daily Apps Pace"
+          value={stats?.avgAppsPerLoggedDay || '0.0'}
+          subtitle="Submissions / day"
+          badge="Average"
+          badgeType="green"
+          icon={<TrendingUp size={15} className="text-emerald-600 dark:text-emerald-400" />}
+          iconBg="rgba(34, 197, 94, 0.15)"
+        />
+
+        <MetricWidget
+          title="Offers / Stages"
+          value={stats?.offersReceived || 0}
+          subtitle={`${stats?.interviewsInProgress || 0} in progress`}
+          badge="Stages"
+          badgeType="purple"
+          icon={<Trophy size={15} className="text-purple-600 dark:text-purple-400" />}
+          iconBg="rgba(168, 85, 247, 0.15)"
+        />
+      </div>
+
+      {/* ── Charts & Visualizers Grid ─────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Application Funnel Chart */}
+        <div className="md:col-span-2 apple-card p-5 md:p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-400" />
-                DSA Problems Solved by Category
-              </h2>
-              <p className="text-xs text-slate-400">Target problem counts across all topics</p>
+              <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
+                Application Pipeline
+              </h3>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Distribution across recruitment stages
+              </p>
             </div>
-            <Link
-              href="/dsa-progress"
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
-            >
-              View Full Sheet <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <span className="apple-badge badge-blue">
+              {stats?.totalAppsLogged || 0} Total Logged
+            </span>
           </div>
 
-          <div className="h-72 w-full">
-            {progressData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={progressData.slice(0, 8)} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                  <XAxis dataKey="topic" stroke="#64748b" fontSize={10} tickLine={false} interval={0} angle={-15} textAnchor="end" />
-                  <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-                    labelStyle={{ color: '#f8fafc', fontWeight: 'bold', fontSize: '12px' }}
-                  />
-                  <Bar dataKey="problemsSolved" fill="#6366f1" radius={[6, 6, 0, 0]} name="Solved" />
-                  <Bar dataKey="totalProblems" fill="#334155" radius={[6, 6, 0, 0]} name="Total Target" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-500 text-sm">
-                No progress data found. Upload Excel from Admin to populate.
-              </div>
-            )}
+          <div style={{ height: 160 }} className="w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={appFunnel} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <XAxis
+                  dataKey="name"
+                  stroke="var(--text-tertiary)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="var(--text-tertiary)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(150, 150, 150, 0.06)' }}
+                  contentStyle={{
+                    background: 'var(--modal-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '16px',
+                    fontSize: '11px',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                <Bar dataKey="count" radius={[6, 6, 2, 2]}>
+                  {appFunnel.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Right: Job Application Status Distribution */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2 mb-1">
-              <Briefcase className="w-5 h-5 text-amber-400" />
-              Application Pipeline
-            </h2>
-            <p className="text-xs text-slate-400 mb-4">Current application stages breakdown</p>
+        {/* DSA Target Radial */}
+        <div className="apple-card p-5 md:p-6 flex flex-col items-center justify-between text-center">
+          <div className="w-full text-left">
+            <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
+              DSA Target
+            </h3>
+            <p className="text-[11px] text-[var(--text-secondary)]">Completion ratio</p>
+          </div>
 
-            <div className="h-52 w-full flex items-center justify-center">
-              {stats?.applications.total > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={applicationChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={75}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {applicationChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-slate-500 text-sm">No application stats logged</div>
-              )}
+          <div className="relative w-32 h-32 my-2 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={dsaRing}
+                  innerRadius={46}
+                  outerRadius={60}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {dsaRing.map((entry, index) => (
+                    <Cell key={`pie-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
+                {stats?.overallDsaPercent || 0}%
+              </span>
+              <span className="text-[9px] font-semibold text-[var(--text-tertiary)] uppercase">
+                Solved
+              </span>
             </div>
           </div>
 
-          <div className="space-y-2 mt-4">
-            {applicationChartData.map((item, idx) => (
-              <div key={item.name} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx] }}></span>
-                  <span className="text-slate-300 font-medium">{item.name}</span>
-                </div>
-                <span className="font-bold text-white">{item.value}</span>
+          <div className="w-full grid grid-cols-2 gap-2 pt-3 border-t border-[var(--card-border)] text-xs">
+            <div>
+              <div className="font-bold text-amber-700 dark:text-indigo-400">
+                {stats?.solvedDsaProblems || 0}
               </div>
-            ))}
+              <div className="text-[10px] text-[var(--text-tertiary)]">Solved</div>
+            </div>
+            <div>
+              <div className="font-bold text-[var(--text-secondary)]">
+                {Math.max(
+                  (stats?.totalDsaProblems || 0) - (stats?.solvedDsaProblems || 0),
+                  0
+                )}
+              </div>
+              <div className="text-[10px] text-[var(--text-tertiary)]">Remaining</div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── Quick Navigation Bento ────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {quickNav.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="apple-card p-4 flex items-center justify-between group no-underline"
+            style={{
+              background: item.gradient,
+              borderColor: item.border,
+            }}
+          >
+            <div>
+              <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-amber-800 dark:group-hover:text-gray-200 transition">
+                {item.title}
+              </div>
+              <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{item.meta}</div>
+            </div>
+            <ChevronRight
+              size={14}
+              className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] group-hover:translate-x-1 transition duration-150"
+            />
+          </a>
+        ))}
+      </div>
+
+      {/* ── Live Global Job Feed Widget ───────────────────────── */}
+      <div className="apple-card p-5 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <Compass size={14} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
+                Live Tech Job Openings
+              </h3>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Synced from RemoteOK, Remotive & Arbeitnow
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/jobs"
+            className="apple-badge badge-indigo hover:opacity-80 transition flex items-center gap-1 font-semibold"
+          >
+            Explore all <ArrowUpRight size={11} />
+          </a>
+        </div>
+
+        {/* Job Rows */}
+        <div className="space-y-2">
+          {loadingJobs &&
+            Array(3)
+              .fill(0)
+              .map((_, i) => (
+                <div key={i} className="skeleton h-14 rounded-2xl" />
+              ))}
+
+          {!loadingJobs && jobs.length === 0 && (
+            <div className="p-6 text-center text-xs text-[var(--text-secondary)]">
+              No jobs cached yet. Tap Jarvis and say &quot;Find me software engineer jobs&quot;!
+            </div>
+          )}
+
+          {!loadingJobs &&
+            jobs.map((job, idx) => (
+              <a
+                key={idx}
+                href={job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-[var(--card-border)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition group no-underline"
+              >
+                <div className="flex-1 min-w-0 pr-3">
+                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-amber-700 dark:group-hover:text-indigo-300 transition truncate">
+                    {job.title}
+                  </div>
+                  <div className="text-[11px] text-[var(--text-secondary)] mt-0.5 truncate">
+                    {job.company} · {job.location || 'Remote'}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 flex-shrink-0">
+                  <span className="apple-badge badge-dim text-[10px]">
+                    {job.source}
+                  </span>
+                  <div className="w-6 h-6 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition">
+                    <ArrowUpRight size={12} />
+                  </div>
+                </div>
+              </a>
+            ))}
         </div>
       </div>
     </div>

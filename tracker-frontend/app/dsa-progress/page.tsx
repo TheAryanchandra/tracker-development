@@ -1,36 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { fetchDsaProgress, updateDsaProgress, createDsaProgress, deleteDsaProgress } from '@/lib/api';
-import {
-  BarChart3,
-  Plus,
-  Edit2,
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  X,
-  Trash2,
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { fetchDsaProgress, createDsaProgress, updateDsaProgress, deleteDsaProgress } from '@/lib/api';
+import { BarChart3, Plus, Trash2, CheckCircle2, Edit2 } from 'lucide-react';
 
 export default function DsaProgressPage() {
-  const [progressList, setProgressList] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ totalProblems: 0, problemsSolved: 0 });
 
-  // Edit inline modal state
-  const [editingItem, setEditingItem] = useState<any | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTopicName, setNewTopicName] = useState('');
-
-  useEffect(() => {
-    loadProgress();
-  }, []);
-
-  const loadProgress = async () => {
+  const loadTopics = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetchDsaProgress();
-      if (res.success) setProgressList(res.data);
+      const data = await fetchDsaProgress();
+      setTopics(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -38,310 +22,157 @@ export default function DsaProgressPage() {
     }
   };
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem) return;
+  useEffect(() => {
+    loadTopics();
+  }, []);
+
+  const handleStartEdit = (item: any) => {
+    setEditingId(item._id);
+    setEditForm({ totalProblems: item.totalProblems || 0, problemsSolved: item.problemsSolved || 0 });
+  };
+
+  const handleSaveEdit = async (id: string) => {
+    const total = editForm.totalProblems;
+    const solved = editForm.problemsSolved;
+    const percent = total > 0 ? Math.round((solved / total) * 100) : 0;
+    const status = solved >= total && total > 0 ? 'Completed' : solved > 0 ? 'In Progress' : 'Add problem count';
 
     try {
-      const total = parseInt(editingItem.totalProblems) || 0;
-      const solved = parseInt(editingItem.problemsSolved) || 0;
-
-      const res = await updateDsaProgress(editingItem._id, {
+      await updateDsaProgress(id, {
         totalProblems: total,
         problemsSolved: solved,
-        status: editingItem.status || (solved >= total && total > 0 ? 'Completed' : 'In Progress'),
+        percentComplete: percent,
+        status,
       });
-
-      if (res.success) {
-        setEditingItem(null);
-        loadProgress();
-      }
+      setEditingId(null);
+      loadTopics();
     } catch (err) {
       console.error(err);
     }
   };
-
-  const handleAddNewTopic = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTopicName) return;
-    try {
-      const res = await createDsaProgress({
-        topic: newTopicName,
-        totalProblems: 0,
-        problemsSolved: 0,
-        percentComplete: 0,
-        status: 'Add problem count',
-      });
-      if (res.success) {
-        setIsModalOpen(false);
-        setNewTopicName('');
-        loadProgress();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this topic?')) return;
-    try {
-      const res = await deleteDsaProgress(id);
-      if (res.success) {
-        setProgressList((prev) => prev.filter((item) => item._id !== id));
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const grandTotalProblems = progressList.reduce((acc, curr) => acc + (curr.totalProblems || 0), 0);
-  const grandSolvedProblems = progressList.reduce((acc, curr) => acc + (curr.problemsSolved || 0), 0);
-  const overallPercent = grandTotalProblems > 0 ? Math.round((grandSolvedProblems / grandTotalProblems) * 100) : 0;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-up">
+      {/* Header Banner */}
+      <div className="apple-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
-            <BarChart3 className="w-7 h-7 text-emerald-400" />
-            DSA Topic Progress & Roadmap
+          <div className="apple-badge badge-green font-semibold mb-2">
+            <BarChart3 className="w-3.5 h-3.5" /> Topic-wise DSA Mastery
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+            DSA Progress Tracker
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Track solved vs target problem counts across 18 DSA categories with live % calculations.
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Track solved problems, completion percentages, and topic-wise readiness across standard topics.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30"
-        >
-          <Plus className="w-4 h-4" />
-          Add Custom DSA Topic
-        </button>
-      </div>
 
-      {/* Overall Progress Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Overall DSA Completion
-          </span>
-          <div className="flex items-baseline gap-3 mt-1">
-            <span className="text-4xl font-extrabold text-white">{grandSolvedProblems}</span>
-            <span className="text-sm text-slate-400">/ {grandTotalProblems} Problems Solved</span>
-          </div>
-        </div>
-
-        <div className="flex-1 max-w-md">
-          <div className="flex justify-between text-xs font-semibold mb-1">
-            <span className="text-slate-300">Target Readiness</span>
-            <span className="text-emerald-400">{overallPercent}%</span>
-          </div>
-          <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${overallPercent}%` }}
-            ></div>
-          </div>
+        <div className="apple-card-flat px-4 py-2 text-right">
+          <p className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Tracked Topics</p>
+          <p className="text-lg font-black text-amber-700 dark:text-indigo-400">{topics.length}</p>
         </div>
       </div>
 
-      {/* Modal: Add Topic */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-base">Add Custom Topic</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleAddNewTopic} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Topic Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Segment Trees & Disjoint Set"
-                  value={newTopicName}
-                  onChange={(e) => setNewTopicName(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-500"
-                >
-                  Add Topic
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Edit Counts */}
-      {editingItem && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-white text-base">
-                Edit Topic: <span className="text-indigo-400">{editingItem.topic}</span>
-              </h3>
-              <button onClick={() => setEditingItem(null)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Total Target Problems</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editingItem.totalProblems}
-                  onChange={(e) => setEditingItem({ ...editingItem, totalProblems: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Problems Solved</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editingItem.problemsSolved}
-                  onChange={(e) => setEditingItem({ ...editingItem, problemsSolved: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Status</label>
-                <input
-                  type="text"
-                  value={editingItem.status}
-                  onChange={(e) => setEditingItem({ ...editingItem, status: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg"
-                  placeholder="Add problem count / In Progress / Completed"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingItem(null)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-500"
-                >
-                  Update Topic
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Progress Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+      {/* Table */}
+      <div className="apple-card overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider">
+          <table className="w-full text-left text-xs text-[var(--text-primary)]">
+            <thead className="bg-black/[0.03] dark:bg-white/[0.02] text-[var(--text-secondary)] font-bold uppercase tracking-wider text-[10px] border-b border-[var(--card-border)]">
               <tr>
-                <th className="py-3.5 px-5">Topic</th>
-                <th className="py-3.5 px-4 text-center">Total Problems</th>
-                <th className="py-3.5 px-4 text-center">Problems Solved</th>
-                <th className="py-3.5 px-5 w-48 text-center">% Complete</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-5 text-right">Actions</th>
+                <th className="p-3.5 w-12 text-center">#</th>
+                <th className="p-3.5">Topic</th>
+                <th className="p-3.5 text-center">Total Target</th>
+                <th className="p-3.5 text-center">Problems Solved</th>
+                <th className="p-3.5">Progress %</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[var(--card-border)]">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
-                    Loading DSA progress topics...
-                  </td>
+                  <td colSpan={7} className="p-8 text-center text-gray-500">Loading topic progress...</td>
                 </tr>
-              ) : progressList.length === 0 ? (
+              ) : topics.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
-                    No topics found. Upload Excel or click "Add Custom DSA Topic".
-                  </td>
+                  <td colSpan={7} className="p-8 text-center text-gray-500">No topics seeded. Re-sync your Excel sheet in the sidebar!</td>
                 </tr>
               ) : (
-                progressList.map((item) => (
-                  <tr key={item._id} className="hover:bg-slate-900/50 transition">
-                    <td className="py-4 px-5 font-bold text-slate-200">{item.topic}</td>
-                    <td className="py-4 px-4 text-center font-semibold text-slate-400">
-                      {item.totalProblems || 0}
-                    </td>
-                    <td className="py-4 px-4 text-center font-extrabold text-emerald-400">
-                      {item.problemsSolved || 0}
-                    </td>
-                    <td className="py-4 px-5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-slate-800 h-2 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ${
-                              item.percentComplete === 100
-                                ? 'bg-emerald-400'
-                                : item.percentComplete > 50
-                                ? 'bg-indigo-500'
-                                : 'bg-amber-500'
-                            }`}
-                            style={{ width: `${item.percentComplete || 0}%` }}
-                          ></div>
+                topics.map((item, idx) => {
+                  const isEditing = editingId === item._id;
+                  return (
+                    <tr key={item._id || idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
+                      <td className="p-3.5 text-center font-bold text-gray-400">{idx + 1}</td>
+                      <td className="p-3.5 font-bold text-[var(--text-primary)]">{item.topic}</td>
+                      <td className="p-3.5 text-center">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editForm.totalProblems}
+                            onChange={(e) => setEditForm({ ...editForm, totalProblems: parseInt(e.target.value) || 0 })}
+                            className="w-16 px-2 py-1 rounded bg-[var(--input-bg)] border border-[var(--card-border)] text-center text-xs"
+                          />
+                        ) : (
+                          <span className="text-[var(--text-secondary)] font-medium">{item.totalProblems || 0}</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-center font-bold text-amber-700 dark:text-indigo-400">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editForm.problemsSolved}
+                            onChange={(e) => setEditForm({ ...editForm, problemsSolved: parseInt(e.target.value) || 0 })}
+                            className="w-16 px-2 py-1 rounded bg-[var(--input-bg)] border border-[var(--card-border)] text-center text-xs"
+                          />
+                        ) : (
+                          item.problemsSolved || 0
+                        )}
+                      </td>
+                      <td className="p-3.5 w-48">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-black/[0.08] dark:bg-white/[0.08] h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-amber-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(item.percentComplete || 0, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] font-bold text-[var(--text-secondary)] w-8 text-right">
+                            {item.percentComplete || 0}%
+                          </span>
                         </div>
-                        <span className="w-10 text-right font-bold text-slate-300">
-                          {item.percentComplete || 0}%
+                      </td>
+                      <td className="p-3.5">
+                        <span className={`apple-badge ${
+                          item.percentComplete >= 100
+                            ? 'badge-green'
+                            : item.problemsSolved > 0
+                            ? 'badge-blue'
+                            : 'badge-dim'
+                        }`}>
+                          {item.status || (item.problemsSolved > 0 ? 'In Progress' : 'Not Started')}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                          item.percentComplete === 100
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : item.totalProblems === 0
-                            ? 'bg-slate-800 text-slate-400 border-slate-700'
-                            : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                        }`}
-                      >
-                        {item.status || 'Add problem count'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-right space-x-1">
-                      <button
-                        onClick={() => setEditingItem({ ...item })}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800"
-                        title="Edit Counts"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item._id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800"
-                        title="Delete Topic"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="p-3.5 text-right">
+                        {isEditing ? (
+                          <button
+                            onClick={() => handleSaveEdit(item._id)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold"
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleStartEdit(item)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition"
+                            title="Edit topic numbers"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

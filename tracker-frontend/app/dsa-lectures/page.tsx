@@ -1,362 +1,191 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchLectures, createLecture, updateLecture, deleteLecture } from '@/lib/api';
-import {
-  Youtube,
-  Search,
-  Plus,
-  Play,
-  CheckCircle,
-  Clock,
-  Trash2,
-  ExternalLink,
-  X,
-  Filter,
-} from 'lucide-react';
+import { Youtube, ExternalLink, Plus, Search, Filter, Trash2, CheckCircle2, Clock, PlayCircle } from 'lucide-react';
 
 export default function DsaLecturesPage() {
   const [lectures, setLectures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
-
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    srNo: '',
-    url: '',
-    title: '',
-    duration: '',
-    status: 'Pending',
-  });
+  const [formData, setFormData] = useState({ srNo: '', title: '', url: '', duration: '', status: 'Pending' });
 
-  useEffect(() => {
-    loadLectures();
-  }, [statusFilter]);
-
-  const loadLectures = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetchLectures(statusFilter, search);
-      if (res.success) setLectures(res.data);
+      const data = await fetchLectures(statusFilter, search);
+      setLectures(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching lectures:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadData();
+  }, [search, statusFilter]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    loadLectures();
+    try {
+      await createLecture({
+        ...formData,
+        srNo: parseInt(formData.srNo) || lectures.length + 1,
+      });
+      setIsModalOpen(false);
+      setFormData({ srNo: '', title: '', url: '', duration: '', status: 'Pending' });
+      loadData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleToggleStatus = async (item: any) => {
+    const newStatus = item.status === 'Completed' ? 'Pending' : 'Completed';
     try {
-      const res = await updateLecture(id, { status: newStatus });
-      if (res.success) {
-        setLectures((prev) =>
-          prev.map((item) => (item._id === id ? { ...item, status: newStatus } : item))
-        );
-      }
+      await updateLecture(item._id, { status: newStatus });
+      loadData();
     } catch (err) {
       console.error(err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this lecture?')) return;
-    try {
-      const res = await deleteLecture(id);
-      if (res.success) {
-        setLectures((prev) => prev.filter((item) => item._id !== id));
+    if (confirm('Delete this lecture entry?')) {
+      try {
+        await deleteLecture(id);
+        loadData();
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
     }
-  };
-
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await createLecture({
-        ...formData,
-        srNo: formData.srNo ? parseInt(formData.srNo) : lectures.length + 1,
-      });
-      if (res.success) {
-        setIsModalOpen(false);
-        setFormData({ srNo: '', url: '', title: '', duration: '', status: 'Pending' });
-        loadLectures();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Extract Youtube Embed URL
-  const getEmbedUrl = (url: string) => {
-    if (!url) return '';
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11
-      ? `https://www.youtube.com/embed/${match[2]}?autoplay=1`
-      : url;
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-up">
+      {/* Header Banner */}
+      <div className="apple-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
-            <Youtube className="w-7 h-7 text-red-500" />
-            DSA Course Curriculum & Video Lectures
+          <div className="apple-badge badge-green font-semibold mb-2">
+            <Youtube className="w-3.5 h-3.5" /> DSA Course Curriculum
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+            DSA Lectures
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Complete Java & DSA course playlist with status tracking and embedded video player.
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Track video playlists, watch durations, and completion status.
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Lecture
-        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="apple-card-flat px-4 py-2 text-right">
+            <p className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Total Videos</p>
+            <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">{lectures.length}</p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-amber-600 dark:bg-indigo-600 hover:bg-amber-500 dark:hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Add Lecture
+          </button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by lecture title or topic..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-900 text-xs text-slate-200 placeholder-slate-500 pl-9 pr-4 py-2.5 rounded-lg border border-slate-800 focus:outline-none focus:border-indigo-500"
+            placeholder="Search title, URL..."
+            className="w-full text-xs text-[var(--text-primary)] placeholder-gray-400 pl-9 pr-4 py-2.5 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] focus:outline-none focus:border-amber-500 dark:focus:border-indigo-500 transition"
           />
-        </form>
+        </div>
 
-        <div className="flex items-center gap-3">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <div className="flex gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-800">
-            {['', 'Pending', 'In Progress', 'Completed'].map((st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
-                  statusFilter === st
-                    ? 'bg-indigo-600 text-white font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {st === '' ? 'All' : st}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-gray-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="text-xs text-[var(--text-primary)] px-3 py-2.5 rounded-xl bg-[var(--card-bg)] border border-[var(--card-border)] focus:outline-none focus:border-amber-500 dark:focus:border-indigo-500 transition"
+          >
+            <option value="">All Statuses</option>
+            <option value="Completed">Completed</option>
+            <option value="Pending">Pending</option>
+          </select>
         </div>
       </div>
 
-      {/* Video Modal Player */}
-      {activeVideoUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800">
-              <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                <Youtube className="w-5 h-5 text-red-500" /> Video Player
-              </h3>
-              <button
-                onClick={() => setActiveVideoUrl(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="aspect-video w-full">
-              <iframe
-                src={getEmbedUrl(activeVideoUrl)}
-                title="Lecture Video"
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-white text-base">Add New DSA Lecture</h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleCreateSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Lecture Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. DSA In Java | Arrays"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  YouTube URL
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 4h 18m 1s"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 text-xs text-white p-2.5 rounded-lg focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                </div>
-              </div>
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-500"
-                >
-                  Save Lecture
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Lectures Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+      {/* Table */}
+      <div className="apple-card overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/90 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider">
+          <table className="w-full text-left text-xs text-[var(--text-primary)]">
+            <thead className="bg-black/[0.03] dark:bg-white/[0.02] text-[var(--text-secondary)] font-bold uppercase tracking-wider text-[10px] border-b border-[var(--card-border)]">
               <tr>
-                <th className="py-3.5 px-4 w-12 text-center">#</th>
-                <th className="py-3.5 px-4">Title</th>
-                <th className="py-3.5 px-4">Duration</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="p-3.5 w-12 text-center">#</th>
+                <th className="p-3.5">Title</th>
+                <th className="p-3.5">URL</th>
+                <th className="p-3.5">Duration</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[var(--card-border)]">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
-                    Loading lectures...
-                  </td>
+                  <td colSpan={6} className="p-8 text-center text-gray-500">Loading lectures...</td>
                 </tr>
               ) : lectures.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
-                    No lectures found. Upload an Excel file or click "Add New Lecture".
-                  </td>
+                  <td colSpan={6} className="p-8 text-center text-gray-500">No lectures found. Click &quot;Add Lecture&quot; or sync from Excel!</td>
                 </tr>
               ) : (
-                lectures.map((lecture, idx) => (
-                  <tr key={lecture._id || idx} className="hover:bg-slate-900/50 transition">
-                    <td className="py-4 px-4 text-center font-bold text-slate-400">
-                      {lecture.srNo || idx + 1}
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-slate-200 max-w-md">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setActiveVideoUrl(lecture.url)}
-                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition flex-shrink-0"
-                          title="Play Video"
+                lectures.map((item, idx) => (
+                  <tr key={item._id || idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition">
+                    <td className="p-3.5 text-center font-bold text-gray-400">{item.srNo || idx + 1}</td>
+                    <td className="p-3.5 font-semibold text-[var(--text-primary)] max-w-xs truncate">{item.title}</td>
+                    <td className="p-3.5 max-w-xs">
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-700 dark:text-indigo-400 hover:underline flex items-center gap-1 text-xs truncate"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                        </button>
-                        <span className="truncate">{lecture.title}</span>
-                      </div>
+                          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{item.url}</span>
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
-                    <td className="py-4 px-4 text-slate-400 flex items-center gap-1.5 mt-2">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      {lecture.duration || 'N/A'}
+                    <td className="p-3.5 text-[var(--text-secondary)] flex items-center gap-1.5 mt-2">
+                      <Clock className="w-3.5 h-3.5 text-gray-400" />
+                      {item.duration || 'N/A'}
                     </td>
-                    <td className="py-4 px-4">
-                      <select
-                        value={lecture.status || 'Pending'}
-                        onChange={(e) => handleStatusChange(lecture._id, e.target.value)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border focus:outline-none ${
-                          lecture.status === 'Completed'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : lecture.status === 'In Progress'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                    <td className="p-3.5">
+                      <button
+                        onClick={() => handleToggleStatus(item)}
+                        className={`apple-badge cursor-pointer transition ${
+                          item.status === 'Completed' ? 'badge-green' : 'badge-orange'
                         }`}
                       >
-                        <option value="Pending" className="bg-slate-900">Pending</option>
-                        <option value="In Progress" className="bg-slate-900">In Progress</option>
-                        <option value="Completed" className="bg-slate-900">Completed</option>
-                      </select>
+                        {item.status === 'Completed' ? <CheckCircle2 className="w-3 h-3" /> : <PlayCircle className="w-3 h-3" />}
+                        {item.status || 'Pending'}
+                      </button>
                     </td>
-                    <td className="py-4 px-4 text-right space-x-2">
-                      <a
-                        href={lecture.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-block p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-                        title="Open on YouTube"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
+                    <td className="p-3.5 text-right">
                       <button
-                        onClick={() => handleDelete(lecture._id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800"
-                        title="Delete"
+                        onClick={() => handleDelete(item._id)}
+                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition"
+                        title="Delete lecture"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
@@ -366,6 +195,77 @@ export default function DsaLecturesPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-up">
+          <div className="apple-card w-full max-w-md p-6 border border-[var(--card-border)] bg-[var(--modal-bg)] shadow-2xl">
+            <h2 className="text-base font-extrabold text-[var(--text-primary)] mb-4">Add DSA Lecture</h2>
+            <form onSubmit={handleAdd} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-[var(--text-secondary)] mb-1 font-medium">Lecture Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="e.g. Dynamic Programming - 1D Array"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--text-primary)] outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[var(--text-secondary)] mb-1 font-medium">YouTube / Video URL *</label>
+                <input
+                  type="url"
+                  required
+                  value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--text-primary)] outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[var(--text-secondary)] mb-1 font-medium">Duration</label>
+                  <input
+                    type="text"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    placeholder="1h 24m"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--text-primary)] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[var(--text-secondary)] mb-1 font-medium">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--input-bg)] border border-[var(--card-border)] text-[var(--text-primary)] outline-none"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-600 dark:bg-indigo-600 text-white font-bold hover:bg-amber-500 dark:hover:bg-indigo-500 transition"
+                >
+                  Save Lecture
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

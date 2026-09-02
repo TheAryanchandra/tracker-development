@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { uploadExcelFile } from '@/lib/api';
 import {
   UploadCloud,
@@ -10,7 +10,6 @@ import {
   Download,
   Database,
   Layers,
-  Sparkles,
   RefreshCw,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -55,195 +54,163 @@ export default function AdminPage() {
     }
   };
 
-  // Generate a multi-sheet Sample Excel file directly in browser
   const downloadSampleExcel = () => {
     const wb = XLSX.utils.book_new();
 
-    // 1. dsa lectures sheet
-    const dsaLecturesData = [
-      { '#': 1, URL: 'https://www.youtube.com/watch?v=m3fg2PRY1u4', Title: 'DSA In Java | Basics | Variables, Operators', Duration: '4h 18m 1s', status: 'Completed' },
-      { '#': 2, URL: 'https://www.youtube.com/watch?v=D96vIVeRqHk', Title: 'DSA In Java | If Else | Conditionals', Duration: '2h 43m 11s', status: 'Completed' },
-      { '#': 3, URL: 'https://www.youtube.com/watch?v=h0S6HUpyWQE', Title: 'DSA In Java | Loops | For & While', Duration: '3h 46m 25s', status: 'In Progress' },
-      { '#': 4, URL: 'https://www.youtube.com/watch?v=mI5hopd2Ycw', Title: 'DSA In Java | Pattern Printing', Duration: '3h 50m 51s', status: 'Pending' },
+    const dsaLectures = [
+      { 'sr #': 1, 'url': 'https://youtube.com/watch?v=sample1', 'title': 'Array Basics & Pointers', 'duration': '1h 15m', 'status': 'Completed' },
+      { 'sr #': 2, 'url': 'https://youtube.com/watch?v=sample2', 'title': 'Binary Search Deep Dive', 'duration': '2h 00m', 'status': 'Pending' },
     ];
-    const wsLectures = XLSX.utils.json_to_sheet(dsaLecturesData);
-    XLSX.utils.book_append_sheet(wb, wsLectures, 'dsa lectures');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dsaLectures), 'dsa lectures');
 
-    // 2. Daily Tracker sheet
-    const dailyTrackerData = [
-      { Date: '01-Sep-2026 (Tue)', 'DSA Done (Y/N)': 'Y', 'DSA Topic / Focus': 'Raghav Garg - Arrays intro', 'Applications Sent': 0, 'Project Work (Y/N)': 'Y', Project: 'AI Copilot - auth service', 'AI Learning (Y/N)': 'Y', Notes: 'Watched 1 lecture + solved 3 problems' },
-      { Date: '02-Sep-2026 (Wed)', 'DSA Done (Y/N)': 'Y', 'DSA Topic / Focus': 'Binary Search Basics', 'Applications Sent': 2, 'Project Work (Y/N)': 'Y', Project: 'Tracker Backend APIs', 'AI Learning (Y/N)': 'Y', Notes: 'Added Express APIs + Mongoose schemas' },
+    const dailyTracker = [
+      { 'Date': '2026-08-31', 'DSA Done': 'Yes', 'DSA Topic': 'Arrays & Two Pointers', 'Applications': 5, 'Project Work': 'Yes', 'Project': 'AI Knowledge Copilot', 'AI Learning': 'Yes', 'Notes': 'Solved 3 hard problems' },
     ];
-    const wsDaily = XLSX.utils.json_to_sheet(dailyTrackerData);
-    XLSX.utils.book_append_sheet(wb, wsDaily, 'Daily Tracker');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dailyTracker), 'Daily Tracker');
 
-    // 3. DSA Progress sheet
-    const dsaProgressData = [
-      { Topic: 'Basics (Time/Space Complexity, Math)', 'Total Problems (enter from your sheet)': 25, 'Problems Solved': 20, '% Complete': '80%', Status: 'In Progress' },
-      { Topic: 'Sorting Algorithms', 'Total Problems (enter from your sheet)': 15, 'Problems Solved': 15, '% Complete': '100%', Status: 'Completed' },
-      { Topic: 'Arrays', 'Total Problems (enter from your sheet)': 40, 'Problems Solved': 30, '% Complete': '75%', Status: 'In Progress' },
-      { Topic: 'Binary Search', 'Total Problems (enter from your sheet)': 30, 'Problems Solved': 18, '% Complete': '60%', Status: 'In Progress' },
-      { Topic: 'Strings', 'Total Problems (enter from your sheet)': 25, 'Problems Solved': 12, '% Complete': '48%', Status: 'In Progress' },
-      { Topic: 'Linked List', 'Total Problems (enter from your sheet)': 20, 'Problems Solved': 8, '% Complete': '40%', Status: 'In Progress' },
+    const dsaProgress = [
+      { 'Topic': 'Arrays', 'Total': 25, 'Solved': 15, 'Status': 'In Progress' },
+      { 'Topic': 'Dynamic Programming', 'Total': 30, 'Solved': 12, 'Status': 'In Progress' },
     ];
-    const wsProgress = XLSX.utils.json_to_sheet(dsaProgressData);
-    XLSX.utils.book_append_sheet(wb, wsProgress, 'DSA Progress');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dsaProgress), 'DSA Progress');
 
-    // 4. Application Tracker sheet
-    const applicationTrackerData = [
-      { '#': 1, 'Date Applied': '29-Aug-2026', Company: 'Example Corp', Role: 'Full Stack Engineer', Platform: 'LinkedIn', Status: 'Applied', 'Follow-up Date': '05-Sep-2026', Notes: 'Applied via job post, referral pending' },
-      { '#': 2, 'Date Applied': '01-Sep-2026', Company: 'TechInnovate', Role: 'Backend Developer', Platform: 'Company Site', Status: 'Interviewing', 'Follow-up Date': '08-Sep-2026', Notes: 'Scheduled tech round 1' },
+    const appTracker = [
+      { 'Sr No': 1, 'Date Applied': '2026-08-31', 'Company': 'Google', 'Role': 'Software Engineer', 'Platform': 'Referral', 'Status': 'Applied', 'Follow-up Date': '2026-09-07', 'Notes': 'Referred by alumni' },
     ];
-    const wsApps = XLSX.utils.json_to_sheet(applicationTrackerData);
-    XLSX.utils.book_append_sheet(wb, wsApps, 'Application Tracker');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(appTracker), 'Application Tracker');
 
-    // Save File
-    XLSX.writeFile(wb, 'DAILY_TRACKER_MASTER_TEMPLATE.xlsx');
+    XLSX.writeFile(wb, 'Aryan_Daily_Tracker_Master.xlsx');
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      {/* Header Banner */}
-      <div className="glass-panel p-8 rounded-2xl border border-slate-800 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
-              <Database className="w-3.5 h-3.5" />
-              <span>Multi-Sheet Admin Sync Engine</span>
-            </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              Admin & Excel Data Import Hub
-            </h1>
-            <p className="text-xs text-slate-400 mt-2 max-w-xl">
-              Upload your master Excel spreadsheet containing sheets <code className="text-indigo-400 font-mono">dsa lectures</code>, <code className="text-indigo-400 font-mono">Daily Tracker</code>, <code className="text-indigo-400 font-mono">DSA Progress</code>, and <code className="text-indigo-400 font-mono">Application Tracker</code> to update all 4 sections instantly!
-            </p>
+    <div className="space-y-6 max-w-4xl mx-auto animate-fade-up">
+      {/* Header */}
+      <div className="apple-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="apple-badge badge-green font-semibold mb-2">
+            <Layers className="w-3.5 h-3.5" /> Multi-Sheet Admin Sync Engine
           </div>
-
-          <button
-            onClick={downloadSampleExcel}
-            className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition border border-slate-700 whitespace-nowrap shadow-lg"
-          >
-            <Download className="w-4 h-4 text-emerald-400" />
-            Download Sample Excel Template
-          </button>
+          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tight">
+            Admin & Excel Data Hub
+          </h1>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Upload your master Excel spreadsheet containing sheets <span className="font-mono text-amber-700 dark:text-indigo-400">dsa lectures, Daily Tracker, DSA Progress, Application Tracker</span> to update all tables instantly!
+          </p>
         </div>
+
+        <button
+          onClick={downloadSampleExcel}
+          className="px-4 py-2.5 rounded-xl border border-[var(--card-border)] bg-[var(--card-flat)] hover:bg-black/5 dark:hover:bg-white/5 text-[var(--text-primary)] text-xs font-semibold flex items-center gap-2 transition"
+        >
+          <Download className="w-4 h-4" /> Download Sample .xlsx
+        </button>
       </div>
 
-      {/* Main Upload Box */}
-      <div className="glass-panel p-8 rounded-2xl border border-slate-800 space-y-6">
-        <form onSubmit={handleUpload} className="space-y-6">
-          {/* File Dropzone */}
-          <div className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-2xl p-10 text-center transition bg-slate-900/40 relative cursor-pointer">
-            <input
-              type="file"
-              accept=".xlsx, .xls, .csv"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="flex flex-col items-center justify-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                <UploadCloud className="w-7 h-7" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  {file ? file.name : 'Click or Drag & Drop your Excel file (.xlsx)'}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  {file ? `${(file.size / 1024).toFixed(1)} KB` : 'Supports multi-sheet workbooks with standard section tab names'}
-                </p>
-              </div>
-            </div>
+      {/* Upload Box */}
+      <form onSubmit={handleUpload} className="space-y-4">
+        <div className="apple-card p-8 border-dashed border-2 border-[var(--card-border)] text-center flex flex-col items-center justify-center relative cursor-pointer hover:border-amber-500/40 dark:hover:border-indigo-500/40 transition">
+          <input
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            onChange={handleFileChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 dark:bg-indigo-500/10 flex items-center justify-center text-amber-700 dark:text-indigo-400 mb-3 shadow-md">
+            <UploadCloud className="w-7 h-7" />
+          </div>
+          <p className="text-sm font-bold text-[var(--text-primary)]">
+            {file ? file.name : 'Click or Drag & Drop Excel file (.xlsx, .xls, .csv)'}
+          </p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            {file ? `${(file.size / 1024).toFixed(1)} KB selected` : 'Supports multi-sheet workbooks with standard table headers'}
+          </p>
+        </div>
+
+        {/* Mode Selector */}
+        <div className="apple-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <h4 className="text-xs font-bold text-[var(--text-primary)]">Database Update Strategy</h4>
+            <p className="text-[11px] text-[var(--text-secondary)]">Choose how Excel rows are synchronized</p>
           </div>
 
-          {/* Sync Mode Options */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800">
-            <div>
-              <p className="text-xs font-bold text-white">Database Update Strategy</p>
-              <p className="text-[11px] text-slate-400">Choose how Excel rows are merged with MongoDB Atlas</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMode('replace')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                mode === 'replace'
+                  ? 'bg-amber-600 dark:bg-indigo-600 text-white shadow-md'
+                  : 'bg-[var(--card-flat)] text-[var(--text-secondary)] border border-[var(--card-border)]'
+              }`}
+            >
+              Replace (Clean Sync)
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('append')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                mode === 'append'
+                  ? 'bg-amber-600 dark:bg-indigo-600 text-white shadow-md'
+                  : 'bg-[var(--card-flat)] text-[var(--text-secondary)] border border-[var(--card-border)]'
+              }`}
+            >
+              Append (Add Only)
+            </button>
+          </div>
+        </div>
 
-            <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-              <button
-                type="button"
-                onClick={() => setMode('replace')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-                  mode === 'replace' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Wipe & Replace
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('append')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-                  mode === 'append' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Upsert / Merge
-              </button>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={!file || uploading}
+          className="w-full py-3.5 rounded-2xl bg-amber-600 dark:bg-indigo-600 hover:bg-amber-500 dark:hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2"
+        >
+          {uploading ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" /> Synchronizing Database...
+            </>
+          ) : (
+            <>
+              <Database className="w-4 h-4" /> Import & Sync All Sections
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Result feedback */}
+      {result && (
+        <div className="apple-card p-5 border-emerald-500/30 bg-emerald-500/5">
+          <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs mb-2">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{result.message}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs mt-3">
+            <div className="apple-card-flat p-2">
+              <span className="font-black text-[var(--text-primary)] block">{result.results?.dsaLectures || 0}</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">Lectures</span>
+            </div>
+            <div className="apple-card-flat p-2">
+              <span className="font-black text-[var(--text-primary)] block">{result.results?.dailyTracker || 0}</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">Daily Logs</span>
+            </div>
+            <div className="apple-card-flat p-2">
+              <span className="font-black text-[var(--text-primary)] block">{result.results?.dsaProgress || 0}</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">Topics</span>
+            </div>
+            <div className="apple-card-flat p-2">
+              <span className="font-black text-[var(--text-primary)] block">{result.results?.applicationTracker || 0}</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">Applications</span>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={!file || uploading}
-            className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg transition ${
-              !file || uploading
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
-            }`}
-          >
-            {uploading ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin" /> Processing & Syncing Excel Sheets...
-              </>
-            ) : (
-              <>
-                <Layers className="w-5 h-5" /> Import & Sync Across All 4 Sections
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Error Alert */}
-        {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Result Summary */}
-        {result && (
-          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-4">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>{result.message}</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                <p className="text-[10px] text-slate-400">DSA Lectures</p>
-                <p className="text-base font-extrabold text-indigo-400">{result.results.dsaLectures} Rows</p>
-              </div>
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                <p className="text-[10px] text-slate-400">Daily Tracker</p>
-                <p className="text-base font-extrabold text-emerald-400">{result.results.dailyTracker} Rows</p>
-              </div>
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                <p className="text-[10px] text-slate-400">DSA Progress</p>
-                <p className="text-base font-extrabold text-amber-400">{result.results.dsaProgress} Topics</p>
-              </div>
-              <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-center">
-                <p className="text-[10px] text-slate-400">Applications</p>
-                <p className="text-base font-extrabold text-violet-400">{result.results.applicationTracker} Jobs</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {error && (
+        <div className="apple-card p-4 border-rose-500/30 bg-rose-500/5 flex items-center gap-2.5 text-rose-500 text-xs">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ const ApplicationTrackerSchema = new mongoose.Schema(
     },
     followUpDate: { type: String, default: '' },
     notes: { type: String, default: '' },
+    resumeUrl: { type: String, default: '' },
+    attachmentName: { type: String, default: '' },
   },
   { timestamps: true }
 );

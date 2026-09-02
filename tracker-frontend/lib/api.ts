@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tracker-backend-rnec.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,16 +9,33 @@ export const api = axios.create({
   },
 });
 
+// Helper to safely unwrap arrays from { success: true, count: N, data: [...] }
+const extractArray = (resData: any): any[] => {
+  if (Array.isArray(resData)) return resData;
+  if (resData && Array.isArray(resData.data)) return resData.data;
+  return [];
+};
+
 // Dashboard APIs
 export const fetchDashboardStats = async () => {
-  const res = await api.get('/dashboard/stats');
-  return res.data;
+  try {
+    const res = await api.get('/dashboard/stats');
+    return res.data;
+  } catch (err) {
+    const res = await axios.get('http://127.0.0.1:5000/api/dashboard/stats');
+    return res.data;
+  }
 };
 
 // DSA Lectures APIs
 export const fetchLectures = async (status?: string, search?: string) => {
-  const res = await api.get('/dsa-lectures', { params: { status, search } });
-  return res.data;
+  try {
+    const res = await api.get('/dsa-lectures', { params: { status, search } });
+    return extractArray(res.data);
+  } catch (err) {
+    const res = await axios.get('http://127.0.0.1:5000/api/dsa-lectures', { params: { status, search } });
+    return extractArray(res.data);
+  }
 };
 
 export const createLecture = async (data: any) => {
@@ -38,8 +55,13 @@ export const deleteLecture = async (id: string) => {
 
 // Daily Tracker APIs
 export const fetchDailyLogs = async () => {
-  const res = await api.get('/daily-tracker');
-  return res.data;
+  try {
+    const res = await api.get('/daily-tracker');
+    return extractArray(res.data);
+  } catch (err) {
+    const res = await axios.get('http://127.0.0.1:5000/api/daily-tracker');
+    return extractArray(res.data);
+  }
 };
 
 export const createDailyLog = async (data: any) => {
@@ -59,8 +81,13 @@ export const deleteDailyLog = async (id: string) => {
 
 // DSA Progress APIs
 export const fetchDsaProgress = async () => {
-  const res = await api.get('/dsa-progress');
-  return res.data;
+  try {
+    const res = await api.get('/dsa-progress');
+    return extractArray(res.data);
+  } catch (err) {
+    const res = await axios.get('http://127.0.0.1:5000/api/dsa-progress');
+    return extractArray(res.data);
+  }
 };
 
 export const createDsaProgress = async (data: any) => {
@@ -80,8 +107,13 @@ export const deleteDsaProgress = async (id: string) => {
 
 // Application Tracker APIs
 export const fetchApplications = async (status?: string, search?: string) => {
-  const res = await api.get('/application-tracker', { params: { status, search } });
-  return res.data;
+  try {
+    const res = await api.get('/application-tracker', { params: { status, search } });
+    return extractArray(res.data);
+  } catch (err) {
+    const res = await axios.get('http://127.0.0.1:5000/api/application-tracker', { params: { status, search } });
+    return extractArray(res.data);
+  }
 };
 
 export const createApplication = async (data: any) => {
@@ -105,10 +137,56 @@ export const uploadExcelFile = async (file: File, mode: 'replace' | 'append' = '
   formData.append('file', file);
   formData.append('mode', mode);
 
-  const res = await axios.post(`${API_BASE_URL}/upload/excel`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return res.data;
+  try {
+    const res = await api.post('/upload/excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  } catch (err) {
+    const res = await axios.post('http://127.0.0.1:5000/api/upload/excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
 };
+
+// Resume / File Upload API
+export const uploadResumeFile = async (file: File, applicationId?: string) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (applicationId) formData.append('applicationId', applicationId);
+
+  try {
+    const res = await api.post('/upload/resume', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  } catch (err) {
+    const res = await axios.post('http://127.0.0.1:5000/api/upload/resume', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  }
+};
+
+// AI Chat RAG API with sessionId support
+export const sendAiChat = async (prompt: string, sessionId = 'default') => {
+  try {
+    const res = await api.post('/ai/chat', { prompt, sessionId });
+    return res.data;
+  } catch (err) {
+    try {
+      const res = await axios.post('http://127.0.0.1:5000/api/ai/chat', { prompt, sessionId });
+      return res.data;
+    } catch (fallbackErr) {
+      throw err;
+    }
+  }
+};
+
+// SSE stream URL builder — used for EventSource streaming
+export const getStreamUrl = (prompt: string, sessionId = 'default') => {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
+  return `${base}/ai/stream?prompt=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}`;
+};
+
