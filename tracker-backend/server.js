@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Default API healthcheck route
-app.get('/api/health', (req, res) => {
+app.get(['/api', '/api/health'], (req, res) => {
   res.json({ status: 'OK', message: 'Daily Tracker API is operational 🚀' });
 });
 
@@ -82,7 +82,8 @@ const seedDefaultDsaTopics = async () => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Express Server]: Running on port ${PORT}`);
   seedDefaultDsaTopics();
 });
+
