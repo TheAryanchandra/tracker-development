@@ -20,14 +20,18 @@ try {
 /**
  * Main RAG query function
  */
-async function ragQuery(query, conversationHistory = '', learnedFacts = '', externalContext = '') {
-  // Step 1: Ensure vector store is fresh
-  await loadAndBuild();
+async function ragQuery(query, conversationHistory = '', learnedFacts = '', externalContext = '', includeDatabase = true) {
+  // Only load/search MongoDB when the route explicitly needs personal data.
+  // General conversation should be handled by the agent without database
+  // records being injected into the prompt.
+  if (includeDatabase) await loadAndBuild();
 
-  // Step 2: Semantic retrieval
-  const relevantChunks = vectorStore.search(query, 6);
+  // Step 2: Semantic retrieval (opt-in for privacy and cleaner answers)
+  const relevantChunks = includeDatabase ? vectorStore.search(query, 6) : [];
   const contextText =
-    relevantChunks.length > 0
+    !includeDatabase
+      ? 'Database was not queried for this request.'
+      : relevantChunks.length > 0
       ? relevantChunks.map((c) => c.text).join('\n')
       : 'No specific data found in database.';
 

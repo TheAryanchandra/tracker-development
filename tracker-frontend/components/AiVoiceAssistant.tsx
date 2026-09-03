@@ -81,6 +81,7 @@ export const AiVoiceAssistant: React.FC = () => {
   const restartVoiceRef = useRef<number | null>(null);
   const speakingRef = useRef(false);
   const speechRequestRef = useRef(0);
+  const voiceUnlockedRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
 
@@ -235,6 +236,14 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       return;
     }
     try {
+      // This handler is a direct tap, so it is also the best mobile audio
+      // permission point for the reply that arrives later.
+      if ('speechSynthesis' in window && !voiceUnlockedRef.current) {
+        const probe = new SpeechSynthesisUtterance('');
+        probe.volume = 0;
+        window.speechSynthesis.speak(probe);
+        voiceUnlockedRef.current = true;
+      }
       voiceSessionRef.current = true;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -257,6 +266,18 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       recognitionRef.current.start();
     }
   }, [drawVisualizer]);
+
+  // Mobile Safari/Chrome require speech to be primed by a user gesture before
+  // an asynchronous API response is allowed to play audio.
+  const unlockVoice = useCallback(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      const probe = new SpeechSynthesisUtterance('');
+      probe.volume = 0;
+      window.speechSynthesis.speak(probe);
+      voiceUnlockedRef.current = true;
+    } catch {}
+  }, []);
 
   // Voice synthesis
   const speak = useCallback(
@@ -575,7 +596,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       {/* ── Floating Action Button ────────────────────────────── */}
       <button
         className="jarvis-trigger group"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { unlockVoice(); setOpen((o) => !o); }}
         title="Open Jarvis AI Copilot"
       >
         {open ? (
@@ -616,6 +637,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
               <button
                 onClick={() => setTts((t) => {
                   const next = !t;
+                  if (next) unlockVoice();
                   if (!next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
                     speechRequestRef.current += 1;
                     window.speechSynthesis.cancel();

@@ -12,6 +12,8 @@ import {
   UploadCloud,
   Zap,
   BriefcaseBusiness,
+  Menu,
+  X,
 } from 'lucide-react';
 import { ExcelUploadModal } from './ExcelUploadModal';
 import ThemeToggle from './ThemeToggle';
@@ -29,12 +31,31 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [excelOpen, setExcelOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const open = () => setExcelOpen(true);
     window.addEventListener('atlas:open-excel', open);
     return () => window.removeEventListener('atlas:open-excel', open);
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [mobileOpen]);
 
   return (
     <>
@@ -113,6 +134,64 @@ export default function Sidebar() {
         </div>
       </aside>
 
+      {/* Full navigation drawer for phones. The bottom bar stays focused on
+          the most-used routes, while this drawer keeps every route reachable. */}
+      {mobileOpen && (
+        <button
+          aria-label="Close navigation"
+          className="mobile-drawer-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside className={`mobile-drawer ${mobileOpen ? 'is-open' : ''}`} aria-hidden={!mobileOpen}>
+        <div className="mobile-drawer-head">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-tr from-amber-600 via-amber-700 to-amber-800 shadow-md">
+              <Zap size={17} className="text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-extrabold text-[var(--text-primary)]">Aryan Tracker</div>
+              <div className="text-[10px] text-[var(--text-tertiary)]">Your command center</div>
+            </div>
+          </div>
+          <button className="mobile-drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="mobile-drawer-label">Workspace</div>
+        <nav className="mobile-drawer-nav">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                tabIndex={mobileOpen ? 0 : -1}
+                className={`mobile-drawer-link ${active ? 'active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+                {active && <span className="mobile-drawer-active-dot" />}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mobile-drawer-footer">
+          <button
+            onClick={() => { setMobileOpen(false); setExcelOpen(true); }}
+            className="mobile-drawer-sync"
+          >
+            <UploadCloud size={16} /> Sync Excel Sheet
+          </button>
+          <div className="mobile-drawer-settings">
+            <span><i /> MongoDB Live</span>
+            <ThemeToggle />
+          </div>
+        </div>
+      </aside>
+
       {/* ── Mobile Bottom Nav ───────────────────────── */}
       <nav className="mobile-nav flex items-center justify-around border-t border-[var(--card-border)] bg-[var(--sidebar-bg)]">
         {navItems.slice(0, 5).map((item) => {
@@ -136,6 +215,15 @@ export default function Sidebar() {
         <div className="p-1">
           <ThemeToggle />
         </div>
+        <button
+          className="mobile-menu-button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open full navigation"
+          aria-expanded={mobileOpen}
+        >
+          <Menu size={19} />
+          <span>More</span>
+        </button>
       </nav>
 
       <ExcelUploadModal

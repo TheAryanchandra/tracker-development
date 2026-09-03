@@ -29,6 +29,12 @@ function needsLiveWeb(prompt) {
   return /\b(today|tonight|tomorrow|current|currently|latest|recent|news|weather|temperature|forecast|price|stock|score|live|search|look up|find online|documentation|what happened|who is|when is)\b/.test(text);
 }
 
+// Personal tracker data is opt-in. This prevents ordinary conversation from
+// being answered with a dump of daily logs or internal workspace context.
+function needsDatabase(prompt) {
+  return /\b(my|me|i|today|this week|current|latest)\b.*\b(progress|streak|stats?|daily logs?|applications?|jobs?|lectures?|dsa|tracker)\b|\b(show|list|check|tell me|how many|what are)\b.*\b(daily logs?|logs?|progress|streak|applications?|dsa|tracker|database)\b/i.test(String(prompt || ''));
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 const now = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -111,10 +117,12 @@ exports.handleAiChat = async (req, res) => {
       }
 
       case INTENTS.GREETING:
+        result = await ragQuery(prompt, history, learnedFacts, '', false);
+        break;
       case INTENTS.QUERY_STATS: {
         // Do not invoke function-calling for simple conversation or a direct
         // tracker read; the model/RAG path is faster and more reliable.
-        result = await ragQuery(prompt, history, learnedFacts);
+        result = await ragQuery(prompt, history, learnedFacts, '', true);
         break;
       }
 
@@ -162,7 +170,7 @@ exports.handleAiChat = async (req, res) => {
             const webResults = await searchWeb(prompt, 5);
             externalContext = formatSearchResults(prompt, webResults);
           }
-          const ragResult = await ragQuery(augmentedPrompt, history, learnedFacts, externalContext);
+          const ragResult = await ragQuery(augmentedPrompt, history, learnedFacts, externalContext, needsDatabase(prompt));
           result = { reply: ragResult.reply, source: ragResult.source };
         }
         break;
@@ -242,7 +250,7 @@ exports.handleAiStream = async (req, res) => {
       const { jobs } = await searchJobsPaginated({ query: q, limit: 6, forceRefresh: true });
       fullReply = `🔍 **Live Jobs matching "${q || 'Tech & Engineering'}":**\n\n${formatJobsForResponse(jobs)}\n\n💡 Open [/jobs](/jobs) for pagination, search & filters!`;
     } else if ([INTENTS.GREETING, INTENTS.QUERY_STATS].includes(intent)) {
-      const result = await ragQuery(String(prompt), history, learnedFacts);
+      const result = await ragQuery(String(prompt), history, learnedFacts, '', intent === INTENTS.QUERY_STATS);
       fullReply = result.reply;
     } else {
       // Agentic loop with streaming indicator
@@ -276,7 +284,7 @@ exports.handleAiStream = async (req, res) => {
           const webResults = await searchWeb(String(prompt), 5);
           externalContext = formatSearchResults(String(prompt), webResults);
         }
-        const r = await ragQuery(String(prompt), history, learnedFacts, externalContext);
+        const r = await ragQuery(String(prompt), history, learnedFacts, externalContext, needsDatabase(String(prompt)));
         fullReply = r.reply;
       }
     }

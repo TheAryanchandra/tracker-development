@@ -220,7 +220,7 @@ function buildAgentSystemPrompt(learnedFacts, conversationHistory) {
 - Always maintain full context across turns. If Aryan continues a thought, follow up seamlessly.
 - Use humor, motivation, and sharp engineering intuition. Seamlessly handle English and Hinglish.
 - If asked about live internet events or anything you don't know, use the "search_web" tool immediately.
-- If asked about streak, applications, or DSA progress, query the live database with "query_database".
+- Only query the live database when Aryan explicitly asks about his tracker, daily logs, streak, applications, lectures, or DSA progress. Never include database records in ordinary conversation.
 - If user mentions performing an action ("I solved 2 DP problems today"), automatically log it using the right tool.
 
 ## What You Know About Aryan:
@@ -301,6 +301,14 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
 
       response = await chat.sendMessage(toolResults);
       candidate = response.response;
+    }
+
+    // A max-token finish is not a valid answer. Let the controller hand this
+    // request to the provider fallback chain instead of returning a cut-off
+    // response to the user.
+    const finishReason = candidate.candidates?.[0]?.finishReason;
+    if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
+      return { reply: null, toolsUsed, usedAgent: false, error: 'Agent output limit reached' };
     }
 
     const finalText = candidate.text?.();
