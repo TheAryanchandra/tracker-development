@@ -4,6 +4,15 @@ const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
 const memoryCache = require('../services/cacheService');
 
+// Sheets imports can contain repeated rows for the same calendar day. The
+// dashboard must report days, not raw MongoDB documents.
+const dayKey = (value) => {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? String(value || '').trim().toLowerCase()
+    : parsed.toISOString().slice(0, 10);
+};
+
 const DEFAULT_STATS = {
   startDate: '31-Aug-2026',
   daysElapsed: 1,
@@ -38,6 +47,14 @@ exports.getDashboardStats = async (req, res) => {
       ApplicationTracker.find().maxTimeMS(2500).lean().catch(() => []),
     ]);
 
+    const trackedLogs = Array.from(
+      new Map(
+        dailyLogs
+          .filter((log) => log && log.date && dayKey(log.date))
+          .map((log) => [dayKey(log.date), log])
+      ).values()
+    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
     // DSA Lectures Stats
     const totalLectures = lectures.length;
     const completedLectures = lectures.filter(l => String(l.status).toLowerCase() === 'completed').length;
@@ -50,13 +67,13 @@ exports.getDashboardStats = async (req, res) => {
 
     // Applications Stats
     const totalApps = applications.length;
-    const totalAppsSentFromDaily = dailyLogs.reduce((acc, curr) => acc + (curr.applicationsSent || 0), 0);
+    const totalAppsSentFromDaily = trackedLogs.reduce((acc, curr) => acc + (curr.applicationsSent || 0), 0);
     const effectiveTotalApps = Math.max(totalApps, totalAppsSentFromDaily);
 
     const interviewsInProgress = applications.filter(a => String(a.status).toLowerCase().includes('interview')).length;
     const offersReceived = applications.filter(a => String(a.status).toLowerCase().includes('offer')).length;
 
-    const daysTracked = dailyLogs.length;
+    const daysTracked = trackedLogs.length;
     const avgAppsPerLoggedDay = daysTracked > 0 ? (effectiveTotalApps / daysTracked).toFixed(1) : '0.0';
 
     // Calculate DSA Streaks
@@ -64,7 +81,7 @@ exports.getDashboardStats = async (req, res) => {
     let longestDsaStreak = 0;
     let tempStreak = 0;
 
-    dailyLogs.forEach(log => {
+    trackedLogs.forEach(log => {
       if (log.dsaDone) {
         tempStreak++;
         if (tempStreak > longestDsaStreak) longestDsaStreak = tempStreak;
@@ -74,7 +91,7 @@ exports.getDashboardStats = async (req, res) => {
     });
     currentDsaStreak = tempStreak;
 
-    const startDate = dailyLogs.length > 0 ? dailyLogs[0].date : '31-Aug-2026';
+    const startDate = trackedLogs.length > 0 ? trackedLogs[0].date : '31-Aug-2026';
     const daysElapsed = Math.max(daysTracked, 1);
 
     const appStatusMap = {
@@ -107,9 +124,9 @@ exports.getDashboardStats = async (req, res) => {
       },
       dailyTracker: {
         daysTracked,
-        dsaDoneDays: dailyLogs.filter(d => d.dsaDone).length,
-        projectDoneDays: dailyLogs.filter(d => d.projectWork).length,
-        aiLearningDays: dailyLogs.filter(d => d.aiLearning).length,
+        dsaDoneDays: trackedLogs.filter(d => d.dsaDone).length,
+        projectDoneDays: trackedLogs.filter(d => d.projectWork).length,
+        aiLearningDays: trackedLogs.filter(d => d.aiLearning).length,
       },
     };
 

@@ -62,7 +62,8 @@ export const AiVoiceAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [listening, setListening] = useState(false);
-  const [tts, setTts] = useState(false);
+  // Speak replies by default; the header button remains an explicit mute.
+  const [tts, setTts] = useState(true);
   const [transcript, setTranscript] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -79,6 +80,9 @@ export const AiVoiceAssistant: React.FC = () => {
   const voiceSessionRef = useRef(false);
   const restartVoiceRef = useRef<number | null>(null);
   const speakingRef = useRef(false);
+  const speechRequestRef = useRef(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const microphoneStreamRef = useRef<MediaStream | null>(null);
 
   // Initialize and load persistent history
   useEffect(() => {
@@ -147,13 +151,23 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       setTranscript(interim);
       // Barge-in: a new spoken phrase immediately interrupts the current TTS reply.
       if (speakingRef.current && interim.trim()) {
+        speechRequestRef.current += 1;
         window.speechSynthesis.cancel();
         speakingRef.current = false;
       }
       for (let i = e.resultIndex; i < e.results.length; i += 1) {
         if (e.results[i].isFinal) {
           const turn = e.results[i][0].transcript.trim();
-          if (turn) handleSend(turn);
+          if (turn) {
+            // Some browsers deliver a final result without an interim one.
+            // Treat that as a barge-in too.
+            if (speakingRef.current) {
+              speechRequestRef.current += 1;
+              window.speechSynthesis.cancel();
+              speakingRef.current = false;
+            }
+            handleSend(turn);
+          }
         }
       }
     };
@@ -202,10 +216,15 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
   const stopListening = useCallback(() => {
     voiceSessionRef.current = false;
     speakingRef.current = false;
+    speechRequestRef.current += 1;
     if (restartVoiceRef.current) window.clearTimeout(restartVoiceRef.current);
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
     setListening(false);
     recognitionRef.current?.stop();
+    microphoneStreamRef.current?.getTracks().forEach((track) => track.stop());
+    microphoneStreamRef.current = null;
+    audioContextRef.current?.close().catch(() => {});
+    audioContextRef.current = null;
     cancelAnimationFrame(animFrameRef.current);
     analyserRef.current = null;
   }, []);
@@ -220,14 +239,17 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
+      microphoneStreamRef.current = stream;
       const audioCtx = new AudioContext();
+      audioContextRef.current = audioCtx;
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 64;
       source.connect(analyser);
       analyserRef.current = analyser;
       setListening(true);
-      recognitionRef.current.start();
+      try { recognitionRef.current.start(); } catch {}
       drawVisualizer();
     } catch {
       voiceSessionRef.current = true;
@@ -240,21 +262,52 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
   const speak = useCallback(
     (text: string) => {
       if ((!tts && !voiceSessionRef.current) || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+      const requestId = ++speechRequestRef.current;
       window.speechSynthesis.cancel();
       if (voiceSessionRef.current) {
         speakingRef.current = true;
       }
-      const clean = text.replace(/[*_#`•🔗[\]()]/g, '').replace(/\n/g, '. ');
+      const clean = text
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/[*_#`•🔗[\]()]/g, '')
+        .replace(/[📊🌐💼📝🎯🚀⚡🤔✅📌]/g, '')
+        .replace(/\n+/g, '. ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!clean) return;
       const utt = new SpeechSynthesisUtterance(clean);
+      utt.lang = 'en-US';
+      utt.volume = 1;
+      // Prime the browser voice catalogue. Some Chromium builds return an
+      // empty list until voiceschanged has fired, but speech still works with
+      // the platform default voice.
+      window.speechSynthesis.getVoices();
       const voices = window.speechSynthesis.getVoices();
-      const maleVoiceHints = ['david', 'mark', 'guy', 'daniel', 'alex', 'james', 'aaron', 'george', 'microsoft david', 'google us english'];
-      const best =
-        voices.find((v) => v.lang.startsWith('en') && maleVoiceHints.some((hint) => v.name.toLowerCase().includes(hint))) ||
-        voices.find((v) => v.lang.startsWith('en') && !/female|zira|samantha|karen|susan/i.test(v.name)) ||
-        voices.find((v) => v.lang.startsWith('en'));
+      const maleVoiceHints = [
+        'microsoft guy online (natural)',
+        'microsoft guy',
+        'google us english',
+        'microsoft david online (natural)',
+        'microsoft david',
+        'daniel', 'alex', 'mark', 'guy', 'james', 'aaron', 'george',
+      ];
+      const englishVoices = voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+      const best = [...englishVoices].sort((a, b) => {
+        const score = (voice: SpeechSynthesisVoice) => {
+          const name = voice.name.toLowerCase();
+          const preferred = maleVoiceHints.findIndex((hint) => name.includes(hint));
+          if (preferred >= 0) return 100 - preferred;
+          if (/female|zira|samantha|karen|susan/i.test(name)) return 0;
+          return 25;
+        };
+        return score(b) - score(a);
+      })[0] || voices[0];
       if (best) utt.voice = best;
-      utt.rate = 1.05;
-      utt.pitch = 0.92;
+      // A slightly slower pace and lower pitch makes the system voice sound
+      // calmer and more deliberate than the browser default.
+      utt.rate = 0.96;
+      utt.pitch = 0.9;
       utt.onend = () => {
         speakingRef.current = false;
         if (voiceSessionRef.current) {
@@ -263,10 +316,24 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
           }, 220);
         }
       };
+      utt.onerror = () => {
+        // `cancel()` emits an error in Chromium. It is expected during
+        // interruption/mute and must not be shown as a playback failure.
+        if (requestId !== speechRequestRef.current) return;
+        speakingRef.current = false;
+        setStatusMessage('Voice playback was unavailable. You can still read the reply above.');
+        window.setTimeout(() => setStatusMessage(null), 3500);
+      };
       window.speechSynthesis.speak(utt);
     },
     [tts]
   );
+
+  useEffect(() => () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+    microphoneStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioContextRef.current?.close().catch(() => {});
+  }, []);
 
   // File selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -547,7 +614,15 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
                 <RefreshCw size={13} />
               </button>
               <button
-                onClick={() => setTts((t) => !t)}
+                onClick={() => setTts((t) => {
+                  const next = !t;
+                  if (!next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                    speechRequestRef.current += 1;
+                    window.speechSynthesis.cancel();
+                    speakingRef.current = false;
+                  }
+                  return next;
+                })}
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition"
                 title={tts ? 'Mute Speech Voice' : 'Enable Speech Voice'}
               >
