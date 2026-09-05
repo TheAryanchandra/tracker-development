@@ -15,6 +15,7 @@ class VectorStore {
     this.vocabArray = [];
     this.lastBuilt = null;
     this.buildTTL = 5 * 60 * 1000; // 5 min
+    this.maxTextLength = 12000;
   }
 
   /**
@@ -26,7 +27,8 @@ class VectorStore {
     this.vocabulary = new Set();
 
     // Add all documents to TF-IDF
-    rawDocs.forEach(doc => {
+    const normalized = this._normalizeDocs(rawDocs);
+    normalized.forEach(doc => {
       this.tfidf.addDocument(doc.text);
       // Tokenize into vocabulary
       const tokens = doc.text.toLowerCase().split(/\W+/).filter(t => t.length > 2);
@@ -36,7 +38,7 @@ class VectorStore {
     this.vocabArray = Array.from(this.vocabulary);
 
     // Compute TF-IDF vector for each document
-    rawDocs.forEach((doc, idx) => {
+    normalized.forEach((doc, idx) => {
       const vector = this._computeVector(idx);
       this.documents.push({ ...doc, vector });
     });
@@ -117,26 +119,19 @@ class VectorStore {
    * without rebuilding the entire store
    */
   addChunk(chunk) {
-    // Remove existing chunk with same id if it exists
-    this.documents = this.documents.filter(d => d.id !== chunk.id);
-
-    // Add to TF-IDF engine
-    this.tfidf.addDocument(chunk.text);
-    const newDocIndex = this.documents.length;
-
-    // Tokenize into vocabulary
-    const tokens = chunk.text.toLowerCase().split(/\W+/).filter(t => t.length > 2);
-    tokens.forEach(t => this.vocabulary.add(t));
-    this.vocabArray = Array.from(this.vocabulary);
-
-    // Compute vector for the new chunk
-    const vector = {};
-    this.tfidf.listTerms(newDocIndex).forEach(term => {
-      vector[term.term] = term.tfidf;
-    });
-
-    this.documents.push({ ...chunk, vector });
+    const docs = this.documents.filter(d => d.id !== chunk.id).map(({ vector, ...doc }) => doc);
+    docs.push(chunk);
+    this.build(docs);
     console.log(`[VectorStore] Added chunk "${chunk.id}" (total: ${this.documents.length})`);
+  }
+
+  _normalizeDocs(rawDocs) {
+    const seen = new Set();
+    return (Array.isArray(rawDocs) ? rawDocs : []).map((doc, index) => ({
+      id: String(doc.id || `chunk-${index}`),
+      text: String(doc.text || '').replace(/\s+/g, ' ').trim().slice(0, this.maxTextLength),
+      metadata: doc.metadata && typeof doc.metadata === 'object' ? doc.metadata : {},
+    })).filter(doc => doc.text && !seen.has(doc.id) && seen.add(doc.id));
   }
 
   /**

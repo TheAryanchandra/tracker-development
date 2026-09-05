@@ -164,3 +164,15 @@ You can open Jarvis using the floating bot button on the bottom right:
 
 ## 📄 License
 ISC © Aryan Chandra
+
+## n8n task automation
+
+Jarvis and the task dashboard can emit task events to an n8n Webhook. Set these variables in the backend deployment:
+
+```env
+N8N_WEBHOOK_URL=https://your-n8n-host/webhook/aryan-tracker
+N8N_WEBHOOK_SECRET=use-a-long-random-secret
+N8N_TIMEOUT_MS=5000
+```
+
+Create an n8n workflow with a **Webhook** node using `POST`, validate the `X-Aryan-Tracker-Secret` header, then branch on `{{$json.event}}` (`task.created`, `task.updated`, `task.completed`, or `task.deleted`). The task payload is in `{{$json.payload.task}}`. This lets you connect reminders, email, calendar, Slack, or daily summaries without making the app wait for n8n.

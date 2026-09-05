@@ -211,12 +211,22 @@ exports.handleAiStream = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
+  const abortController = new AbortController();
+  const withDeadline = (promise, ms = 30000) => {
+    let timer;
+    return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Jarvis request timed out')), ms); })])
+      .finally(() => clearTimeout(timer));
+  };
+  let disconnected = false;
+  req.on('close', () => { disconnected = true; abortController.abort(); });
 
   const send = (data) => {
-    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch (e) {}
+    if (disconnected || res.writableEnded) return false;
+    try { res.write(`data: ${JSON.stringify(data)}\n\n`); return true; } catch (e) { return false; }
   };
 
   try {
+    send({ type: 'status', status: 'started', message: 'Jarvis is working', done: false });
     autoLearnFromMessage(String(prompt), 'user').catch(() => {});
     const { intent, entities } = classify(String(prompt));
     const history = memoryStore.getContextString(String(sessionId));
@@ -239,7 +249,7 @@ exports.handleAiStream = async (req, res) => {
 
     if (directActionMap[intent]) {
       send({ token: '⚡ ', done: false });
-      const result = await directActionMap[intent]();
+      const result = await withDeadline(directActionMap[intent]());
       fullReply = result.reply;
       actionExecuted = result.actionExecuted;
       broadcast(WS_EVENTS.AI_ACTION, { action: actionExecuted, entities });
@@ -247,10 +257,10 @@ exports.handleAiStream = async (req, res) => {
     } else if (intent === INTENTS.SEARCH_JOBS) {
       send({ token: '🔍 Searching live job boards... ', done: false });
       const q = entities.jobQuery || '';
-      const { jobs } = await searchJobsPaginated({ query: q, limit: 6, forceRefresh: true });
+      const { jobs } = await withDeadline(searchJobsPaginated({ query: q, limit: 6, forceRefresh: false }));
       fullReply = `🔍 **Live Jobs matching "${q || 'Tech & Engineering'}":**\n\n${formatJobsForResponse(jobs)}\n\n💡 Open [/jobs](/jobs) for pagination, search & filters!`;
     } else if ([INTENTS.GREETING, INTENTS.QUERY_STATS].includes(intent)) {
-      const result = await ragQuery(String(prompt), history, learnedFacts, '', intent === INTENTS.QUERY_STATS);
+      const result = await withDeadline(ragQuery(String(prompt), history, learnedFacts, '', intent === INTENTS.QUERY_STATS));
       fullReply = result.reply;
     } else {
       // Agentic loop with streaming indicator
@@ -262,7 +272,7 @@ exports.handleAiStream = async (req, res) => {
         send({ token: `🌐 Reading ${urls.length} URL(s)... `, done: false });
       }
 
-      const agentResult = await runAgentLoop(String(prompt), history, learnedFacts);
+      const agentResult = await runAgentLoop(String(prompt), history, learnedFacts, 5, { signal: abortController.signal });
 
       if (agentResult.usedAgent && agentResult.reply) {
         fullReply = agentResult.reply;
@@ -281,19 +291,20 @@ exports.handleAiStream = async (req, res) => {
         // Fallback to RAG
         let externalContext = '';
         if (needsLiveWeb(String(prompt))) {
-          const webResults = await searchWeb(String(prompt), 5);
+          const webResults = await withDeadline(searchWeb(String(prompt), 5), 10000);
           externalContext = formatSearchResults(String(prompt), webResults);
         }
-        const r = await ragQuery(String(prompt), history, learnedFacts, externalContext, needsDatabase(String(prompt)));
+        const r = await withDeadline(ragQuery(String(prompt), history, learnedFacts, externalContext, needsDatabase(String(prompt))));
         fullReply = r.reply;
       }
     }
 
-    // Stream word-by-word with natural delay
-    const words = fullReply.split(' ');
-    for (let i = 0; i < words.length; i++) {
-      send({ token: words[i] + ' ', done: false });
-      await new Promise(r => setTimeout(r, 18 + Math.random() * 12)); // natural variation
+    // Stream immediately in small readable chunks. Artificial per-word sleeps
+    // made Jarvis feel asleep even after the model had already finished.
+    const chunks = fullReply.match(/.{1,160}(?:\s+|$)/g) || [fullReply];
+    for (const chunk of chunks) {
+      if (disconnected) return;
+      send({ token: chunk, done: false });
     }
 
     send({ token: '', done: true, intent, actionExecuted, toolsUsed, entities });
@@ -301,11 +312,11 @@ exports.handleAiStream = async (req, res) => {
     memoryStore.addTurn(String(sessionId), String(prompt), fullReply);
     persistConversation(String(sessionId), 'user', String(prompt), intent).catch(() => {});
     persistConversation(String(sessionId), 'assistant', fullReply, intent, actionExecuted).catch(() => {});
-    res.end();
+    if (!res.writableEnded) res.end();
 
   } catch (err) {
-    send({ error: err.message, done: true });
-    res.end();
+    if (!disconnected) send({ error: err.message, done: true });
+    if (!res.writableEnded) res.end();
   }
 };
 

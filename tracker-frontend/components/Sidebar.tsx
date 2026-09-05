@@ -57,6 +57,10 @@ export default function Sidebar() {
     };
   }, [mobileOpen]);
 
+  // The home route is the public portfolio. Keep workspace navigation on the
+  // tracker routes so the portfolio can breathe and read like a landing page.
+  if (pathname === '/') return null;
+
   return (
     <>
       {/* ── Desktop Sidebar ─────────────────────────── */}

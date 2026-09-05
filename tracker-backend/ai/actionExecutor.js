@@ -10,6 +10,7 @@ const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
 const vectorStore = require('./vectorStore');
 const Task = require('../models/Task');
+const { dispatchAsync } = require('../services/automationService');
 
 const dateToday = () => new Date().toISOString().split('T')[0];
 
@@ -152,6 +153,7 @@ async function createTask(entities, rawPrompt) {
   if (!title) return { reply: 'What should I add as the task?', actionExecuted: null };
   const task = await Task.create({ title, priority: entities.priority || 'medium', dueAt: entities.date ? new Date(entities.date) : null, source: 'assistant' });
   vectorStore.lastBuilt = null;
+  dispatchAsync('task.created', { task: task.toObject(), actor: 'jarvis' });
   return { reply: `✅ Task saved: **${task.title}**${task.dueAt ? `\nDue: **${task.dueAt.toLocaleDateString('en-IN')}**` : ''}\nPriority: **${task.priority}**`, actionExecuted: 'TASK_CREATED', task };
 }
 
@@ -168,6 +170,7 @@ async function completeTask(entities, rawPrompt) {
   if (!task) return { reply: `I couldn't find an open task matching **${needle || 'that'}**. Say “show my tasks” to see them.`, actionExecuted: null };
   task.status = 'completed';
   await task.save();
+  dispatchAsync('task.completed', { task: task.toObject(), actor: 'jarvis' });
   return { reply: `✅ Done — **${task.title}** is marked complete.`, actionExecuted: 'TASK_COMPLETED', task };
 }
 

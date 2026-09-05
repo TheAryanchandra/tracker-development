@@ -9,6 +9,12 @@
 
 const { loadAndBuild } = require('./documentLoader');
 const vectorStore = require('./vectorStore');
+const PROVIDER_TIMEOUT = 12000;
+const withTimeout = (promise, ms = PROVIDER_TIMEOUT) => {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('AI provider timeout')), ms); })])
+    .finally(() => clearTimeout(timer));
+};
 
 let GoogleGenerativeAI;
 try {
@@ -41,7 +47,7 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview' });
       const systemPrompt = buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts);
-      const result = await model.generateContent(systemPrompt + '\n\nUser: ' + query);
+      const result = await withTimeout(model.generateContent(systemPrompt + '\n\nUser: ' + query));
       const text = result.response.text();
       if (text) {
         return { reply: text, source: `${process.env.GEMINI_MODEL || 'Gemini'} (RAG)`, chunks: relevantChunks };
@@ -71,7 +77,9 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
           ],
           temperature: 0.7,
         }),
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT),
       });
+      if (!response.ok) throw new Error(`OpenAI HTTP ${response.status}`);
       const data = await response.json();
       if (
         data.choices &&
@@ -107,6 +115,7 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
           system: buildSystemPrompt(`${contextText}\n\n${externalContext}`, conversationHistory, learnedFacts),
           messages: [{ role: 'user', content: query }],
         }),
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT),
       });
       const data = await response.json();
       const text = data.content?.filter((part) => part.type === 'text').map((part) => part.text).join('\n');
@@ -143,6 +152,10 @@ ${conversationHistory || 'Fresh session.'}
 - Speak naturally like a brilliant peer and mentor, never like a dry FAQ robot.
 - When greeted, respond warmly and ask what's on the agenda today (DSA, jobs, system design).
 - Use live numbers from the database when asked about progress, streak, or stats.
+- Keep personal facts, tracker data, and public web data separate; never present web data as Aryan's personal fact.
+- Use only numbers present in retrieved context. If a source is missing or stale, say so instead of guessing.
+- Mention the source (memory, tracker, or web) when it matters and clearly state uncertainty.
+- Never claim a mutation succeeded unless the tool/database result confirms it.
 - Keep responses concise (2 to 4 sentences) unless a detailed breakdown is explicitly requested.
 - Support both English and Hinglish seamlessly.`;
 }

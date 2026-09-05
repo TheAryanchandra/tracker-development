@@ -44,7 +44,7 @@ class MemoryCache {
   }
 
   flush() {
-    this.store.clear;
+    this.store.clear();
     this.ttls.clear();
   }
 

@@ -22,6 +22,11 @@ import {
   RefreshCw,
   Eye,
   StopCircle,
+  Clock3,
+  Wifi,
+  WifiOff,
+  Trash2,
+  ChevronRight,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -56,6 +61,16 @@ const QUICK_ACTIONS = [
   { label: '🎯 Weak Areas', prompt: 'What are my weakest DSA topics in my tracker and what should I solve next?' },
 ];
 
+const WORKFLOW_ACTIONS = [
+  { label: 'Morning plan', prompt: 'Create my focused plan for today using my tracker data. Prioritize DSA, applications, and one high-leverage engineering task.' },
+  { label: 'Update progress', prompt: "Help me log today's progress. Ask only for the missing details, then save the update to my tracker." },
+  { label: 'Tailor resume', prompt: 'I will paste a job description next. Analyze the role and tailor my resume bullets to match it without inventing experience.' },
+  { label: 'Search jobs', prompt: 'Find current SDE 1, SWE 1, full-stack, backend, or AI engineer roles that match my profile and summarize the best fits.' },
+  { label: 'Weak DSA topics', prompt: 'Review my tracker and identify my weakest DSA topics, then give me a realistic practice sequence for this week.' },
+  { label: 'Summarize today', prompt: 'Summarize everything I completed today from my tracker and tell me the single best next action.' },
+  { label: 'Automate a task', prompt: 'Create this task and send it to my automation workflow: ' },
+];
+
 export const AiVoiceAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -69,6 +84,9 @@ export const AiVoiceAssistant: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState(false);
+  const [lastPrompt, setLastPrompt] = useState('');
+  const [elapsed, setElapsed] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -84,6 +102,8 @@ export const AiVoiceAssistant: React.FC = () => {
   const voiceUnlockedRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
+  const startedAtRef = useRef<number | null>(null);
+  const statusTimerRef = useRef<number | null>(null);
 
   // Initialize and load persistent history
   useEffect(() => {
@@ -134,6 +154,19 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, statusMessage]);
+
+  useEffect(() => {
+    if (!loading) {
+      if (statusTimerRef.current) window.clearInterval(statusTimerRef.current);
+      return;
+    }
+    startedAtRef.current = Date.now();
+    setElapsed(0);
+    statusTimerRef.current = window.setInterval(() => {
+      if (startedAtRef.current) setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+    }, 1000);
+    return () => { if (statusTimerRef.current) window.clearInterval(statusTimerRef.current); };
+  }, [loading]);
 
   // Speech Recognition Init
   useEffect(() => {
@@ -416,12 +449,11 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       const previewUrl = filePreview;
 
       if (!query && !fileToSend) return;
-      // Let a new voice turn barge in and replace a slow/in-flight answer.
-      if (loading) {
-        streamRef.current?.close();
-        streamRef.current = null;
-        setLoading(false);
-      }
+      // Keep one active turn at a time. The stop control is the explicit
+      // cancellation path, which prevents accidental duplicate writes.
+      if (loading) return;
+      setLastPrompt(query);
+      setConnectionError(false);
 
       // Reset inputs
       setInput('');
@@ -517,7 +549,14 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       let fullText = '';
 
       es.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        let data: any;
+        try {
+          data = JSON.parse(event.data);
+        } catch {
+          setConnectionError(true);
+          setStatusMessage('The agent sent an unreadable update.');
+          return;
+        }
 
         if (data.error) {
           setMessages((prev) =>
@@ -567,6 +606,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
           es.close();
           setLoading(false);
           setStatusMessage(null);
+          startedAtRef.current = null;
           speak(fullText);
         }
       };
@@ -574,7 +614,8 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
       es.onerror = () => {
         es.close();
         setLoading(false);
-        setStatusMessage(null);
+        setConnectionError(true);
+        setStatusMessage('Connection interrupted. Check the agent service and retry.');
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiId
@@ -591,6 +632,10 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
     [input, selectedFile, filePreview, loading, speak]
   );
 
+  const retryLastPrompt = useCallback(() => {
+    if (lastPrompt && !loading) handleSend(lastPrompt);
+  }, [handleSend, lastPrompt, loading]);
+
   return (
     <>
       {/* ── Floating Action Button ────────────────────────────── */}
@@ -598,6 +643,8 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
         className="jarvis-trigger group"
         onClick={() => { unlockVoice(); setOpen((o) => !o); }}
         title="Open Jarvis AI Copilot"
+        aria-label={open ? 'Close Jarvis AI Copilot' : 'Open Jarvis AI Copilot'}
+        aria-expanded={open}
       >
         {open ? (
           <X size={20} className="transition group-hover:rotate-90" />
@@ -608,7 +655,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
 
       {/* ── Chatbot Window ─────────────────────────────────────── */}
       {open && (
-        <div className="jarvis-panel flex flex-col shadow-2xl">
+        <div className="jarvis-panel flex flex-col shadow-2xl" role="dialog" aria-modal="false" aria-label="Jarvis AI Copilot">
           {/* Header */}
           <div className="jarvis-header p-3.5 border-b border-[var(--card-border)] flex items-center justify-between gap-3 bg-[var(--card-flat)]">
             <div className="flex items-center gap-2.5">
@@ -618,7 +665,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
               <div>
                 <div className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
                   Jarvis Agentic Copilot
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="jarvis-live-pill"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ready</span>
                 </div>
                 <div className="text-[10px] text-[var(--text-tertiary)] font-medium flex items-center gap-1">
                   <span>Web Search</span> • <span>Vision OCR</span> • <span>Memory</span>
@@ -632,7 +679,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
                 className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-black/5 dark:hover:bg-white/5 transition"
                 title="Clear Chat History"
               >
-                <RefreshCw size={13} />
+                <Trash2 size={13} />
               </button>
               <button
                 onClick={() => setTts((t) => {
@@ -661,7 +708,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
 
           {/* Quick Action Suggestions */}
           <div className="jarvis-quick-actions px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01] scrollbar-none">
-            {QUICK_ACTIONS.map((action) => (
+            {WORKFLOW_ACTIONS.map((action) => (
               <button
                 key={action.label}
                 onClick={() => handleSend(action.prompt)}
@@ -749,9 +796,11 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
 
             {/* Live Status Indicator */}
             {statusMessage && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 animate-pulse">
-                <Sparkles size={13} className="animate-spin" />
+              <div className={`jarvis-status ${connectionError ? 'is-error' : ''}`} role="status" aria-live="polite">
+                {connectionError ? <WifiOff size={14} /> : <Sparkles size={14} className="animate-spin" />}
                 <span>{statusMessage}</span>
+                {loading && <span className="jarvis-elapsed"><Clock3 size={12} /> {elapsed}s</span>}
+                {connectionError && <button onClick={retryLastPrompt} disabled={loading}>Retry <ChevronRight size={13} /></button>}
               </div>
             )}
 
@@ -815,6 +864,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
               onClick={() => fileInputRef.current?.click()}
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--input-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] transition"
               title="Upload image / document for OCR"
+              aria-label="Attach a file for OCR"
             >
               <Paperclip size={15} />
             </button>
@@ -828,6 +878,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
                   : 'bg-[var(--input-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)]'
               }`}
               title={listening ? 'Stop listening' : 'Speak to Jarvis'}
+              aria-label={listening ? 'Stop listening' : 'Speak to Jarvis'}
             >
               {listening ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
@@ -840,6 +891,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               placeholder={selectedFile ? 'Add notes for this file or press Send...' : 'Ask Jarvis anything, paste URLs, or give commands...'}
               className="flex-1 bg-[var(--input-bg)] border border-[var(--card-border)] text-xs text-[var(--text-primary)] placeholder-gray-400 rounded-xl px-3.5 py-2 focus:outline-none focus:border-amber-500 dark:focus:border-indigo-500 transition"
+              aria-label="Message Jarvis"
             />
 
             {/* Send / stop control */}

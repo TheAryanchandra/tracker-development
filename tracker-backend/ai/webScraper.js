@@ -14,6 +14,8 @@ const assistantCache = require('../services/assistantCache');
 
 const scrapeCache = new Map();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const FETCH_TIMEOUT = 8000;
+const inflight = new Map();
 
 /**
  * Perform live web search using DuckDuckGo HTML Lite (no API key required)
@@ -22,9 +24,20 @@ async function searchWeb(query, maxResults = 5) {
   try {
     const cacheKey = `jarvis:web:${query.toLowerCase().trim()}:${maxResults}`;
     const cached = await assistantCache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    if (cached) return typeof cached === 'string' ? JSON.parse(cached) : cached;
+    if (inflight.has(cacheKey)) return inflight.get(cacheKey);
+    const work = searchWebUncached(query, maxResults, cacheKey).finally(() => inflight.delete(cacheKey));
+    inflight.set(cacheKey, work);
+    return await work;
+  } catch (err) {
+    console.warn(`[WebSearch] Search error for "${query}":`, err.message);
+    return [];
+  }
+}
+
+async function searchWebUncached(query, maxResults, cacheKey) {
     const encoded = encodeURIComponent(query);
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encoded}`;
+    const searchUrl = `https://html.google.com/html/?q=${encoded}`;
 
     const response = await fetch(searchUrl, {
       headers: {
@@ -32,7 +45,7 @@ async function searchWeb(query, maxResults = 5) {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
-      timeout: 10000,
+      timeout: FETCH_TIMEOUT,
     });
 
     if (!response.ok) {
@@ -72,7 +85,7 @@ async function searchWeb(query, maxResults = 5) {
     if (results.length > 0) {
       const memoryText = results.map(r => `[Web Search: ${r.title}]\nSnippet: ${r.snippet}\nLink: ${r.url}`).join('\n\n');
       vectorStore.addChunk({
-        id: `websearch-${Date.now()}`,
+        id: `websearch-${Buffer.from(cacheKey).toString('base64url').slice(0, 80)}`,
         text: `Web Search Results for "${query}":\n${memoryText}`,
         metadata: { type: 'web_search', query, date: new Date().toISOString() },
       });
@@ -80,10 +93,6 @@ async function searchWeb(query, maxResults = 5) {
 
     await assistantCache.set(cacheKey, JSON.stringify(results), 600);
     return results;
-  } catch (err) {
-    console.warn(`[WebSearch] Search error for "${query}":`, err.message);
-    return [];
-  }
 }
 
 /**
@@ -176,7 +185,7 @@ async function scrapeUrl(url) {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
       },
-      timeout: 12000,
+      timeout: FETCH_TIMEOUT,
     });
 
     if (!response.ok) {
@@ -200,7 +209,7 @@ async function scrapeUrl(url) {
 
     const chunkText = `[Web Scrape: ${url}]\nType: ${urlType}\nTitle: ${content.title || ''}\nDescription: ${content.description || ''}\nBody: ${content.body || content.description || ''}`;
     vectorStore.addChunk({
-      id: `scrape-${Date.now()}`,
+      id: `scrape-${Buffer.from(url).toString('base64url').slice(0, 90)}`,
       text: chunkText,
       metadata: { type: 'web_scrape', url, urlType, date: new Date().toISOString() },
     });

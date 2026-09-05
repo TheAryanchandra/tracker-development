@@ -44,6 +44,10 @@ app.use('/api/ai',                  require('./routes/aiRoutes'));
 app.use('/api/notifications',       require('./routes/notificationRoutes'));
 app.use('/api/sheets',              require('./routes/sheetsRoutes'));
 app.use('/api/tasks',               require('./routes/taskRoutes'));
+app.get('/api/automations/status', (req, res) => {
+  const { status } = require('./services/automationService');
+  res.json({ success: true, automation: status() });
+});
 
 // Global Error Handler
 app.use((err, req, res, next) => {

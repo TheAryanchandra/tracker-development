@@ -10,14 +10,16 @@ const DsaProgress = require('../models/DsaProgress');
 const ApplicationTracker = require('../models/ApplicationTracker');
 const JarvisDocument = require('../models/JarvisDocument');
 const vectorStore = require('./vectorStore');
+let rebuildPromise = null;
 
 /**
  * Load all MongoDB data and rebuild the vector store if needed
  */
 async function loadAndBuild() {
   if (!vectorStore.needsRebuild()) return;
+  if (rebuildPromise) return rebuildPromise;
 
-  try {
+  rebuildPromise = (async () => { try {
     const [lectures, dailyLogs, dsaProgress, applications, savedDocuments] = await Promise.all([
       DsaLecture.find().maxTimeMS(2500).lean().catch(() => []),
       DailyTracker.find().sort({ date: -1 }).limit(60).maxTimeMS(2500).lean().catch(() => []),
@@ -130,7 +132,8 @@ async function loadAndBuild() {
   vectorStore.build(chunks);
   } catch (err) {
     console.warn('[DocLoader Error]:', err.message);
-  }
+  } finally { rebuildPromise = null; } })();
+  return rebuildPromise;
 }
 
 module.exports = { loadAndBuild };

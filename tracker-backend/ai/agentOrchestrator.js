@@ -131,10 +131,17 @@ const TOOLS = [
 /**
  * Execute tool calls from agent
  */
+const MUTATING_TOOLS = new Set(['log_daily_activity', 'log_application', 'create_task', 'complete_task']);
+const toolWithTimeout = (promise, ms = 9000) => {
+  let timer;
+  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Tool timeout')), ms); })])
+    .finally(() => clearTimeout(timer));
+};
+
 async function executeTool(toolName, toolArgs) {
   console.log(`[Agent] Executing tool: ${toolName}`, JSON.stringify(toolArgs).slice(0, 120));
 
-  switch (toolName) {
+  try { switch (toolName) {
     case 'search_web': {
       if (typeof webScraper.searchWeb !== 'function') {
         return 'Live web search is temporarily unavailable. I can still search your tracker database and memory.';
@@ -204,7 +211,9 @@ async function executeTool(toolName, toolArgs) {
     }
 
     default:
-      return `Unknown tool: ${toolName}`;
+      return { ok: false, error: `Unknown tool: ${toolName}` };
+  } } catch (error) {
+    return { ok: false, error: error.message, tool: toolName };
   }
 }
 
@@ -221,7 +230,8 @@ function buildAgentSystemPrompt(learnedFacts, conversationHistory) {
 - Use humor, motivation, and sharp engineering intuition. Seamlessly handle English and Hinglish.
 - If asked about live internet events or anything you don't know, use the "search_web" tool immediately.
 - Only query the live database when Aryan explicitly asks about his tracker, daily logs, streak, applications, lectures, or DSA progress. Never include database records in ordinary conversation.
-- If user mentions performing an action ("I solved 2 DP problems today"), automatically log it using the right tool.
+- If user mentions performing an action ("I solved 2 DP problems today"), log it only when the intent is unambiguous.
+- Before mutations, ask for confirmation when the request is ambiguous or could create duplicates. After a tool call, report its structured result accurately.
 
 ## What You Know About Aryan:
 ${learnedFacts || 'Aryan Chandra — Software Engineering student working on DSA mastery and tier-1 tech job search.'}
@@ -233,7 +243,7 @@ ${conversationHistory || 'Fresh session.'}`;
 /**
  * Main agent loop
  */
-async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts = '', maxSteps = 5) {
+async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts = '', maxSteps = 5, options = {}) {
   if (!process.env.GEMINI_API_KEY || !GoogleGenerativeAI) {
     return { reply: null, toolsUsed: [], usedAgent: false };
   }
@@ -270,10 +280,11 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
     let actionExecuted = null;
     let steps = 0;
 
-    let response = await chat.sendMessage(augmentedMessage);
+    let response = await toolWithTimeout(chat.sendMessage(augmentedMessage));
     let candidate = response.response;
 
     while (steps < maxSteps) {
+      if (options.signal?.aborted) throw new Error('Client disconnected');
       steps++;
       const functionCalls = candidate.functionCalls?.() || [];
 
@@ -281,9 +292,8 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
         break;
       }
 
-      const toolResults = await Promise.all(
-        functionCalls.map(async (call) => {
-          const toolResult = await executeTool(call.name, call.args);
+      const invoke = async (call) => {
+          const toolResult = await toolWithTimeout(executeTool(call.name, call.args));
           toolsUsed.push({ tool: call.name, args: call.args });
 
           if (['log_daily_activity', 'log_application', 'create_task', 'complete_task'].includes(call.name)) {
@@ -296,10 +306,12 @@ async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts 
               response: { result: toolResult },
             },
           };
-        })
-      );
+      };
+      const toolResults = MUTATING_TOOLS.size && functionCalls.some(call => MUTATING_TOOLS.has(call.name))
+        ? await functionCalls.reduce(async (promise, call) => { const results = await promise; results.push(await invoke(call)); return results; }, Promise.resolve([]))
+        : await Promise.all(functionCalls.map(invoke));
 
-      response = await chat.sendMessage(toolResults);
+      response = await toolWithTimeout(chat.sendMessage(toolResults));
       candidate = response.response;
     }
 
