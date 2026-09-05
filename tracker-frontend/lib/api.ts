@@ -213,3 +213,10 @@ export const getStreamUrl = (prompt: string, sessionId = 'default') => {
   const base = getBaseUrl();
   return `${base}/ai/stream?prompt=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}`;
 };
+
+// Contact Form API
+export const submitContactForm = async (data: { name: string; email: string; message: string }) => {
+  const res = await api.post('/contact', data);
+  return res.data;
+};
+

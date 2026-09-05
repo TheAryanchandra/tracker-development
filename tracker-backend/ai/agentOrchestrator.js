@@ -234,7 +234,7 @@ function buildAgentSystemPrompt(learnedFacts, conversationHistory) {
 - Before mutations, ask for confirmation when the request is ambiguous or could create duplicates. After a tool call, report its structured result accurately.
 
 ## What You Know About Aryan:
-${learnedFacts || 'Aryan Chandra — Software Engineering student working on DSA mastery and tier-1 tech job search.'}
+${learnedFacts || 'Aryan Chandra — Software Engineering student working on DSA mastery and tier-1 tech job search. Phone: +91 92057 23006, Email: aryanchandra3456@gmail.com.'}
 
 ## Recent Conversation History:
 ${conversationHistory || 'Fresh session.'}`;

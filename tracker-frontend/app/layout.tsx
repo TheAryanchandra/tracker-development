@@ -9,8 +9,8 @@ const AiVoiceAssistant = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: 'Aryan Tracker',
-  description: "Aryan's personal command center with an AI assistant",
+  title: 'Aryan Chandra | Software Engineer — Backend, Full Stack & AI Systems',
+  description: "Aryan Chandra's portfolio — Software Engineer with 2+ years production experience building scalable systems, distributed backends, and agentic AI applications.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,10 +19,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
-          <main className="page-main flex-1 overflow-y-auto" style={{ padding: '24px 20px', minWidth: 0 }}>
+          <main className="page-main flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
             {children}
           </main>
         </div>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Person',
+              name: 'Aryan Chandra',
+              jobTitle: 'Software Engineer',
+              telephone: '+919205723006',
+              email: 'aryanchandra3456@gmail.com',
+              url: 'https://github.com/TheAryanchandra',
+              sameAs: [
+                'https://www.linkedin.com/in/thearyanchandra/',
+                'https://github.com/TheAryanchandra',
+              ],
+            }),
+          }}
+        />
         <AiVoiceAssistant />
       </body>
     </html>

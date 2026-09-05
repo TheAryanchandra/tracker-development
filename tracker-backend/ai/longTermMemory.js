@@ -135,7 +135,7 @@ async function getLearnedFactsContext() {
     memoryCache.set('learned_facts_str', result, 3600);
     return result;
   } catch (err) {
-    return memoryCache.get('learned_facts_str') || 'Aryan Chandra — Software Engineering student working on DSA mastery and tech job search.';
+    return memoryCache.get('learned_facts_str') || 'Aryan Chandra — Software Engineering student working on DSA mastery and tech job search. Phone: +91 92057 23006, Email: aryanchandra3456@gmail.com.';
   }
 }
 
