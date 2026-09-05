@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import {
   ArrowUpRight,
   BrainCircuit,
@@ -39,6 +40,7 @@ import {
   Rocket,
   Bot,
   BarChart3,
+  CalendarCheck,
   Clock3,
   Users,
   Package,
@@ -47,6 +49,12 @@ import {
   ExternalLink,
   Mail,
   Phone,
+  ChevronDown,
+  LayoutDashboard,
+  Youtube,
+  Briefcase,
+  Menu,
+  UploadCloud,
 } from 'lucide-react';
 
 import { fetchDashboardStats, submitContactForm } from '@/lib/api';
@@ -66,10 +74,22 @@ const defaultStats = {
 
 const impactMetrics = [
   {
+    value: '3 Apps',
+    label: 'Play Store & App Store',
+    detail: 'Fonofy, Golf Fed, Carenzy',
+    icon: Smartphone,
+  },
+  {
     value: '50K+',
     label: 'Daily Transactions',
     detail: 'Production commerce platform',
     icon: Activity,
+  },
+  {
+    value: '1,000+',
+    label: 'Listings & Golfers',
+    detail: 'Live mobile active users',
+    icon: Users,
   },
   {
     value: '99.9%',
@@ -84,22 +104,10 @@ const impactMetrics = [
     icon: Zap,
   },
   {
-    value: '200K+',
-    label: 'SKUs Optimized',
-    detail: 'Across 5 warehouses',
-    icon: Package,
-  },
-  {
     value: '150+',
     label: 'REST APIs',
     detail: 'Payment & order workflows',
     icon: Network,
-  },
-  {
-    value: '92',
-    label: 'Lighthouse Score',
-    detail: 'Improved from 65',
-    icon: Rocket,
   },
 ];
 
@@ -109,7 +117,7 @@ const projects = [
     title: 'AI Engineering Knowledge Copilot',
     type: 'Enterprise RAG / Backend Systems',
     description:
-      'Enterprise knowledge retrieval platform built with Java 21, Spring Boot and Spring AI. Designed a JWT-secured RBAC API gateway and event-driven Kafka retrieval pipeline with Qdrant vector search, PostgreSQL and Redis.',
+      'Enterprise knowledge retrieval platform built with Java 21, Spring Boot and Spring AI. Designed a JWT-secured RBAC API gateway and event-driven Kafka retrieval pipeline with Qdrant vector search, PostgreSQL and Redis (HNSW vector indexing, BM25 + vector-score hybrid search) with sub-200ms latency.',
     stack: [
       'Java 21',
       'Spring Boot',
@@ -123,14 +131,14 @@ const projects = [
     href: 'https://github.com/TheAryanchandra/AI-Copilot',
     icon: BrainCircuit,
     featured: true,
-    metrics: ['JWT + RBAC', 'Kafka Events', 'Hybrid Search', 'HNSW Indexing'],
+    metrics: ['JWT + RBAC', 'Kafka Events', 'Hybrid Search', 'Sub-200ms'],
   },
   {
     number: '02',
     title: 'Stadium Pulse — Crowd Intelligence',
-    type: 'Agentic AI / Google Cloud',
+    type: 'Agentic AI / Google Cloud Premier League',
     description:
-      'Agentic crowd-intelligence system built in Python with LangGraph multi-agent orchestration, Gemini API, structured Pydantic outputs and OpenAI embeddings for real-time semantic analysis and sentiment tracking.',
+      'Agentic crowd-intelligence system built in Python with LangGraph multi-agent orchestration workflows calling Gemini API with prompt-engineered, structured Pydantic output, plus OpenAI embeddings for real-time semantic analysis and pattern detection. Deployed on Google Cloud Run at sub-500ms latency. Recognized as top builder in Google Cloud Agentic Premier League (April 2026).',
     stack: ['Python', 'LangGraph', 'Gemini API', 'OpenAI', 'Pydantic', 'Cloud Run'],
     href: 'https://github.com/TheAryanchandra/agentic-premier-league',
     icon: Globe2,
@@ -142,8 +150,8 @@ const projects = [
     title: 'GiantCell Healthcare Commerce Platform',
     type: 'Full-Stack Commerce / Distributed Backend',
     description:
-      'High-throughput healthcare commerce platform handling pharmacy, diagnostics, and consultations. Shipped 150+ REST APIs, automated Razorpay payments, and distributed inventory across 5 warehouses with sub-second lookups.',
-    stack: ['React.js', 'Node.js', 'Express.js', 'MongoDB', 'Redis', 'AWS EC2/S3', 'Docker'],
+      'Production MERN & Java healthcare commerce platform handling pharmacy, diagnostics, and consultations on AWS (EC2, S3). Shipped 150+ REST APIs, automated Razorpay payments, and engineered distributed inventory management across 5 warehouses and 200K+ SKUs scaling to 50K+ daily transactions at 99.9% uptime.',
+    stack: ['React.js', 'Node.js', 'Express.js', 'Java Servlets', 'MongoDB', 'Redis', 'AWS EC2/S3'],
     href: 'https://github.com/TheAryanchandra',
     icon: DatabaseZap,
     featured: true,
@@ -151,6 +159,66 @@ const projects = [
   },
   {
     number: '04',
+    title: 'Fonofy — Mobile Phone Marketplace',
+    type: 'Mobile Engineering / React Native & Android/iOS',
+    description:
+      'Built and shipped Fonofy, a cross-platform mobile marketplace app (React Native, JavaScript/TypeScript) live with 1,000+ product listings for buying and selling phones — engineered listings, search, end-to-end buyer-seller transactions, and in-app messaging; released to production on Android (Google Play Store) and iOS (App Store).',
+    stack: [
+      'React Native',
+      'JavaScript',
+      'TypeScript',
+      'Android',
+      'iOS',
+      'REST APIs',
+      'In-App Chat',
+    ],
+    href: 'https://github.com/TheAryanchandra',
+    icon: Smartphone,
+    featured: true,
+    metrics: ['Play Store & App Store', '1,000+ Listings', 'Buyer-Seller Txns', 'In-App Chat'],
+  },
+  {
+    number: '05',
+    title: 'Delhi Golf Federation Mobile App',
+    type: 'Mobile Engineering / Flutter, Dart & Location Tracking',
+    description:
+      'Developed the official Delhi Golf Federation mobile app (Flutter, Dart), serving 1,000+ concurrent member players — built live scorecards, membership management, real-time GPS player-location tracking, Razorpay-integrated payments, and an in-app wallet for membership/booking fees; live on Android (Google Play Store) and iOS (App Store).',
+    stack: [
+      'Flutter',
+      'Dart',
+      'Android',
+      'iOS',
+      'Razorpay SDK',
+      'GPS Location',
+      'In-App Wallet',
+    ],
+    href: 'https://github.com/TheAryanchandra',
+    icon: Smartphone,
+    featured: true,
+    metrics: ['1,000+ Players', 'GPS Tracking', 'Razorpay Wallet', 'Play & App Store'],
+  },
+  {
+    number: '06',
+    title: 'Carenzy — Car Bidding & Marketplace App',
+    type: 'Mobile Engineering / Flutter & Native Swift Module',
+    description:
+      'Built Carenzy, a car buy-and-sell marketplace app (Flutter, Dart) featuring VIN-verified vehicle listings and a real-time WebSocket bidding engine for live auctions; engineered a native Swift iOS module for camera-based VIN/registration scanning — live on Android (Google Play Store) and iOS (App Store).',
+    stack: [
+      'Flutter',
+      'Dart',
+      'Swift',
+      'WebSockets',
+      'Android',
+      'iOS',
+      'Camera VIN Scan',
+    ],
+    href: 'https://github.com/TheAryanchandra',
+    icon: Smartphone,
+    featured: true,
+    metrics: ['Live Bidding Engine', 'Native Swift Module', 'VIN Camera Scan', 'Play & App Store'],
+  },
+  {
+    number: '07',
     title: 'Jarvis — Personal SDE Command Copilot',
     type: 'Developer Platform / Full-Stack & RAG',
     description:
@@ -165,101 +233,85 @@ const projects = [
 
 const capabilities = [
   {
-    label: 'Backend Engineering',
+    label: 'Backend & Systems Engineering',
     icon: Server,
     description:
-      'Production APIs, authentication, distributed workflows and real-time services.',
+      'Production APIs, authentication, microservices, distributed workflows and real-time services.',
     items:
-      'Node.js · Express.js · Java · Spring Boot · Servlets · REST APIs · WebSockets',
+      'Java (Spring Boot, Servlets) · Node.js · Express.js · REST APIs · WebSockets · Kafka · JWT · RBAC',
   },
   {
-    label: 'Frontend Engineering',
+    label: 'Full-Stack Web Engineering',
     icon: Code2,
     description:
-      'Responsive, performant interfaces with modern React architecture.',
+      'High-performance interfaces with modern React, Next.js, and Redux state architecture.',
     items:
-      'React.js · Next.js · TypeScript · JavaScript · Redux · Tailwind CSS',
+      'React.js · Next.js · TypeScript · JavaScript · Redux · Tailwind CSS · D3.js · HTML5/CSS3',
+  },
+  {
+    label: 'AI & ML Engineering',
+    icon: Cpu,
+    description:
+      'Production RAG platforms, multi-agent workflows, Gemini & OpenAI APIs, and ML pipelines.',
+    items:
+      'LangGraph · Gemini API · LangChain · RAG · Qdrant · XGBoost · Scikit-Learn · OpenAI Embeddings',
   },
   {
     label: 'Databases & Caching',
     icon: Database,
     description:
-      'Data modeling, aggregation, indexing and low-latency caching strategies.',
+      'Data modeling, aggregation pipelines, vector indexing and low-latency multi-layer caching.',
     items:
-      'MongoDB · PostgreSQL · MySQL · Redis · Firestore · Aggregation · Indexing',
+      'MongoDB · Redis · PostgreSQL · MySQL · Firestore · HNSW Indexing · BM25 Hybrid Search',
   },
   {
-    label: 'Cloud & DevOps',
+    label: 'Cloud & DevOps Infrastructure',
     icon: Cloud,
     description:
-      'Deployment, automation and production infrastructure.',
+      'Production cloud deployments, containerization, and automated CI/CD release pipelines.',
     items:
-      'AWS EC2 · AWS S3 · Google Cloud Run · Docker · GitHub Actions CI/CD',
-  },
-  {
-    label: 'System Design',
-    icon: Layers,
-    description:
-      'Scalable architectures designed around reliability and performance.',
-    items:
-      'Microservices · API Gateway · Caching · Load Balancing · Event-Driven Systems',
-  },
-  {
-    label: 'AI / ML Engineering',
-    icon: Cpu,
-    description:
-      'Production-oriented AI systems rather than isolated model experiments.',
-    items:
-      'LangGraph · Gemini API · LangChain · RAG · Qdrant · XGBoost · Scikit-Learn',
-  },
-  {
-    label: 'Security',
-    icon: ShieldCheck,
-    description:
-      'Secure APIs and access-control patterns for application backends.',
-    items:
-      'JWT · OAuth · RBAC · Authentication · Authorization · Session Management',
+      'AWS (EC2, S3) · Google Cloud Run · Docker · GitHub Actions CI/CD · Jest/Supertest',
   },
   {
     label: 'Mobile Engineering',
     icon: Smartphone,
     description:
-      'Cross-platform applications shipped to real users and app stores.',
+      'Cross-platform & native mobile apps released live to Google Play Store & Apple App Store.',
     items:
-      'React Native · Flutter · Swift · Dart · Firebase · Razorpay SDK',
+      'React Native · Flutter · Swift (native iOS modules) · Dart · Play Store & App Store Deployment',
   },
 ];
 
 const architectureItems = [
   {
-    icon: Workflow,
-    title: 'API Design',
-    description: 'RESTful services, authentication and third-party integrations',
-  },
-  {
-    icon: DatabaseZap,
-    title: 'Data Layer',
-    description: 'Indexes, aggregation pipelines, caching and query optimization',
+    icon: Server,
+    title: 'Backend Systems & API Gateway',
+    description: 'Java Spring Boot & Node.js RESTful microservices, JWT/RBAC security, and third-party API integrations',
   },
   {
     icon: Network,
-    title: 'Distributed Systems',
-    description: 'Kafka events, WebSockets and service-oriented architecture',
+    title: 'Distributed Events & RAG',
+    description: 'Kafka event-driven retrieval, vector search with Qdrant (HNSW indexing), and LangGraph multi-agent orchestration',
   },
   {
-    icon: ShieldCheck,
-    title: 'Security',
-    description: 'JWT, OAuth, RBAC and secure session management',
+    icon: DatabaseZap,
+    title: 'Data & Performance Layer',
+    description: 'MongoDB aggregation pipelines, multi-layer Redis caching, query indexing, and 70% latency reduction',
+  },
+  {
+    icon: Smartphone,
+    title: 'Cross-Platform & Native Mobile',
+    description: 'React Native & Flutter mobile apps with native Swift iOS modules and store releases',
   },
   {
     icon: GitBranch,
-    title: 'Delivery',
-    description: 'Automated testing, CI/CD and deployment workflows',
+    title: 'DevOps & CI/CD Pipelines',
+    description: 'Automated Jest/Supertest testing, GitHub Actions CI/CD with automated rollbacks, AWS EC2/S3 & Cloud Run',
   },
   {
-    icon: BarChart3,
-    title: 'Observability',
-    description: 'Real-time monitoring, metrics and operational visibility',
+    icon: ShieldCheck,
+    title: 'Security & Auth',
+    description: 'JWT, OAuth, RBAC, session management, and PCI-compliant Razorpay payment automation',
   },
 ];
 
@@ -267,49 +319,50 @@ const experience = [
   {
     date: 'SEP 2024 — NOW',
     company: 'Ta Rule Technology Pvt. Ltd.',
-    role: 'Software Engineer — Full Stack, Java & AI Systems',
+    role: 'Software Engineer – Full Stack, Backend, Java & Mobile Systems',
     location: 'Noida, Uttar Pradesh',
     description:
-      'Building and shipping production software across full-stack commerce, backend systems, mobile applications and AI-powered platforms.',
+      'Architecting and shipping production software across full-stack healthcare commerce, distributed backend microservices, mobile applications (Android & iOS), and AI platforms.',
     bullets: [
-      'Architected and shipped a production MERN healthcare commerce platform using React, Node.js, Express, MongoDB and Redis on AWS EC2/S3.',
-      'Integrated 150+ REST APIs for Razorpay automation and order orchestration, supporting 50K+ daily transactions with 99.9% uptime.',
-      'Engineered distributed inventory management across 5 warehouses and 200K+ SKUs using MongoDB aggregation, Redis caching and query indexing.',
-      'Reduced backend latency by 30%, from 2.1s to 1.47s, while achieving sub-second query response.',
-      'Improved Lighthouse performance from 65 to 92 using Redux optimization, code splitting and lazy loading.',
-      'Built Jest/Supertest automated testing with GitHub Actions CI/CD and automated rollback workflows.',
-      'Extended the Node.js/Express backend with Java Servlets for secure sessions, authentication and legacy admin integrations.',
+      'Architected and shipped a production MERN healthcare commerce platform (React, Node.js, Express, MongoDB, Redis) on AWS (EC2, S3) to give the business a reliable, transaction-safe payment and order backbone — integrated 150+ REST APIs for Razorpay automation and order orchestration, scaling to 50K+ daily transactions at 99.9% uptime.',
+      'Engineered a distributed inventory system to eliminate manual, error-prone stock tracking across 5 warehouses and 200K+ SKUs, using MongoDB aggregation pipelines, Redis caching, and query indexing — cut backend latency 30% (2.1s → 1.47s) while achieving sub-second query response.',
+      'Identified underperforming frontend load times (Lighthouse score of 65) and elevated performance to Lighthouse 92 through Redux state optimization, code splitting, and lazy loading, directly improving page speed for end users.',
+      'Built a Jest/Supertest automated test suite with GitHub Actions CI/CD and automated rollback to strengthen release confidence, reducing defects reaching production and enabling faster, safer deployments.',
+      'Extended the Node.js/Express backend with Java Servlets to add secure session management, authentication, and third-party API integrations for legacy admin workflows running alongside the core MERN stack.',
+      'Built and shipped production mobile apps (Fonofy, Delhi Golf Federation, Carenzy) live on Android (Google Play Store) and iOS (App Store) using React Native, Flutter, Dart, and native Swift iOS modules.',
     ],
     tags: [
       'Node.js',
       'React',
-      'Java',
+      'Java (Spring Boot / Servlets)',
       'MongoDB',
       'Redis',
-      'AWS',
-      'CI/CD',
+      'AWS (EC2, S3)',
+      'GitHub Actions CI/CD',
+      'React Native',
+      'Flutter',
+      'Swift',
     ],
   },
   {
     date: 'JUN 2024 — AUG 2024',
-    company: 'Indian Oil Corporation Limited',
+    company: 'Indian Oil Corporation Limited (IOCL)',
     role: 'Software Engineer Intern',
     location: 'New Delhi, India',
     description:
       'Worked on forecasting, real-time monitoring and ML inference optimization for operational network data.',
     bullets: [
-      'Designed and trained an XGBoost regression model to replace manual bandwidth monitoring, achieving 85% forecasting accuracy.',
-      'Built a feature pipeline using 7/14/30-day lags, seasonality and trend decomposition to strengthen model signal quality.',
-      'Built a real-time model-monitoring layer using React.js, D3.js and Node.js WebSockets.',
-      'Optimized an ML inference pipeline using MongoDB aggregation, Redis caching and indexed queries.',
-      'Reduced end-to-end inference latency by 70%, from 8.2s to 2.4s.',
+      'Designed and trained an XGBoost regression model to replace manual bandwidth monitoring across network nodes, achieving 85% forecasting accuracy — deployed automated inference with Redis caching and anomaly detection to eliminate manual monitoring entirely.',
+      'Engineered a feature pipeline (7/14/30-day lags, seasonality, trend decomposition) to strengthen model signal quality, accelerating operational decision-making for the forecasting team.',
+      'Built a real-time model-monitoring layer (React.js/D3.js, Node.js WebSockets) surfacing live predictions across concurrent forecasting streams, shortening time-to-detect for anomalies.',
+      'Optimized an ML inference pipeline suffering 8.2s end-to-end latency using MongoDB aggregation, multi-layer Redis caching, and indexed queries — cut latency 70% (8.2s → 2.4s) while sustaining high uptime under production load.',
     ],
     tags: [
       'Python',
       'XGBoost',
-      'React',
+      'React.js',
       'D3.js',
-      'Node.js',
+      'Node.js WebSockets',
       'MongoDB',
       'Redis',
     ],
@@ -449,17 +502,18 @@ export default function PortfolioPage() {
         aria-label="Portfolio navigation"
       >
         <a
-          className="portfolio-mark group"
+          className="portfolio-mark group flex items-center gap-2.5"
           href="#top"
         >
-          <span className="group-hover:scale-105 transition-transform">
+          <span className="w-8 h-8 rounded-xl bg-[var(--accent)] text-white font-extrabold flex items-center justify-center text-xs shadow-md group-hover:scale-105 transition-transform flex-shrink-0">
             AC
           </span>
-
-          <strong>Aryan Chandra</strong>
+          <strong className="hidden sm:inline font-extrabold text-sm text-[var(--text-primary)] whitespace-nowrap">
+            Aryan Chandra
+          </strong>
         </a>
 
-        <div className="portfolio-links hidden lg:flex">
+        <div className="portfolio-links hidden lg:flex items-center gap-6">
           <a href="#work">Work</a>
           <a href="#experience">Experience</a>
           <a href="#stack">Stack</a>
@@ -467,28 +521,82 @@ export default function PortfolioPage() {
           <a href="#contact">Contact</a>
         </div>
 
-        <div className="portfolio-nav-actions">
+        <div className="portfolio-nav-actions flex items-center gap-2">
+          {/* DSA Progress Direct Badge */}
+          <Link
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold text-xs hover:bg-amber-500/20 transition shadow-sm whitespace-nowrap"
+            href="/dsa-progress"
+          >
+            <BarChart3 size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span className="inline">DSA Progress</span>
+          </Link>
+
+          {/* Daily Log Direct Badge */}
+          <Link
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold text-xs hover:bg-amber-500/20 transition shadow-sm whitespace-nowrap"
+            href="/daily-tracker"
+          >
+            <CalendarCheck size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span className="hidden sm:inline">Daily Log</span>
+          </Link>
+
+          {/* Apps Dropdown Menu (Desktop) */}
+          <div className="relative group hidden md:block">
+            <button
+              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[var(--card-flat)] border border-[var(--card-border)] text-[var(--text-primary)] text-xs font-bold hover:border-amber-500 transition whitespace-nowrap"
+              aria-label="Open application modules menu"
+            >
+              <LayoutDashboard size={14} className="flex-shrink-0" />
+              <span>Apps</span>
+              <ChevronDown size={12} className="flex-shrink-0" />
+            </button>
+            <div className="absolute right-0 top-full mt-1.5 w-52 py-2 bg-[var(--modal-bg)] border border-[var(--card-border)] rounded-2xl shadow-xl backdrop-blur-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all z-50 space-y-1 px-1.5">
+              <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-tertiary)]">
+                Tracker Modules
+              </div>
+              <Link href="/dsa-progress" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <BarChart3 size={15} /> DSA Progress
+              </Link>
+              <Link href="/daily-tracker" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <CalendarCheck size={15} /> Daily Log
+              </Link>
+              <Link href="/dsa-lectures" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <Youtube size={15} /> DSA Lectures
+              </Link>
+              <Link href="/applications" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <Briefcase size={15} /> Applications
+              </Link>
+              <Link href="/jobs" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <BriefcaseBusiness size={15} /> Jobs
+              </Link>
+              <Link href="/admin" className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-300 transition">
+                <UploadCloud size={15} /> Admin &amp; Sheet Sync
+              </Link>
+            </div>
+          </div>
+
+          {/* Resume Button */}
           <a
-            className="nav-system-link !border-[var(--accent)] !bg-[var(--accent)] !text-black !font-semibold hover:brightness-110 shadow-sm transition-all"
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[var(--accent)] text-black font-bold text-xs hover:brightness-110 shadow-sm transition whitespace-nowrap"
             href="https://drive.google.com/file/d/16_xFWEtL5LRA6mamE2wlLHSLALQpTltm/view?usp=sharing"
             target="_blank"
             rel="noreferrer"
           >
-            <FileText size={14} />
-            Resume
-            <ArrowUpRight size={13} />
-          </a>
-
-          <a
-            className="nav-system-link"
-            href="#system"
-          >
-            <Terminal size={15} />
-            System
-            <ArrowUpRight size={13} />
+            <FileText size={14} className="flex-shrink-0" />
+            <span className="hidden sm:inline">Resume</span>
+            <ArrowUpRight size={13} className="flex-shrink-0" />
           </a>
 
           <ThemeToggle />
+
+          {/* Mobile Navigation Drawer Trigger */}
+          <button
+            onClick={() => window.dispatchEvent(new Event('atlas:open-mobile-menu'))}
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--card-flat)] border border-[var(--card-border)] text-[var(--text-primary)] hover:border-amber-500 transition flex-shrink-0"
+            aria-label="Open navigation menu"
+          >
+            <Menu size={18} />
+          </button>
         </div>
       </nav>
 
@@ -513,32 +621,32 @@ export default function PortfolioPage() {
             className="portfolio-kicker"
           >
             <span className="live-dot animate-pulse" />
-            SOFTWARE ENGINEER / SDE 1 / SWE 1
+            SOFTWARE ENGINEER / SDE 1 / SWE 1 / FULL-STACK &amp; BACKEND / AI
           </motion.div>
 
           <motion.h1
             variants={fadeUp}
             className="bg-clip-text text-transparent bg-gradient-to-r from-gray-950 via-gray-700 to-gray-500 dark:from-white dark:via-gray-200 dark:to-gray-500"
           >
-            Software engineer
+            Software Engineer
             <br />
 
             <em className="text-[var(--accent)] drop-shadow-md">
-              building scalable systems
+              building high-throughput backends &amp; AI platforms
             </em>
 
             <br />
 
-            that ship and perform.
+            that scale in production.
           </motion.h1>
 
           <motion.p
             variants={fadeUp}
             className="hero-lede text-lg md:text-xl"
           >
-            Full-stack and backend engineer specializing in
-            Java, Spring Boot, Node.js, React, distributed
-            systems, cloud infrastructure and production AI.
+            Software Engineer specializing in Java, Spring Boot, Node.js, React,
+            distributed systems, RAG &amp; Agentic AI, cross-platform mobile apps
+            (React Native, Flutter, Swift), and high-throughput cloud infrastructure.
           </motion.p>
 
           <motion.div
@@ -555,7 +663,7 @@ export default function PortfolioPage() {
 
             <span className="availability">
               <i />
-              Open to SDE 1 / SWE 1 opportunities
+              Open to SDE 1 / SWE 1 / Full-Stack / Backend / AI &amp; Mobile roles
             </span>
           </motion.div>
 
@@ -564,13 +672,13 @@ export default function PortfolioPage() {
             className="flex flex-wrap gap-3 mt-7"
           >
             {[
-              'Backend',
-              'Full Stack',
-              'Java',
-              'Spring Boot',
-              'Node.js',
-              'React',
-              'AI Systems',
+              'Software Engineer',
+              'Full-Stack (MERN)',
+              'Java & Spring Boot',
+              'Agentic AI & RAG',
+              'Node.js & React',
+              'Mobile (Android & iOS)',
+              'Cloud & DevOps',
             ].map((item) => (
               <span
                 key={item}
@@ -684,9 +792,9 @@ export default function PortfolioPage() {
 
           <p>
             I focus on engineering systems that are
-            reliable in production — from APIs and
-            databases to distributed workflows and
-            AI-powered applications.
+            reliable in production — from cross-platform mobile apps
+            (React Native, Flutter, Swift) live on Play Store &amp; App Store to
+            scalable backends and AI-powered applications.
           </p>
 
           <div className="grid grid-cols-2 gap-3 mt-6">
@@ -695,7 +803,7 @@ export default function PortfolioPage() {
                 CURRENT FOCUS
               </span>
               <strong className="text-sm">
-                Backend + Full Stack
+                Mobile (Android/iOS) + Backend
               </strong>
             </div>
 
@@ -704,7 +812,7 @@ export default function PortfolioPage() {
                 SPECIALIZATION
               </span>
               <strong className="text-sm">
-                Java + AI Systems
+                React Native / Flutter / Swift
               </strong>
             </div>
           </div>
@@ -815,24 +923,24 @@ export default function PortfolioPage() {
         >
           {[
             {
+              icon: Smartphone,
+              title: 'Mobile App Delivery',
+              text: 'Shipped 3 production mobile apps (Fonofy, Delhi Golf Fed, Carenzy) live on Google Play Store & iOS App Store.',
+            },
+            {
               icon: BriefcaseBusiness,
               title: 'Production Experience',
-              text: 'Experience building and shipping systems used in real business workflows.',
+              text: 'Experience building and shipping production mobile apps, backends, and full-stack enterprise systems.',
             },
             {
               icon: DatabaseZap,
               title: 'Performance Mindset',
-              text: 'Hands-on optimization across APIs, databases, caching and frontend performance.',
-            },
-            {
-              icon: Boxes,
-              title: 'System Thinking',
-              text: 'Comfortable reasoning about APIs, services, queues, caching, databases and scale.',
+              text: 'Hands-on optimization across mobile apps, APIs, databases, caching and ML inference pipelines.',
             },
             {
               icon: Bot,
-              title: 'AI Engineering',
-              text: 'Builds production-oriented RAG and agentic systems rather than only AI demos.',
+              title: 'AI & Mobile Engineering',
+              text: 'Combines native & cross-platform mobile apps with production-oriented RAG and agentic AI systems.',
             },
           ].map(
             ({
@@ -881,15 +989,15 @@ export default function PortfolioPage() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-widest text-[var(--accent)]">
-                Recruiter Fast-Track / 2+ Years Experience
+                Recruiter Fast-Track / Product-Based Companies, MNCs, GCCs &amp; Startups
               </span>
             </div>
             <h3 className="text-lg md:text-xl font-bold">
-              Looking for a high-velocity Backend or Full-Stack Engineer?
+              Looking for a high-velocity SDE 1 / SWE 1, Full-Stack, Backend, or AI Engineer?
             </h3>
             <p className="text-xs md:text-sm opacity-70 max-w-2xl">
-              Production-tested in Java, Spring Boot, Node.js, distributed databases, and Agentic AI.
-              Available immediately with a verified track record of 50K+ daily transactions and sub-second query pipelines.
+              Production-tested in Java 21, Spring Boot, Node.js, Express, React, Kafka, Qdrant RAG, Agentic AI (LangGraph/Gemini), AWS, and Mobile Development (React Native &amp; Flutter).
+              Available immediately with a verified track record of scaling platforms to 50K+ daily transactions and sub-200ms query pipelines.
             </p>
           </div>
 
@@ -1148,20 +1256,20 @@ export default function PortfolioPage() {
           SYSTEM DESIGN
       ========================================================= */}
 
-      <section className="portfolio-section">
+      <section className="portfolio-section my-8 md:my-14">
         <motion.div
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="section-intro compact"
+          className="section-intro compact mb-10 md:mb-14"
         >
-          <div className="portfolio-kicker">
+          <div className="portfolio-kicker mb-3">
             SYSTEM DESIGN
             <span>/ HOW I THINK ABOUT SOFTWARE</span>
           </div>
 
-          <h2>
+          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
             From request
             <br />
             <em>to reliable system.</em>
@@ -1173,7 +1281,7 @@ export default function PortfolioPage() {
           whileInView="show"
           viewport={{ once: true }}
           variants={staggerContainer}
-          className="grid md:grid-cols-2 xl:grid-cols-3 gap-4"
+          className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8"
         >
           {architectureItems.map(
             ({
@@ -1184,23 +1292,27 @@ export default function PortfolioPage() {
               <motion.div
                 variants={fadeUp}
                 whileHover={{
-                  y: -4,
+                  y: -5,
                 }}
                 key={title}
-                className="apple-card p-6 rounded-3xl group relative overflow-hidden"
+                className="apple-card p-7 md:p-8 rounded-3xl group relative overflow-hidden flex flex-col justify-between transition-all duration-300 border border-[var(--card-border)] bg-[var(--card-bg)] hover:border-[var(--accent)] hover:shadow-xl"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-glow)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                <div className="relative z-10">
-                  <Icon
-                    size={21}
-                    className="text-[var(--accent)] mb-5 group-hover:scale-110 transition-transform"
-                  />
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-glow)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                <div className="relative z-10 flex flex-col h-full justify-between">
+                  <div>
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--accent-glow)] border border-amber-500/20 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-amber-500/20 transition-all duration-300">
+                      <Icon
+                        size={22}
+                        className="text-[var(--accent)]"
+                      />
+                    </div>
 
-                  <h3 className="font-bold group-hover:text-[var(--accent)] transition-colors">
-                    {title}
-                  </h3>
+                    <h3 className="text-lg md:text-xl font-extrabold tracking-tight group-hover:text-[var(--accent)] transition-colors leading-snug">
+                      {title}
+                    </h3>
+                  </div>
 
-                  <p className="text-sm opacity-65 mt-2 leading-relaxed">
+                  <p className="text-xs md:text-sm text-[var(--text-secondary)] mt-4 leading-relaxed font-medium opacity-85">
                     {description}
                   </p>
                 </div>
@@ -1503,7 +1615,7 @@ export default function PortfolioPage() {
             <div className="section-intro compact mb-6">
               <div className="portfolio-kicker">
                 GET IN TOUCH
-                <span>/ SDE 1 / SWE 1 / ENGINEERING</span>
+                <span>/ ANDROID &amp; IOS MOBILE / FULL-STACK / SDE 1</span>
               </div>
 
               <h2>
@@ -1513,8 +1625,8 @@ export default function PortfolioPage() {
               </h2>
 
               <p className="opacity-75 mt-4 leading-relaxed">
-                Hiring for backend, full-stack, platform, or AI engineering?
-                Have an interesting problem or looking for someone who ships reliable code?
+                Hiring for Android &amp; iOS mobile development (React Native, Flutter, Swift),
+                backend, full-stack, or AI engineering? Have an interesting problem or looking for someone who ships reliable code?
                 Let&apos;s connect.
               </p>
             </div>
@@ -1637,7 +1749,7 @@ export default function PortfolioPage() {
             <div className="p-4 rounded-2xl bg-[var(--card-flat)] border border-[var(--card-border)] space-y-2 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span>Available for SDE 1 / SWE 1 / Backend roles</span>
+                <span>Available for SDE 1 / SWE 1 / Full-Stack / Backend / AI &amp; Mobile roles</span>
               </div>
               <div className="text-[var(--text-secondary)] flex items-center gap-2 pl-4">
                 <Phone size={13} />

@@ -94,7 +94,7 @@ export default function DailyTrackerPage() {
       {/* Table */}
       <div className="apple-card overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[var(--text-primary)]">
+          <table className="w-full min-w-[760px] text-left text-xs text-[var(--text-primary)]">
             <thead className="bg-black/[0.03] dark:bg-white/[0.02] text-[var(--text-secondary)] font-bold uppercase tracking-wider text-[10px] border-b border-[var(--card-border)]">
               <tr>
                 <th className="p-3.5">Date</th>

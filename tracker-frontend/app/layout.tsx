@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
+import Navbar from '@/components/Navbar';
 
 const AiVoiceAssistant = dynamic(
   () => import('@/components/AiVoiceAssistant').then((mod) => mod.AiVoiceAssistant),
@@ -9,8 +10,13 @@ const AiVoiceAssistant = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: 'Aryan Chandra | Software Engineer — Backend, Full Stack & AI Systems',
-  description: "Aryan Chandra's portfolio — Software Engineer with 2+ years production experience building scalable systems, distributed backends, and agentic AI applications.",
+  title: 'Aryan Chandra | Software Engineer (SDE 1 / SWE 1) — Full-Stack, Backend, AI & Mobile',
+  description: "Aryan Chandra's portfolio — Software Engineer specializing in Java 21, Spring Boot, Node.js, React, distributed backends, RAG & Agentic AI, and mobile apps for Product-Based Companies, MNCs, GCCs, and Startups.",
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,8 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
-          <main className="page-main flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
-            {children}
+          <main className="page-main flex-1 overflow-y-auto flex flex-col" style={{ minWidth: 0 }}>
+            <Navbar />
+            <div className="flex-1">
+              {children}
+            </div>
           </main>
         </div>
         <script
