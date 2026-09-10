@@ -4,6 +4,57 @@
 
 ---
 
+## 👤 Profile / Portfolio Summary
+
+**Aryan Chandra** is a software engineer, backend-focused full-stack developer, and AI product builder targeting roles such as **Software Engineer, SDE-1, SWE-1, Full Stack Engineer, AI Engineer, and Backend Engineer** across **product-based companies, MNCs, GCCs, and startups**.
+
+This repository is the engineering portfolio behind a full-stack and AI-first software profile. It demonstrates **production-minded software delivery**, **mobile app engineering**, **cloud deployment**, **AI-powered workflows**, and **high-throughput backend/product systems**. The project combines deep product thinking with a modern engineering toolkit that can support the role requirements of product companies, MNCs, GCCs, and startup ecosystems.
+
+### Resume-Ready Hiring Position
+
+A software engineer focused on shipping reliable production systems with strong foundations in:
+
+- **Full-stack engineering** using Next.js, React, Node.js, Express, TypeScript, and JavaScript.
+- **Backend engineering** using REST APIs, event-driven services, middleware architecture, database design, authentication, and data pipelines.
+- **AI engineering** using RAG, agentic workflows, LangGraph, Gemini, OpenAI embeddings, and document intelligence.
+- **Mobile engineering** for Android/iOS applications using React Native, Flutter, Dart, and Swift-native integration.
+- **Cloud and DevOps systems** using AWS EC2/S3, Google Cloud Run, Docker, CI/CD, GitHub Actions, and secure deployment workflows.
+
+### Profile Snapshot
+
+**Location:** New Delhi, India  
+**Open to roles:** SDE 1, SWE 1, Full-Stack, Backend, AI Engineer, Mobile roles  
+**Availability:** Available immediately  
+**Focus:** Build production-grade systems, optimize backends, ship AI product experiences, and scale mobile-first platforms.
+
+### Experience Signal
+
+The profile showcases experience in:
+
+- **Ta Rule Technology Pvt. Ltd.** — Software Engineer, Full Stack, Backend, Java & Mobile Systems.
+- **Indian Oil Corporation Limited (IOCL)** — Software Engineer Intern, with focus on forecasting, monitoring, and ML inference optimization.
+
+The project portfolio highlights production systems for:
+
+- Healthcare commerce platform with 150+ REST APIs and 50K+ daily transactions.
+- Distributed inventory and warehouse data systems with strong latency optimization.
+- AI engineering and RAG product pipelines with enterprise-grade security, vector search, and event-driven message flows.
+- Mobile apps such as Fonofy, Delhi Golf Federation, and Carenzy, with Android and iOS releases.
+
+### Target Role Fit
+
+| Target Area | Demonstrated Capability |
+|---|---|
+| **Software Engineer / SDE-1 / SWE-1** | End-to-end product ownership using JavaScript, TypeScript, Node.js, Express, Next.js, Java, Spring Boot, MongoDB, and cloud systems |
+| **Full Stack Engineer** | Frontend dashboard, backend APIs, web application integration, live events, and cloud-ready deployment |
+| **Backend Engineer** | REST APIs, authentication workflows, data integrity, DB modeling, caching, event systems, and distributed service patterns |
+| **AI Engineer** | Gemini-powered OCR, web scraping, agentic workflows, RAG, semantic memory, vector retrieval, and model-assisted workflows |
+| **Product / Startup Engineering** | Automation workflow design, portfolio-grade products, dashboard systems, cloud servicing, and AI-assisted user tooling |
+
+This profile is positioned as a strong portfolio example for hiring teams evaluating **software engineering depth**, **AI product capability**, **system design awareness**, **cloud deployment readiness**, and **full-stack execution**.
+
+---
+
 ## 🌟 Overview & Architecture
 
 This repository hosts the full software engineering growth platform designed to automate and accelerate tracking across **DSA Problem Solving (18 Categories)**, **Job Application Pipelines**, **Daily Work Streaks**, **Lecture Logs**, and **Live Global Job Discovery**.
