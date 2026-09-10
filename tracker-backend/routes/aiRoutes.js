@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { handleAiChat, handleAiStream, handleFileUpload } = require('../controllers/aiController');
+const { handleAiChat, handleAiStream, handleFileUpload, handleAiModels } = require('../controllers/aiController');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -34,6 +34,9 @@ const uploadAiFile = multer({
 
 // POST /api/ai/chat — standard JSON response
 router.post('/chat', handleAiChat);
+
+// GET /api/ai/models — frontend-safe provider/model options
+router.get('/models', handleAiModels);
 
 // GET /api/ai/stream?prompt=...&sessionId=... — SSE streaming response
 router.get('/stream', handleAiStream);

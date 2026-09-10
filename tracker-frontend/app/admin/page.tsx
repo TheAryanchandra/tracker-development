@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Database, Download, FileSpreadsheet, Layers, Loader2, UploadCloud } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Database, Download, FileSpreadsheet, Layers, Loader2, LockKeyhole, Mail, UploadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { uploadExcelFile } from '@/lib/api';
+import { updateAdminCredentials, uploadExcelFile } from '@/lib/api';
+import { getAuthUser, saveAuth } from '@/lib/auth';
 
 export default function AdminPage() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -12,6 +13,10 @@ export default function AdminPage() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [accountEmail, setAccountEmail] = useState(() => getAuthUser<{ email?: string }>()?.email || '');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountSaving, setAccountSaving] = useState(false);
+  const [accountMessage, setAccountMessage] = useState<string | null>(null);
 
   const selectFile = (candidate?: File) => { if (candidate) { setFile(candidate); setError(null); setResult(null); } };
   const handleUpload = async (e: React.FormEvent) => {
@@ -29,9 +34,29 @@ export default function AdminPage() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ 'Sr No': 1, 'Date Applied': '2026-08-31', Company: 'Google', Role: 'Software Engineer', Platform: 'Referral', Status: 'Applied' }]), 'Application Tracker');
     XLSX.writeFile(wb, 'Aryan_Daily_Tracker_Master.xlsx');
   };
+  const handleAccountSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountSaving(true); setAccountMessage(null);
+    try {
+      const res = await updateAdminCredentials(accountEmail, accountPassword);
+      saveAuth(res.token, res.user);
+      setAccountPassword('');
+      setAccountMessage('Admin credentials updated. Your session has been refreshed.');
+    } catch (err: any) {
+      setAccountMessage(err.response?.data?.message || 'Could not update admin credentials.');
+    } finally { setAccountSaving(false); }
+  };
   return <div className="admin-page animate-fade-up">
     <header className="admin-header"><div><div className="admin-kicker"><Layers size={14}/> WORKSPACE ADMIN</div><h1>Data hub<span>.</span></h1><p>Keep your tracker, applications, progress, and lectures in sync from one workbook.</p></div><button className="admin-quiet-button" onClick={downloadSampleExcel}><Download size={16}/> <span>Download sample</span></button></header>
     <div className="admin-status"><div className="admin-status-icon"><Database size={18}/></div><div><strong>Sync center</strong><span>Ready for your next workbook</span></div><span className="admin-live"><i/> Local workspace</span></div>
+    <section className="admin-card mb-5"><div className="admin-card-head"><div><div className="admin-step">03 <span>ACCOUNT SECURITY</span></div><h2>Admin access</h2><p>Change the email or password used to sign in to this workspace.</p></div><LockKeyhole className="admin-card-mark" size={26}/></div>
+      <form onSubmit={handleAccountSave} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end">
+        <label className="block"><span className="mb-1 block text-xs font-bold text-[var(--text-secondary)]">Admin email</span><div className="relative"><Mail size={15} className="absolute left-3 top-3 text-[var(--text-tertiary)]"/><input required type="email" value={accountEmail} onChange={(e) => setAccountEmail(e.target.value)} className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--input-bg)] py-2.5 pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none focus:border-amber-600"/></div></label>
+        <label className="block"><span className="mb-1 block text-xs font-bold text-[var(--text-secondary)]">New password</span><div className="relative"><LockKeyhole size={15} className="absolute left-3 top-3 text-[var(--text-tertiary)]"/><input required minLength={10} type="password" value={accountPassword} onChange={(e) => setAccountPassword(e.target.value)} placeholder="At least 10 characters" className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--input-bg)] py-2.5 pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none focus:border-amber-600"/></div></label>
+        <button disabled={accountSaving} className="admin-submit !m-0 !w-auto whitespace-nowrap" type="submit">{accountSaving ? <Loader2 className="spin" size={17}/> : <LockKeyhole size={17}/>} {accountSaving ? 'Saving…' : 'Update access'}</button>
+      </form>
+      {accountMessage && <p className="mt-3 text-xs font-semibold text-[var(--text-secondary)]">{accountMessage}</p>}
+    </section>
     <form onSubmit={handleUpload} className="admin-form">
       <section className="admin-card admin-upload-card"><div className="admin-card-head"><div><div className="admin-step">01 <span>UPLOAD</span></div><h2>Bring in your workbook</h2><p>Drop a file here or browse from your device.</p></div><FileSpreadsheet className="admin-card-mark" size={26}/></div>
         <div className={`admin-dropzone ${file ? 'has-file' : ''}`} role="button" tabIndex={0} onClick={() => inputRef.current?.click()} onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); selectFile(e.dataTransfer.files[0]); }}>

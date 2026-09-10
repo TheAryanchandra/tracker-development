@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { getStreamUrl, uploadAiFile } from '../lib/api';
+import { fetchAiModels, getStreamUrl, uploadAiFile } from '../lib/api';
 
 interface Message {
   id: string;
@@ -87,6 +87,11 @@ export const AiVoiceAssistant: React.FC = () => {
   const [connectionError, setConnectionError] = useState(false);
   const [lastPrompt, setLastPrompt] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [visionProvider, setVisionProvider] = useState('ocr');
+  const [visionModel, setVisionModel] = useState('gpt-6-astra');
+  const [reasoningEffort, setReasoningEffort] = useState('high');
+  const [webSearch, setWebSearch] = useState(false);
+  const [visionModels, setVisionModels] = useState<Array<{ id: string; label: string }>>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -128,6 +133,13 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
     } catch {
       // Fallback
     }
+  }, []);
+
+  useEffect(() => {
+    fetchAiModels().then((data) => {
+      const models = data?.providers?.find((provider: any) => provider.id === 'kie')?.models || [];
+      setVisionModels(models);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -489,7 +501,12 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
         ]);
 
         try {
-          const res = await uploadAiFile(fileToSend, query, SESSION_ID);
+          const res = await uploadAiFile(fileToSend, query, SESSION_ID, {
+            provider: visionProvider,
+            model: visionModel,
+            reasoningEffort,
+            webSearch,
+          });
           setStatusMessage(null);
           setLoading(false);
 
@@ -629,7 +646,7 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
         );
       };
     },
-    [input, selectedFile, filePreview, loading, speak]
+    [input, selectedFile, filePreview, loading, speak, visionProvider, visionModel, reasoningEffort, webSearch]
   );
 
   const retryLastPrompt = useCallback(() => {
@@ -717,6 +734,48 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
                 {action.label}
               </button>
             ))}
+          </div>
+
+          {/* Vision provider controls apply to the next image attachment. */}
+          <div className="px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-2 text-[10px] text-[var(--text-tertiary)]">
+            <select
+              value={visionProvider}
+              onChange={(e) => setVisionProvider(e.target.value)}
+              className="bg-[var(--input-bg)] border border-[var(--card-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-secondary)]"
+              aria-label="Vision provider"
+            >
+              <option value="ocr">Local OCR</option>
+              <option value="kie">Kie AI Vision</option>
+            </select>
+            {visionProvider === 'kie' && (
+              <>
+                <select
+                  value={visionModel}
+                  onChange={(e) => setVisionModel(e.target.value)}
+                  className="bg-[var(--input-bg)] border border-[var(--card-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-secondary)]"
+                  aria-label="Vision model"
+                >
+                  {(visionModels.length ? visionModels : [{ id: 'gpt-6-astra', label: 'GPT-6 Astra' }]).map((model) => (
+                    <option key={model.id} value={model.id}>{model.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={reasoningEffort}
+                  onChange={(e) => setReasoningEffort(e.target.value)}
+                  className="bg-[var(--input-bg)] border border-[var(--card-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--text-secondary)]"
+                  aria-label="Reasoning effort"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="xhigh">Xhigh</option>
+                </select>
+                <label className="flex items-center gap-1 whitespace-nowrap">
+                  <input type="checkbox" checked={webSearch} onChange={(e) => setWebSearch(e.target.checked)} />
+                  Web search
+                </label>
+              </>
+            )}
           </div>
 
           {/* Chat Messages */}

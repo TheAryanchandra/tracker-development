@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 
 import { fetchDashboardStats, submitContactForm } from '@/lib/api';
+import { getAuthToken } from '@/lib/auth';
 import { useWebSocket } from '@/lib/websocket';
 import ThemeToggle from '@/components/ThemeToggle';
 
@@ -425,8 +426,9 @@ export default function PortfolioPage() {
     message: '',
   });
 
-  const refreshStats = () =>
-    fetchDashboardStats()
+  const refreshStats = () => {
+    if (!getAuthToken()) return Promise.resolve();
+    return fetchDashboardStats()
       .then(
         (r) =>
           r?.success &&
@@ -434,6 +436,7 @@ export default function PortfolioPage() {
           setStats(r.data)
       )
       .catch(() => {});
+  };
 
   useWebSocket({
     SHEET_SYNCED: refreshStats,
@@ -588,6 +591,14 @@ export default function PortfolioPage() {
           </a>
 
           <ThemeToggle />
+
+          <Link
+            href={getAuthToken() ? '/dashboard' : '/login'}
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[var(--card-flat)] border border-[var(--card-border)] text-[var(--text-primary)] font-bold text-xs hover:border-amber-500 transition whitespace-nowrap"
+          >
+            <LockKeyhole size={14} />
+            <span className="hidden sm:inline">{getAuthToken() ? 'Dashboard' : 'Sign in'}</span>
+          </Link>
 
           {/* Mobile Navigation Drawer Trigger */}
           <button

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuth, getAuthToken } from './auth';
 
 // Automatically choose production Render URL or environment variable or localhost for dev
 const getBaseUrl = () => {
@@ -23,6 +24,32 @@ export const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      clearAuth();
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const login = async (email: string, password: string) => {
+  const res = await api.post('/auth/login', { email, password });
+  return res.data;
+};
+
+export const updateAdminCredentials = async (email: string, password: string) => {
+  const res = await api.put('/auth/credentials', { email, password });
+  return res.data;
+};
+
 // Helper to safely unwrap arrays from { success: true, count: N, data: [...] }
 const extractArray = (resData: any): any[] => {
   if (Array.isArray(resData)) return resData;
@@ -41,7 +68,7 @@ export const fetchDashboardStats = async () => {
       const fallbackUrl = (typeof window !== 'undefined' && window.location.protocol === 'https:')
         ? 'https://tracker-backend-rnec.onrender.com/api/dashboard/stats'
         : 'http://127.0.0.1:5000/api/dashboard/stats';
-      const res = await axios.get(fallbackUrl);
+      const res = await api.get('/dashboard/stats');
       return res.data;
     } catch (fallbackErr) {
       console.error('All dashboard stat fetches failed:', fallbackErr);
@@ -181,11 +208,25 @@ export const sendAiChat = async (prompt: string, sessionId = 'default') => {
 };
 
 // AI File / Image Upload (OCR + RAG)
-export const uploadAiFile = async (file: File, prompt = '', sessionId = 'default') => {
+export const fetchAiModels = async () => {
+  const res = await api.get('/ai/models');
+  return res.data;
+};
+
+export const uploadAiFile = async (
+  file: File,
+  prompt = '',
+  sessionId = 'default',
+  options: { provider?: string; model?: string; webSearch?: boolean; reasoningEffort?: string } = {}
+) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('prompt', prompt);
   formData.append('sessionId', sessionId);
+  formData.append('provider', options.provider || 'ocr');
+  if (options.model) formData.append('model', options.model);
+  formData.append('webSearch', String(options.webSearch || false));
+  if (options.reasoningEffort) formData.append('reasoningEffort', options.reasoningEffort);
 
   const res = await api.post('/ai/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -211,7 +252,9 @@ export const fetchSheetsStatus = async () => {
 // SSE stream URL builder — used for EventSource streaming
 export const getStreamUrl = (prompt: string, sessionId = 'default') => {
   const base = getBaseUrl();
-  return `${base}/ai/stream?prompt=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}`;
+  const token = getAuthToken();
+  const authParam = token ? `&access_token=${encodeURIComponent(token)}` : '';
+  return `${base}/ai/stream?prompt=${encodeURIComponent(prompt)}&sessionId=${encodeURIComponent(sessionId)}${authParam}`;
 };
 
 // Contact Form API

@@ -33,19 +33,25 @@ app.get(['/', '/api', '/api/health'], (req, res) => {
   });
 });
 
+// Authentication is public only for login; all tracker APIs require a bearer token.
+app.use('/api/auth', require('./routes/authRoutes'));
+// Public portfolio contact form; tracker and admin APIs remain protected below.
+app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api', require('./services/authService').authenticate);
+
 // Routes
 app.use('/api/dsa-lectures',        require('./routes/dsaLectureRoutes'));
 app.use('/api/daily-tracker',       require('./routes/dailyTrackerRoutes'));
 app.use('/api/dsa-progress',        require('./routes/dsaProgressRoutes'));
 app.use('/api/application-tracker', require('./routes/applicationTrackerRoutes'));
-app.use('/api/upload',              require('./routes/uploadRoutes'));
+app.use('/api/upload',              require('./services/authService').requireRole('admin'), require('./routes/uploadRoutes'));
 app.use('/api/dashboard',           require('./routes/dashboardRoutes'));
 app.use('/api/ai',                  require('./routes/aiRoutes'));
 app.use('/api/notifications',       require('./routes/notificationRoutes'));
-app.use('/api/sheets',              require('./routes/sheetsRoutes'));
+app.use('/api/sheets',              require('./services/authService').requireRole('admin'), require('./routes/sheetsRoutes'));
 app.use('/api/tasks',               require('./routes/taskRoutes'));
-app.use('/api/contact',             require('./routes/contactRoutes'));
 app.get('/api/automations/status', (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Insufficient permissions' });
   const { status } = require('./services/automationService');
   res.json({ success: true, automation: status() });
 });
