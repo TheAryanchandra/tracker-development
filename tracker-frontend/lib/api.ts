@@ -32,9 +32,23 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       clearAuth();
+    }
+    // Automatic failover: If local 5000 is unreachable, retry against live Render backend
+    if (!error.response && error.config && !error.config._retryRender) {
+      error.config._retryRender = true;
+      const renderBase = 'https://tracker-backend-rnec.onrender.com/api';
+      error.config.baseURL = renderBase;
+      if (typeof error.config.url === 'string' && error.config.url.startsWith('http://127.0.0.1:5000/api')) {
+        error.config.url = error.config.url.replace('http://127.0.0.1:5000/api', renderBase);
+      }
+      try {
+        return await api.request(error.config);
+      } catch (retryErr) {
+        return Promise.reject(retryErr);
+      }
     }
     return Promise.reject(error);
   }
