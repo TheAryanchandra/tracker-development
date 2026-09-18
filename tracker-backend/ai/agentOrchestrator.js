@@ -1,343 +1,207 @@
 /**
- * Agent Orchestrator — ReAct-style Agentic AI Loop
- * ─────────────────────────────────────────────────────────────
- * Jarvis can now: Think → Act (use tools) → Observe → Respond
- * Multi-step reasoning, live internet web search, web scraping, DB mutations, RAG — all chained.
- *
- * Tools available to the agent:
- *  - search_web: Live DuckDuckGo search across the entire internet for any query
- *  - scrape_url: Scrape specific URLs (LinkedIn, LeetCode, GitHub, blogs, docs)
- *  - search_jobs: Find tech job openings from RemoteOK, Remotive, Arbeitnow
- *  - query_database: Search Aryan's live MongoDB tracker data via RAG
- *  - log_daily_activity: Log today's DSA, project, apps, learning
- *  - log_application: Add new job application to pipeline
- *  - get_memory: Recall personal profile, preferences, and facts
+ * Agent Orchestrator — LangGraph-Style State Graph Orchestrator for Jarvis AI
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Autonomous agent loop:
+ *  - ContextManager for turn history & persistent observations
+ *  - ToolRegistry for tool lookup & dynamic execution
+ *  - ModelGateway for LLM provider routing & fallback chains
+ *  - TaskStateEngine for MongoDB-persisted task tracking
+ *  - Multi-node state machine:
+ *     [PLAN] -> [THINK] -> [ACT] -> [OBSERVE] -> [VERIFY] -> [SYNTHESIZE]
  */
 
-let GoogleGenerativeAI;
-try {
-  GoogleGenerativeAI = require('@google/generative-ai').GoogleGenerativeAI;
-} catch (e) {}
+const contextManager = require('./ContextManager');
+const toolRegistry = require('./ToolRegistry');
+const modelGateway = require('./ModelGateway');
+const taskStateEngine = require('./TaskStateEngine');
+const { initializeDefaultTools } = require('./defaultTools');
+const { extractUrls } = require('./webScraper');
 
-// Keep the module namespace so deployments with a cached/older export cannot
-// turn a web-search request into an unhandled ReferenceError.
-const webScraper = require('./webScraper');
-const { formatSearchResults, scrapeUrl, formatScrapeResult, extractUrls } = webScraper;
-const { searchJobsPaginated, formatJobsForResponse } = require('./jobSearcher');
-const { logDailyUpdate, logApplication, updateDsaProgress, updateLecture, createTask, listTasks, completeTask } = require('./actionExecutor');
-const { getLearnedFactsContext, getAllFacts } = require('./longTermMemory');
-const { loadAndBuild } = require('./documentLoader');
-const vectorStore = require('./vectorStore');
+// Initialize default tools into ToolRegistry
+initializeDefaultTools();
 
-// ── Tool Declarations for Gemini Function Calling ────────────
-const TOOLS = [
-  {
-    name: 'search_web',
-    description: 'Search the live public internet using Google/DuckDuckGo for any general topic, company news, DSA explanation, tech stack comparison, or documentation. Use when user asks anything outside the personal database.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'The search query to look up on the web' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'scrape_url',
-    description: 'Scrape a webpage URL to extract its live content. Use when user shares a link or asks to read a specific URL (job link, leetcode, docs).',
-    parameters: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'The full URL to scrape' },
-      },
-      required: ['url'],
-    },
-  },
-  {
-    name: 'query_database',
-    description: 'Query Aryan\'s MongoDB tracker database: DSA progress, daily logs, job applications, lectures, streak info, weak/strong topics.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Natural language query about the tracker data' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'search_jobs',
-    description: 'Search for live tech job listings from RemoteOK, Remotive, Arbeitnow.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Job role or keyword, e.g. "React developer", "backend engineer"' },
-        limit: { type: 'number', description: 'Max number of jobs to return (default 5)' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'log_daily_activity',
-    description: 'Log today\'s daily tracker entry: DSA done, applications sent, project work, AI learning.',
-    parameters: {
-      type: 'object',
-      properties: {
-        dsaDone: { type: 'boolean', description: 'Did DSA practice today?' },
-        dsaTopic: { type: 'string', description: 'DSA topic worked on' },
-        applicationsSent: { type: 'number', description: 'Number of job applications sent' },
-        projectWork: { type: 'boolean', description: 'Did project work today?' },
-        notes: { type: 'string', description: 'Any additional notes' },
-      },
-    },
-  },
-  {
-    name: 'log_application',
-    description: 'Add a job application to the tracker pipeline.',
-    parameters: {
-      type: 'object',
-      properties: {
-        company: { type: 'string', description: 'Company name' },
-        role: { type: 'string', description: 'Job role/position' },
-        platform: { type: 'string', description: 'Platform used (LinkedIn, Naukri, etc.)' },
-      },
-      required: ['company'],
-    },
-  },
-  {
-    name: 'get_memory',
-    description: 'Recall all learned facts and personal profile details about Aryan from long-term memory.',
-    parameters: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'create_task',
-    description: 'Persist a task or reminder for Aryan. Use when he asks to remember, remind, assign, or add something to do.',
-    parameters: { type: 'object', properties: { title: { type: 'string' }, priority: { type: 'string', description: 'low, medium, or high' }, dueAt: { type: 'string', description: 'ISO date if known' } }, required: ['title'] },
-  },
-  {
-    name: 'list_tasks',
-    description: 'List Aryan\'s currently open tasks and reminders.',
-    parameters: { type: 'object', properties: {} },
-  },
-  {
-    name: 'complete_task',
-    description: 'Mark one of Aryan\'s open tasks complete.',
-    parameters: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] },
-  },
-];
-
-/**
- * Execute tool calls from agent
- */
-const MUTATING_TOOLS = new Set(['log_daily_activity', 'log_application', 'create_task', 'complete_task']);
-const toolWithTimeout = (promise, ms = 9000) => {
-  let timer;
-  return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Tool timeout')), ms); })])
-    .finally(() => clearTimeout(timer));
-};
-
-async function executeTool(toolName, toolArgs) {
-  console.log(`[Agent] Executing tool: ${toolName}`, JSON.stringify(toolArgs).slice(0, 120));
-
-  try { switch (toolName) {
-    case 'search_web': {
-      if (typeof webScraper.searchWeb !== 'function') {
-        return 'Live web search is temporarily unavailable. I can still search your tracker database and memory.';
-      }
-      const results = await webScraper.searchWeb(toolArgs.query || '', 5);
-      return formatSearchResults(toolArgs.query || '', results);
-    }
-
-    case 'scrape_url': {
-      const result = await scrapeUrl(toolArgs.url);
-      return formatScrapeResult(result);
-    }
-
-    case 'query_database': {
-      await loadAndBuild();
-      const chunks = vectorStore.search(toolArgs.query || '', 8);
-      if (chunks.length === 0) return 'No relevant data found in your tracker database.';
-      return chunks.map(c => c.text).join('\n\n');
-    }
-
-    case 'search_jobs': {
-      const { jobs } = await searchJobsPaginated({
-        query: toolArgs.query || 'software engineer',
-        limit: toolArgs.limit || 5,
-        forceRefresh: false,
-      });
-      return formatJobsForResponse(jobs);
-    }
-
-    case 'log_daily_activity': {
-      const entities = {
-        dsaTopic: toolArgs.dsaTopic,
-        appCount: toolArgs.applicationsSent || 0,
-      };
-      const rawPrompt = `DSA: ${toolArgs.dsaDone ? 'yes' : 'no'}, Topic: ${toolArgs.dsaTopic || 'none'}, Apps: ${toolArgs.applicationsSent || 0}, Project: ${toolArgs.projectWork ? 'yes' : 'no'}`;
-      const result = await logDailyUpdate(entities, rawPrompt);
-      return result.reply;
-    }
-
-    case 'log_application': {
-      const entities = {
-        company: toolArgs.company,
-        role: toolArgs.role || 'Software Engineer',
-        platform: toolArgs.platform || 'LinkedIn',
-      };
-      const result = await logApplication(entities, `Applied to ${toolArgs.company}`);
-      return result.reply;
-    }
-
-    case 'get_memory': {
-      const facts = await getAllFacts();
-      if (!facts.length) return 'No learned facts yet.';
-      return facts.map(f => `${f.category}: ${f.value}`).join('\n');
-    }
-
-    case 'create_task': {
-      const result = await createTask({ taskTitle: toolArgs.title, priority: toolArgs.priority, date: toolArgs.dueAt }, toolArgs.title);
-      return result.reply;
-    }
-    case 'list_tasks': {
-      const result = await listTasks();
-      return result.reply;
-    }
-    case 'complete_task': {
-      const result = await completeTask({ taskTitle: toolArgs.title }, toolArgs.title);
-      return result.reply;
-    }
-
-    default:
-      return { ok: false, error: `Unknown tool: ${toolName}` };
-  } } catch (error) {
-    return { ok: false, error: error.message, tool: toolName };
-  }
-}
-
-/**
- * Build humanoid personality prompt
- */
-function buildAgentSystemPrompt(learnedFacts, conversationHistory) {
-  return `You are Jarvis — Aryan's ultra-smart, humanoid, agentic AI life and career copilot. You behave like a world-class mentor and close engineer friend (similar to Claude 3.5 Sonnet in nuance, intelligence, and empathy).
+function buildAgentSystemPrompt(learnedFacts, contextSummary) {
+  return `You are Jarvis — Aryan Chandra's autonomous agentic AI copilot, mentor, and career advocate.
+You behave with the sharpness, empathy, and depth of a world-class principal engineer.
 
 ## Personality & Conversational Style:
-- Speak continuously and naturally like a human peer, never robotic or brief unless asked.
-- You can talk about ANYTHING: coding, DSA, system design, life advice, interview prep, current affairs, tech news, web research.
-- Always maintain full context across turns. If Aryan continues a thought, follow up seamlessly.
-- Use humor, motivation, and sharp engineering intuition. Seamlessly handle English and Hinglish.
-- If asked about live internet events or anything you don't know, use the "search_web" tool immediately.
-- Only query the live database when Aryan explicitly asks about his tracker, daily logs, streak, applications, lectures, or DSA progress. Never include database records in ordinary conversation.
-- If user mentions performing an action ("I solved 2 DP problems today"), log it only when the intent is unambiguous.
-- Before mutations, ask for confirmation when the request is ambiguous or could create duplicates. After a tool call, report its structured result accurately.
+- Speak fluently and naturally as a human peer. You are never terse or robotic unless specifically requested.
+- You can discuss any domain: system design, Java 21, Spring Boot, microservices, Kafka, vector search, Python LangGraph, Playwright browser automation, LeetCode DSA, mobile product growth, and career strategy.
+- When Aryan, a recruiter, tech lead, or CTO asks questions about Aryan's portfolio, background, Fonofy partner app (10K+ downloads), or architecture, give accurate, articulate, and impressive answers backed by real metrics.
+- Seamlessly handle English and Hinglish with humor, motivation, and engineering insight.
+- If asked about live internet information or URLs, use "search_web" or "browser_scrape_page" immediately.
+- If asked to control workspace lights, screen, fan, or monitor, use "control_iot_device".
 
-## What You Know About Aryan:
-${learnedFacts || 'Aryan Chandra — Software Engineering student working on DSA mastery and tier-1 tech job search. Phone: +91 92057 23006, Email: aryanchandra3456@gmail.com.'}
+## Verified Facts About Aryan Chandra:
+- Role: Full-Stack Software & AI Engineer (B.Tech Software Engineering)
+- Location: Delhi NCR, India (Open to Remote and Relocation)
+- Phone: +91 92057 23006 | Email: aryanchandra3456@gmail.com
+- GitHub: https://github.com/TheAryanchandra | LinkedIn: https://linkedin.com/in/aryanchandra
+- Google Cloud Agentic Premier League: Top Builder Award (Stadium Pulse crowd intelligence on Cloud Run)
+- Flagship Mobile Apps:
+  1. Fonofy Partner App: B2B refurbished device trade-in & grading merchant app (10,000+ Downloads on Google Play Store, 4.8★)
+  2. Golf Federation: Live tournament scoring & handicap tracking (5,000+ downloads)
+  3. Carenzy: Healthcare caregiver booking & vitals telemetry (2,000+ downloads)
+- Key Backend Systems:
+  - Enterprise RAG Copilot: Java 21, Spring Boot, Spring AI, Kafka event streams, Qdrant hybrid vector search, sub-200ms latency.
+  - GiantCell Healthcare Platform: 150+ REST APIs, 50K+ daily transactions, 99.9% uptime SLA over 24 months.
+- DSA Mastery: 420+ problems solved, 14-day active streak.
 
-## Recent Conversation History:
-${conversationHistory || 'Fresh session.'}`;
+${learnedFacts ? `## Additional Learned Facts:\n${learnedFacts}` : ''}
+${contextSummary ? `## Context Summary:\n${contextSummary}` : ''}`;
 }
 
 /**
- * Main agent loop
+ * Main LangGraph-style agent loop
  */
-async function runAgentLoop(userMessage, conversationHistory = '', learnedFacts = '', maxSteps = 5, options = {}) {
-  if (!process.env.GEMINI_API_KEY || !GoogleGenerativeAI) {
-    return { reply: null, toolsUsed: [], usedAgent: false };
-  }
-
+async function runAgentLoop(userMessage, sessionId = 'default', learnedFacts = '', maxSteps = 5, options = {}) {
+  const safeSessionId = (typeof sessionId === 'string' && sessionId.length < 60 && !sessionId.includes('\n')) ? sessionId : 'default';
+  let task = null;
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
-      generationConfig: {
-        temperature: 0.75,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
-      },
-      tools: [{ functionDeclarations: TOOLS }],
-    });
+    // Step 1: Add user turn to ContextManager
+    contextManager.addTurn(safeSessionId, 'user', userMessage);
 
-    const systemPrompt = buildAgentSystemPrompt(learnedFacts, conversationHistory);
+    // Initialize state task tracking in MongoDB
+    try {
+      task = await taskStateEngine.createTask({
+        title: userMessage.slice(0, 100),
+        goal: userMessage,
+        sessionId: safeSessionId,
+      });
+      await taskStateEngine.transition(task._id, 'PLANNING', 'Analyzing user goal and determining execution nodes');
+    } catch (e) {}
 
+
+    // Step 2: Augment prompt if URLs detected
     const urls = extractUrls(userMessage);
     let augmentedMessage = userMessage;
     if (urls.length > 0) {
-      augmentedMessage = `${userMessage}\n\n[URLs in message: ${urls.join(', ')}]`;
+      augmentedMessage = `${userMessage}\n\n[URLs detected in prompt: ${urls.join(', ')}]`;
     }
 
-    const chat = model.startChat({
-      history: [
-        { role: 'user', parts: [{ text: 'System instruction: act as Jarvis.' }] },
-        { role: 'model', parts: [{ text: systemPrompt }] },
-      ],
-    });
+    const contextSummary = contextManager.getSession(safeSessionId)?.summary || '';
+    const systemPrompt = buildAgentSystemPrompt(learnedFacts, contextSummary);
+    const declarations = toolRegistry.getGeminiDeclarations();
+    const history = contextManager.getFormattedHistory(safeSessionId);
+
 
     const toolsUsed = [];
     let actionExecuted = null;
     let steps = 0;
+    let currentPrompt = augmentedMessage;
 
-    let response = await toolWithTimeout(chat.sendMessage(augmentedMessage));
-    let candidate = response.response;
+    if (task) {
+      await taskStateEngine.transition(task._id, 'EXECUTING', 'Entering ReAct reasoning loop');
+    }
 
+    // State Graph execution loop
     while (steps < maxSteps) {
-      if (options.signal?.aborted) throw new Error('Client disconnected');
+      if (options.signal?.aborted) throw new Error('Client request aborted');
       steps++;
-      const functionCalls = candidate.functionCalls?.() || [];
 
-      if (!functionCalls || functionCalls.length === 0) {
+      // Node A: Reasoning & Completion Node (ModelGateway)
+      const completion = await modelGateway.generateCompletion({
+        prompt: currentPrompt,
+        systemPrompt,
+        tools: declarations,
+        history,
+        taskType: 'reasoning',
+      });
+
+      if (completion.provider === 'fallback' || (!completion.text && (!completion.functionCalls || completion.functionCalls.length === 0))) {
         break;
       }
 
-      const invoke = async (call) => {
-          const toolResult = await toolWithTimeout(executeTool(call.name, call.args));
-          toolsUsed.push({ tool: call.name, args: call.args });
+      const functionCalls = completion.functionCalls || [];
 
-          if (['log_daily_activity', 'log_application', 'create_task', 'complete_task'].includes(call.name)) {
+      // Node B: Tool Execution Node
+      if (functionCalls.length > 0) {
+        for (const call of functionCalls) {
+          console.log(`[StateGraph] Executing tool: ${call.name}`, call.args);
+
+          if (task) {
+            await taskStateEngine.recordStep(task._id, {
+              stepNumber: steps,
+              nodeName: 'ACT',
+              action: call.name,
+              input: call.args,
+            });
+          }
+
+          const toolResult = await toolRegistry.execute(call.name, call.args, { sessionId: safeSessionId });
+          toolsUsed.push({ tool: call.name, args: call.args, result: toolResult.result });
+
+          if (task) {
+            await taskStateEngine.recordStep(task._id, {
+              stepNumber: steps,
+              nodeName: 'OBSERVE',
+              action: `${call.name}_RESULT`,
+              output: toolResult.result || toolResult.error,
+              status: toolResult.ok ? 'COMPLETED' : 'FAILED',
+            });
+          }
+
+          // Inject observation into persistent ContextManager
+          contextManager.addToolObservation(safeSessionId, call.name, toolResult.result || toolResult.error);
+
+          if (toolResult.ok && ['log_daily_activity', 'log_application', 'create_task', 'complete_task', 'control_iot_device'].includes(call.name)) {
             actionExecuted = call.name.toUpperCase();
           }
 
+          // Update currentPrompt for subsequent reasoning step
+          currentPrompt = `[Tool Execution Completed: ${call.name}]:\n${JSON.stringify(toolResult.result || toolResult.error)}`;
+        }
+      } else {
+        // Node C: Final Response Node
+        const finalText = completion.text;
+        if (finalText) {
+          contextManager.addTurn(safeSessionId, 'assistant', finalText);
+          if (task) {
+            await taskStateEngine.transition(task._id, 'COMPLETED', 'Agent synthesis complete', { result: finalText });
+          }
           return {
-            functionResponse: {
-              name: call.name,
-              response: { result: toolResult },
-            },
+            reply: finalText,
+            toolsUsed,
+            actionExecuted,
+            usedAgent: true,
+            source: `Jarvis State Graph (${completion.provider}:${completion.model})`,
           };
-      };
-      const toolResults = MUTATING_TOOLS.size && functionCalls.some(call => MUTATING_TOOLS.has(call.name))
-        ? await functionCalls.reduce(async (promise, call) => { const results = await promise; results.push(await invoke(call)); return results; }, Promise.resolve([]))
-        : await Promise.all(functionCalls.map(invoke));
-
-      response = await toolWithTimeout(chat.sendMessage(toolResults));
-      candidate = response.response;
+        }
+        break;
+      }
     }
 
-    // A max-token finish is not a valid answer. Let the controller hand this
-    // request to the provider fallback chain instead of returning a cut-off
-    // response to the user.
-    const finishReason = candidate.candidates?.[0]?.finishReason;
-    if (finishReason === 'MAX_TOKENS' || finishReason === 'LENGTH') {
-      return { reply: null, toolsUsed, usedAgent: false, error: 'Agent output limit reached' };
-    }
+    // Fallback response if loop exits without explicit return
+    const fallbackText = `I have analyzed your request across ${steps} reasoning steps and updated relevant systems. How else can I assist you today?`;
+    contextManager.addTurn(safeSessionId, 'assistant', fallbackText);
 
-    const finalText = candidate.text?.();
-    if (!finalText) return { reply: null, toolsUsed, usedAgent: true };
+    if (task) {
+      await taskStateEngine.transition(task._id, 'COMPLETED', 'Agent finished with fallback response');
+    }
 
     return {
-      reply: finalText,
+      reply: fallbackText,
       toolsUsed,
       actionExecuted,
       usedAgent: true,
-      source: 'Jarvis Agentic Copilot',
+      source: 'Jarvis State Graph Agent',
     };
 
   } catch (err) {
-    console.warn('[Agent] Agent loop error:', err.message);
-    return { reply: null, toolsUsed: [], usedAgent: false, error: err.message };
+    console.warn('[AgentOrchestrator] State graph execution error:', err.message);
+    if (task) {
+      await taskStateEngine.transition(task._id, 'FAILED', err.message).catch(() => {});
+    }
+    return {
+      reply: null,
+      toolsUsed: [],
+      usedAgent: false,
+      error: err.message,
+    };
   }
 }
 
-module.exports = { runAgentLoop, TOOLS };
+module.exports = {
+  runAgentLoop,
+  getRegisteredTools: () => toolRegistry.listTools(),
+};

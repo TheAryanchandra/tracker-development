@@ -148,7 +148,7 @@ exports.handleAiChat = async (req, res) => {
           ? `${prompt}\n\n[Additional context from URLs you shared]:\n${urlContext}`
           : prompt;
 
-        const agentResult = await runAgentLoop(augmentedPrompt, history, learnedFacts);
+        const agentResult = await runAgentLoop(augmentedPrompt, sessionId, learnedFacts);
         if (agentResult.usedAgent && agentResult.reply) {
           result = {
             reply: agentResult.reply,
@@ -272,7 +272,7 @@ exports.handleAiStream = async (req, res) => {
         send({ token: `🌐 Reading ${urls.length} URL(s)... `, done: false });
       }
 
-      const agentResult = await runAgentLoop(String(prompt), history, learnedFacts, 5, { signal: abortController.signal });
+      const agentResult = await runAgentLoop(String(prompt), String(sessionId), learnedFacts, 5, { signal: abortController.signal });
 
       if (agentResult.usedAgent && agentResult.reply) {
         fullReply = agentResult.reply;

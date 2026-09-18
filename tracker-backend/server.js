@@ -45,6 +45,9 @@ app.use('/api/notifications',       require('./routes/notificationRoutes'));
 app.use('/api/sheets',              require('./routes/sheetsRoutes'));
 app.use('/api/tasks',               require('./routes/taskRoutes'));
 app.use('/api/contact',             require('./routes/contactRoutes'));
+app.use('/api/iot',                 require('./routes/iotRoutes'));
+app.use('/api/portfolio',           require('./routes/portfolioRoutes'));
+app.use('/api/agent',               require('./routes/agentRoutes'));
 app.get('/api/automations/status', (req, res) => {
   const { status } = require('./services/automationService');
   res.json({ success: true, automation: status() });
@@ -107,3 +110,5 @@ server.listen(PORT, '0.0.0.0', () => {
   scheduleNotifications();
   startSheetsCron();
 });
+
+// Nodemon restart trigger: 2026-09-18

@@ -53,7 +53,17 @@ interface Message {
 const STORAGE_KEY = 'jarvis_chat_history_v3';
 const SESSION_ID = `session-aryan-tracker`;
 
-const QUICK_ACTIONS = [
+const RECRUITER_ACTIONS = [
+  { label: '👔 Why Hire Aryan?', prompt: 'Give me a structured summary of why Aryan Chandra is an exceptional candidate for an SDE-1, Backend, or AI Engineer role, backed by his real projects and numbers.' },
+  { label: '📄 Candidate Screen Brief', prompt: 'Provide a 1-page candidate screen summary of Aryan: education, target roles, location/relocation, notice period, and top 3 achievements.' },
+  { label: '📱 Fonofy App (10K+)', prompt: 'Tell me about Aryan’s Fonofy partner mobile app: what does it do, what technologies were used, and its verified 10,000+ Google Play Store traction?' },
+  { label: '🛠️ Architecture & Kafka', prompt: 'Explain the technical architecture of Aryan’s Enterprise RAG Knowledge Copilot: how does it use Java 21, Spring Boot 3, Kafka, and Qdrant to achieve sub-200ms latency?' },
+  { label: '⚡ Production SLAs', prompt: 'What are Aryan’s production reliability metrics? Tell me about the 99.9% uptime SLA and 50,000+ daily transactions on GiantCell commerce.' },
+  { label: '🎯 LeetCode DSA Mastery', prompt: 'Summarize Aryan’s DSA problem-solving track record: 420+ solved problems, streak, and key topics mastered.' },
+  { label: '📅 Schedule Interview', prompt: 'How can our recruiting team schedule an interview or get in touch with Aryan immediately?' },
+];
+
+const TRACKER_ACTIONS = [
   { label: '📊 Status Report', prompt: 'Give me an overview of my current DSA streak, applications, and progress from my tracker.' },
   { label: '🌐 Search Web', prompt: 'Search the web and tell me the latest news on tech hiring and software engineer market trends.' },
   { label: '💼 Find Tech Jobs', prompt: 'Search and find live software engineer job openings for me.' },
@@ -61,18 +71,9 @@ const QUICK_ACTIONS = [
   { label: '🎯 Weak Areas', prompt: 'What are my weakest DSA topics in my tracker and what should I solve next?' },
 ];
 
-const WORKFLOW_ACTIONS = [
-  { label: 'Morning plan', prompt: 'Create my focused plan for today using my tracker data. Prioritize DSA, applications, and one high-leverage engineering task.' },
-  { label: 'Update progress', prompt: "Help me log today's progress. Ask only for the missing details, then save the update to my tracker." },
-  { label: 'Tailor resume', prompt: 'I will paste a job description next. Analyze the role and tailor my resume bullets to match it without inventing experience.' },
-  { label: 'Search jobs', prompt: 'Find current SDE 1, SWE 1, full-stack, backend, or AI engineer roles that match my profile and summarize the best fits.' },
-  { label: 'Weak DSA topics', prompt: 'Review my tracker and identify my weakest DSA topics, then give me a realistic practice sequence for this week.' },
-  { label: 'Summarize today', prompt: 'Summarize everything I completed today from my tracker and tell me the single best next action.' },
-  { label: 'Automate a task', prompt: 'Create this task and send it to my automation workflow: ' },
-];
-
 export const AiVoiceAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [chipCategory, setChipCategory] = useState<'recruiter' | 'tracker'>('recruiter');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,11 +117,15 @@ export const AiVoiceAssistant: React.FC = () => {
           {
             id: 'welcome-0',
             sender: 'ai',
-            text: `👋 Hey Aryan! I'm **Jarvis**, your continuous AI copilot.
+            text: `👋 Greetings! I'm **Jarvis**, Aryan Chandra's autonomous AI engineering copilot.
 
-I'm equipped with **live internet web search**, **Google Sheets live sync**, **OCR for uploaded images/documents**, and direct database actions. 
+I have full context on Aryan's production systems, codebase, and career achievements:
+• **Production Mobile Apps:** Shipped **Fonofy Partner App** (10,000+ downloads on Google Play Store, 4.8★)
+• **Distributed Backends:** Java 21, Spring Boot 3, Kafka event pipelines & Qdrant hybrid vector search (sub-200ms P95)
+• **Agentic AI:** Top Builder Award in Google Cloud Agentic Premier League (LangGraph + Cloud Run)
+• **Availability:** Immediate for **SDE-1 / Software Engineering** roles (Delhi NCR, Open to Remote & Relocation)
 
-You can talk to me about anything, upload screenshots of LeetCode/job descriptions, or tell me to log your daily progress!`,
+Feel free to ask me anything about Aryan's technical depth, system design decisions, or request a quick candidate screen brief!`,
             ts: now(),
           },
         ]);
@@ -706,17 +711,41 @@ You can talk to me about anything, upload screenshots of LeetCode/job descriptio
             </div>
           </div>
 
-          {/* Quick Action Suggestions */}
-          <div className="jarvis-quick-actions px-3 py-2 border-b border-[var(--card-border)] flex items-center gap-1.5 overflow-x-auto bg-black/[0.01] dark:bg-white/[0.01] scrollbar-none">
-            {WORKFLOW_ACTIONS.map((action) => (
+          {/* Quick Action Suggestions & Persona Toggle */}
+          <div className="border-b border-[var(--card-border)] bg-black/[0.01] dark:bg-white/[0.01]">
+            <div className="px-3 pt-2 flex items-center gap-2 text-[10px] font-bold">
               <button
-                key={action.label}
-                onClick={() => handleSend(action.prompt)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--card-flat)] hover:bg-amber-500/15 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] hover:border-amber-500/30 whitespace-nowrap transition duration-150 flex-shrink-0 cursor-pointer"
+                onClick={() => setChipCategory('recruiter')}
+                className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                  chipCategory === 'recruiter'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
+                }`}
               >
-                {action.label}
+                👔 Recruiter & CTO
               </button>
-            ))}
+              <button
+                onClick={() => setChipCategory('tracker')}
+                className={`px-2 py-0.5 rounded-md transition cursor-pointer ${
+                  chipCategory === 'tracker'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                ⚙️ Workspace Tracker
+              </button>
+            </div>
+            <div className="jarvis-quick-actions px-3 py-2 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+              {(chipCategory === 'recruiter' ? RECRUITER_ACTIONS : TRACKER_ACTIONS).map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => handleSend(action.prompt)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--card-flat)] hover:bg-amber-500/15 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--card-border)] hover:border-amber-500/30 whitespace-nowrap transition duration-150 flex-shrink-0 cursor-pointer"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Chat Messages */}

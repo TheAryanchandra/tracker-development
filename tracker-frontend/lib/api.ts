@@ -216,7 +216,61 @@ export const getStreamUrl = (prompt: string, sessionId = 'default') => {
 
 // Contact Form API
 export const submitContactForm = async (data: { name: string; email: string; message: string }) => {
-  const res = await api.post('/contact', data);
+  const res = await api.post('/portfolio/contact', data);
+  return res.data;
+};
+
+// IoT APIs
+export const fetchIotDevices = async () => {
+  try {
+    const res = await api.get('/iot/devices');
+    return res.data;
+  } catch (err) {
+    return { success: false, devices: [] };
+  }
+};
+
+export const controlIotDevice = async (data: { deviceId: string; isOn?: boolean; value?: number; color?: string }) => {
+  const res = await api.post('/iot/control', data);
+  return res.data;
+};
+
+export const createIotDevice = async (data: any) => {
+  const res = await api.post('/iot/devices', data);
+  return res.data;
+};
+
+export const deleteIotDevice = async (id: string) => {
+  const res = await api.delete(`/iot/devices/${id}`);
+  return res.data;
+};
+
+// Portfolio Management APIs
+export const fetchPortfolio = async () => {
+  try {
+    const res = await api.get('/portfolio');
+    return res.data;
+  } catch (err) {
+    return { success: false, portfolio: null };
+  }
+};
+
+export const updatePortfolio = async (data: any) => {
+  const res = await api.put('/portfolio', data);
+  return res.data;
+};
+
+export const fetchContactMessages = async () => {
+  try {
+    const res = await api.get('/portfolio/contacts');
+    return res.data;
+  } catch (err) {
+    return { success: false, contacts: [] };
+  }
+};
+
+export const deleteContactMessage = async (id: string) => {
+  const res = await api.delete(`/portfolio/contacts/${id}`);
   return res.data;
 };
 

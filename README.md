@@ -15,7 +15,7 @@ This repository is the engineering portfolio behind a full-stack and AI-first so
 A software engineer focused on shipping reliable production systems with strong foundations in:
 
 - **Full-stack engineering** using Next.js, React, Node.js, Express, TypeScript, and JavaScript.
-- **Backend engineering** using REST APIs, event-driven services, middleware architecture, database design, authentication, and data pipelines.
+- **Backend engineering** using REST APIs, event-driven services, middleware architecture, database design, authentication, and data pipelines. 
 - **AI engineering** using RAG, agentic workflows, LangGraph, Gemini, OpenAI embeddings, and document intelligence.
 - **Mobile engineering** for Android/iOS applications using React Native, Flutter, Dart, and Swift-native integration.
 - **Cloud and DevOps systems** using AWS EC2/S3, Google Cloud Run, Docker, CI/CD, GitHub Actions, and secure deployment workflows.
