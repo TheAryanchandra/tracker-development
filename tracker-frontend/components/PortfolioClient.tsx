@@ -410,7 +410,11 @@ GitHub: https://github.com/TheAryanchandra | LinkedIn: https://linkedin.com/in/a
 
               <div className="pf-fact-grid">
                 <div className="pf-fact-box"><div className="pf-fact-label pf-accent">Target Roles</div><div className="pf-fact-val">SDE-1 / Software Engineer</div><div className="pf-muted pf-xs">Backend, Full-Stack, AI Systems</div></div>
-                <div className="pf-fact-box"><div className="pf-fact-label pf-green">Availability</div><div className="pf-fact-val">Immediate (2026 Grad)</div><div className="pf-muted pf-xs">Internship to Full-Time Ready</div></div>
+                <div className="pf-fact-box">
+  <div className="pf-fact-label pf-green">Availability</div>
+  <div className="pf-fact-val">Immediate</div>
+  <div className="pf-muted pf-xs">Software Engineer · 2025 Graduate</div>
+</div>
                 <div className="pf-fact-box"><div className="pf-fact-label pf-gold">Location</div><div className="pf-fact-val">Delhi NCR, India</div><div className="pf-muted pf-xs">Open to Remote & Global Relocation</div></div>
                 <div className="pf-fact-box"><div className="pf-fact-label" style={{ color: 'var(--color-purple)' }}>Education</div><div className="pf-fact-val">B.Tech Software Engineering</div><div className="pf-muted pf-xs">Strong CS Fundamentals & DSA</div></div>
               </div>

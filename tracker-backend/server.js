@@ -33,12 +33,14 @@ app.get(['/', '/api', '/api/health'], (req, res) => {
   });
 });
 
-// Public endpoints (Auth, Contact, Portfolio view/submit)
+// Public endpoints (Auth, Contact, Portfolio view/submit, AI Copilot, Dashboard Stats)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/portfolio', require('./routes/portfolioRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
-// Require authentication for all tracker & admin routes below
+// Require authentication for all private tracker & admin routes below
 app.use('/api', require('./services/authService').authenticate);
 
 // Routes
@@ -47,8 +49,6 @@ app.use('/api/daily-tracker',       require('./routes/dailyTrackerRoutes'));
 app.use('/api/dsa-progress',        require('./routes/dsaProgressRoutes'));
 app.use('/api/application-tracker', require('./routes/applicationTrackerRoutes'));
 app.use('/api/upload',              require('./services/authService').requireRole('admin'), require('./routes/uploadRoutes'));
-app.use('/api/dashboard',           require('./routes/dashboardRoutes'));
-app.use('/api/ai',                  require('./routes/aiRoutes'));
 app.use('/api/notifications',       require('./routes/notificationRoutes'));
 app.use('/api/sheets',              require('./services/authService').requireRole('admin'), require('./routes/sheetsRoutes'));
 app.use('/api/tasks',               require('./routes/taskRoutes'));
