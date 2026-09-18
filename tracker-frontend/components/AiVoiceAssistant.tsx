@@ -29,6 +29,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { fetchAiModels, getStreamUrl, uploadAiFile, sendAiChat } from '../lib/api';
 
 interface Message {
