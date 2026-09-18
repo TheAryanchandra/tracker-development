@@ -33,10 +33,12 @@ app.get(['/', '/api', '/api/health'], (req, res) => {
   });
 });
 
-// Authentication is public only for login; all tracker APIs require a bearer token.
+// Public endpoints (Auth, Contact, Portfolio view/submit)
 app.use('/api/auth', require('./routes/authRoutes'));
-// Public portfolio contact form; tracker and admin APIs remain protected below.
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/portfolio', require('./routes/portfolioRoutes'));
+
+// Require authentication for all tracker & admin routes below
 app.use('/api', require('./services/authService').authenticate);
 
 // Routes
@@ -50,9 +52,7 @@ app.use('/api/ai',                  require('./routes/aiRoutes'));
 app.use('/api/notifications',       require('./routes/notificationRoutes'));
 app.use('/api/sheets',              require('./services/authService').requireRole('admin'), require('./routes/sheetsRoutes'));
 app.use('/api/tasks',               require('./routes/taskRoutes'));
-app.use('/api/contact',             require('./routes/contactRoutes'));
 app.use('/api/iot',                 require('./routes/iotRoutes'));
-app.use('/api/portfolio',           require('./routes/portfolioRoutes'));
 app.use('/api/agent',               require('./routes/agentRoutes'));
 app.get('/api/automations/status', (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Insufficient permissions' });
@@ -118,4 +118,4 @@ server.listen(PORT, '0.0.0.0', () => {
   startSheetsCron();
 });
 
-// Nodemon restart trigger: 2026-09-18
+// Nodemon restart trigger: 2026-09-18 07:12 IST

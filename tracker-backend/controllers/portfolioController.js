@@ -121,6 +121,61 @@ exports.updatePortfolio = async (req, res) => {
 };
 
 const Contact = require('../models/Contact');
+let nodemailer;
+try { nodemailer = require('nodemailer'); } catch (e) {}
+const { broadcast } = require('../services/websocketService');
+
+async function sendWhisperflowNotification({ name, email, message }) {
+  if (!nodemailer) {
+    console.warn('[Whisperflow] nodemailer not available, skipping email.');
+    return;
+  }
+
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || 'aryanchandra3456@gmail.com';
+  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+  if (!smtpPass) {
+    console.log('[Whisperflow] Contact saved to database & broadcasted to admin panel.');
+    console.log('[Whisperflow] To dispatch live Gmail emails, set SMTP_PASS (Gmail App Password) in tracker-backend/.env');
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: smtpUser, pass: smtpPass },
+  });
+
+  const htmlBody = `
+    <div style="font-family:Inter,system-ui,sans-serif;max-width:560px;margin:0 auto;background:#0f172a;border-radius:16px;padding:32px;color:#e2e8f0">
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;padding:20px 24px;margin-bottom:24px">
+        <h1 style="margin:0;font-size:22px;font-weight:800;color:#fff">🚀 New Portfolio Contact</h1>
+        <p style="margin:6px 0 0;font-size:13px;color:#e0e7ff;opacity:0.85">via Jarvis AI Portfolio — Whisperflow Notification</p>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:10px 0;border-bottom:1px solid #1e293b;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">From</td><td style="padding:10px 0;border-bottom:1px solid #1e293b;font-size:15px;font-weight:700;color:#f1f5f9">${name}</td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid #1e293b;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Email</td><td style="padding:10px 0;border-bottom:1px solid #1e293b"><a href="mailto:${email}" style="color:#818cf8;font-size:14px;font-weight:600">${email}</a></td></tr>
+        <tr><td style="padding:10px 0;font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;vertical-align:top">Message</td><td style="padding:10px 0;font-size:14px;color:#cbd5e1;line-height:1.7">${message}</td></tr>
+      </table>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #1e293b;text-align:center;font-size:11px;color:#475569">
+        Sent by Jarvis AI Portfolio • ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"Jarvis Portfolio Bot" <${smtpUser}>`,
+      to: 'aryanchandra3456@gmail.com',
+      replyTo: email,
+      subject: `[Portfolio Contact] ${name} — New Inquiry`,
+      html: htmlBody,
+      text: `New contact from: ${name} <${email}>\n\nMessage:\n${message}`,
+    });
+    console.log(`[Whisperflow] Contact email sent → aryanchandra3456@gmail.com from ${email}`);
+  } catch (err) {
+    console.error('[Whisperflow] Email send failed:', err.message);
+  }
+}
 
 /**
  * POST /api/portfolio/contact
@@ -138,6 +193,12 @@ exports.submitContact = async (req, res) => {
     console.log(`[Whisperflow / Contact] New recruiter inquiry from ${name} (${email}):`);
     console.log(message);
     console.log(`[Whisperflow] Notification dispatched to: aryanchandra3456@gmail.com`);
+
+    // Broadcast WebSocket event to Admin Panel
+    try { broadcast('CONTACT_RECEIVED', { name, email, message }); } catch (e) {}
+
+    // Dispatch email notification in background
+    sendWhisperflowNotification({ name, email, message }).catch(() => {});
 
     res.json({
       success: true,
