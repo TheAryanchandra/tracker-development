@@ -20,6 +20,7 @@ const {
 } = require('../ai/longTermMemory');
 const { searchJobsPaginated, formatJobsForResponse } = require('../ai/jobSearcher');
 const { broadcast, WS_EVENTS } = require('../services/websocketService');
+const { analyzeImage, supportedModels } = require('../ai/kieClient');
 
 // Search only when the question needs fresh public information. Casual chat,
 // memory, and tracker questions should stay fast and use the local RAG model.
@@ -329,8 +330,17 @@ exports.handleFileUpload = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
-    const { prompt: userPrompt = '' } = req.body;
+    const { prompt: userPrompt = '', provider = 'ocr', model, webSearch, reasoningEffort } = req.body;
     const { sessionId = 'default' } = req.body;
+
+    if (provider === 'kie' && req.file.mimetype.startsWith('image/')) {
+      const vision = await analyzeImage(req.file, userPrompt, {
+        model,
+        webSearch: webSearch === 'true' || webSearch === true,
+        reasoningEffort,
+      });
+      return res.json({ success: true, reply: vision.text, source: `Kie ${vision.model}`, provider: 'kie', model: vision.model });
+    }
 
     // Run OCR on the uploaded file
     const ocrResult = await processUploadedFile(req.file.path, req.file.originalname);
@@ -383,6 +393,14 @@ exports.handleFileUpload = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.handleAiModels = (req, res) => res.json({
+  success: true,
+  providers: [
+    { id: 'ocr', label: 'Local OCR + RAG', vision: true },
+    { id: 'kie', label: 'Kie AI Vision', vision: true, models: supportedModels },
+  ],
+});
 
 // ── Helper functions ──────────────────────────────────────────
 

@@ -7,7 +7,8 @@
  *  - Caches results in-memory and injects them into vector memory
  */
 
-const fetch = require('node-fetch');
+// Node 18+ provides fetch natively, so startup does not depend on node-fetch.
+const fetch = globalThis.fetch;
 const cheerio = require('cheerio');
 const vectorStore = require('./vectorStore');
 const assistantCache = require('../services/assistantCache');

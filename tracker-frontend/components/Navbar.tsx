@@ -3,16 +3,25 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, ShieldCheck, FileSpreadsheet, Menu, BarChart3, CalendarCheck, Home } from 'lucide-react';
+import { Search, ShieldCheck, FileSpreadsheet, Menu, BarChart3, CalendarCheck, Home, LogOut } from 'lucide-react';
 import { ExcelUploadModal } from './ExcelUploadModal';
 import ThemeToggle from './ThemeToggle';
+import { clearAuth, getAuthToken } from '@/lib/auth';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
   const isHome = pathname === '/';
 
-  if (isHome) return null;
+  React.useEffect(() => {
+    const refreshAuth = () => setAuthenticated(Boolean(getAuthToken()));
+    refreshAuth();
+    window.addEventListener('tracker-auth-changed', refreshAuth);
+    return () => window.removeEventListener('tracker-auth-changed', refreshAuth);
+  }, []);
+
+  if (isHome || pathname === '/login' || !authenticated) return null;
 
   return (
     <>
@@ -91,6 +100,24 @@ export default function Navbar() {
           </div>
 
           <ThemeToggle />
+
+          {authenticated ? (
+            <button
+              onClick={() => { clearAuth(); window.location.href = '/'; }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[var(--card-border)] bg-[var(--card-flat)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold transition"
+              title="Sign out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign out</span>
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-700 text-white text-xs font-semibold transition hover:bg-amber-800"
+            >
+              Sign in
+            </Link>
+          )}
 
           <div className="flex items-center gap-2 pl-2 border-l border-[var(--card-border)]">
             <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-700 dark:from-amber-500 dark:to-amber-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">

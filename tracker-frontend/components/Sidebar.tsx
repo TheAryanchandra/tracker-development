@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import { ExcelUploadModal } from './ExcelUploadModal';
 import ThemeToggle from './ThemeToggle';
+import { getAuthToken, getAuthUser } from '@/lib/auth';
 
 const navItems = [
-  { label: 'Dashboard',    href: '/',             icon: LayoutDashboard },
+  { label: 'Dashboard',    href: '/dashboard',    icon: LayoutDashboard },
   { label: 'DSA Progress', href: '/dsa-progress', icon: BarChart3 },
   { label: 'Daily Log',    href: '/daily-tracker', icon: CalendarCheck },
   { label: 'DSA Lectures', href: '/dsa-lectures', icon: Youtube },
@@ -32,7 +33,20 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [excelOpen, setExcelOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [role, setRole] = useState('member');
   const isHome = pathname === '/';
+
+  useEffect(() => {
+    const refreshAuth = () => {
+      const hasToken = Boolean(getAuthToken());
+      setAuthenticated(hasToken);
+      setRole(getAuthUser<{ role?: string }>()?.role || 'member');
+    };
+    refreshAuth();
+    window.addEventListener('tracker-auth-changed', refreshAuth);
+    return () => window.removeEventListener('tracker-auth-changed', refreshAuth);
+  }, [pathname]);
 
   useEffect(() => {
     const open = () => setExcelOpen(true);
@@ -63,6 +77,10 @@ export default function Sidebar() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [mobileOpen]);
+
+  if (!authenticated || pathname === '/login') return null;
+
+  const visibleNavItems = role === 'admin' ? navItems : navItems.filter((item) => item.href !== '/admin');
 
   return (
     <>
@@ -111,7 +129,7 @@ export default function Sidebar() {
 
           {/* Navigation */}
           <nav className="p-2 flex-1 space-y-0.5">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
               return (
@@ -168,7 +186,7 @@ export default function Sidebar() {
         </div>
         <div className="mobile-drawer-label">Workspace &amp; Tracker</div>
         <nav className="mobile-drawer-nav">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
             return (
@@ -203,7 +221,7 @@ export default function Sidebar() {
       {/* ── Mobile Bottom Navigation Bar (Always visible on mobile) ───────────────────────── */}
       <nav className="mobile-nav flex items-center justify-around border-t border-[var(--card-border)] bg-[var(--sidebar-bg)] z-50">
         {[
-          { label: 'Home',     href: '/',             icon: LayoutDashboard },
+          { label: 'Dashboard', href: '/dashboard',   icon: LayoutDashboard },
           { label: 'Progress', href: '/dsa-progress', icon: BarChart3 },
           { label: 'Daily',    href: '/daily-tracker', icon: CalendarCheck },
           { label: 'Lectures', href: '/dsa-lectures', icon: Youtube },
