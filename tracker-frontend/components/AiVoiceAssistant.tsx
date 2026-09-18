@@ -29,8 +29,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { fetchAiModels, getStreamUrl, uploadAiFile } from '../lib/api';
+import { fetchAiModels, getStreamUrl, uploadAiFile, sendAiChat } from '../lib/api';
 
 interface Message {
   id: string;
@@ -633,17 +632,51 @@ Feel free to ask me anything about Aryan's technical depth, system design decisi
         }
       };
 
-      es.onerror = () => {
+      es.onerror = async () => {
         es.close();
+        if (fullText) {
+          setLoading(false);
+          setStatusMessage(null);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === aiId ? { ...m, streaming: false } : m))
+          );
+          return;
+        }
+
+        // Seamless fallback to standard HTTP POST /api/ai/chat if streaming is interrupted
+        setStatusMessage('⚡ Connecting via backup AI channel...');
+        try {
+          const res = await sendAiChat(query, SESSION_ID);
+          setLoading(false);
+          setStatusMessage(null);
+          if (res?.success && res.reply) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiId
+                  ? { ...m, text: res.reply, streaming: false }
+                  : m
+              )
+            );
+            speak(res.reply);
+            return;
+          }
+        } catch (fallbackErr) {}
+
         setLoading(false);
         setConnectionError(true);
-        setStatusMessage('Connection interrupted. Check the agent service and retry.');
+        setStatusMessage(null);
+        
+        const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const errorText = isLocalHost
+          ? '⚡ Connection interrupted. Please ensure local backend is active on port 5000.'
+          : '⚡ Cloud backend server is spinning up (Render free tier cold start). Please click Retry in a few seconds.';
+
         setMessages((prev) =>
           prev.map((m) =>
             m.id === aiId
               ? {
                   ...m,
-                  text: fullText || '⚡ Connection interrupted. Please ensure backend is active on port 5000.',
+                  text: errorText,
                   streaming: false,
                 }
               : m
