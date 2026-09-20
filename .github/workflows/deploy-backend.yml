@@ -1,0 +1,32 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tracker-backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "?? Starting deploy at $(date)"
+            cd ~/tracker-development
+            git fetch origin main
+            git reset --hard origin/main
+            cd tracker-backend
+            npm install --omit=dev
+            pm2 restart jarvis-backend || pm2 start npm --name "jarvis-backend" -- start --max-memory-restart 1500M
+            pm2 save
+            echo "? Deploy complete at $(date)"
+            pm2 status

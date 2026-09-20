@@ -116,6 +116,22 @@ server.listen(PORT, '0.0.0.0', () => {
   seedDefaultDsaTopics();
   scheduleNotifications();
   startSheetsCron();
+
+  // ── Render free-tier keepalive ────────────────────────────────
+  // Render injects RENDER_EXTERNAL_URL on their platform only.
+  // We ping our own public health endpoint every 14 min so Render
+  // never sees 15 min of silence and puts the dyno to sleep.
+  // This is a no-op locally (env var is absent).
+  if (process.env.RENDER_EXTERNAL_URL) {
+    const pingUrl = `${process.env.RENDER_EXTERNAL_URL}/api/health`;
+    const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+    setInterval(() => {
+      fetch(pingUrl)
+        .then(() => console.log(`[Keepalive] Pinged ${pingUrl}`))
+        .catch((err) => console.warn('[Keepalive] Ping failed:', err.message));
+    }, PING_INTERVAL);
+    console.log(`[Keepalive] Anti-sleep active → pinging ${pingUrl} every 14 min`);
+  }
 });
 
 // Nodemon restart trigger: 2026-09-18 07:12 IST

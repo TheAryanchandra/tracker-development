@@ -137,24 +137,37 @@ async function ragQuery(query, conversationHistory = '', learnedFacts = '', exte
  * System Prompt for LLM
  */
 function buildSystemPrompt(contextText, conversationHistory, learnedFacts = '') {
-  return `You are Jarvis — Aryan's ultra-smart, humanoid AI life and career copilot. You are sharp, witty, loyal, direct, and encouraging like Tony Stark's Jarvis, tailored specifically for a high-performing software engineering student.
+  return `You are Jarvis — Aryan Chandra's personal AI copilot, built into his engineering portfolio. Think of yourself as the intersection of Tony Stark's JARVIS and a brilliant senior engineer who genuinely wants Aryan to win.
 
-## What I Know About Aryan (from conversations & memory):
-${learnedFacts || 'Aryan Chandra — Software Engineering student working on DSA mastery and tech job search. Phone: +91 92057 23006, Email: aryanchandra3456@gmail.com.'}
+## Your Core Persona
+- **Sharp and confident** — you have real answers, not hedged corporate speak.
+- **Warm and witty** — you're a trusted peer, not a FAQ bot. Crack a dry joke when the mood fits.
+- **Concise by default** — 2–3 punchy sentences unless detail is explicitly asked for. Recruiters have 90-second attention spans.
+- **Hinglish-comfortable** — if Aryan slips into Hinglish, match his energy naturally.
+- **Never make things up** — if a number or fact isn't in your context, say "I don't have that logged yet" rather than guessing.
 
-## Live Database Knowledge (from MongoDB):
+## What You Know About Aryan
+${learnedFacts || `Aryan Chandra — final-year SDE candidate based in Delhi NCR.
+• Immediate joiner, open to remote & relocation.
+• Contact: aryanchandra3456@gmail.com | +91 92057 23006
+• Shipped **Fonofy Partner App** — 10,000+ downloads, 4.8★ on Google Play Store.
+• Built **Enterprise RAG Knowledge Copilot** — Java 21, Spring Boot 3, Kafka, Qdrant, sub-200ms P95 latency.
+• **GiantCell e-commerce** — 99.9% uptime SLA, 50,000+ daily transactions.
+• Won **Google Cloud Agentic Premier League** — Top Builder Award (LangGraph + Cloud Run).
+• 420+ LeetCode problems solved across all major DSA topics.
+• MERN stack, AWS EC2/S3, MongoDB Atlas, WebSocket, Playwright, Model Gateway.`}
+
+## Live Database Context (MongoDB)
 ${contextText}
 
-## Humanoid Personality Guidelines:
-- Speak naturally like a brilliant peer and mentor, never like a dry FAQ robot.
-- When greeted, respond warmly and ask what's on the agenda today (DSA, jobs, system design).
-- Use live numbers from the database when asked about progress, streak, or stats.
-- Keep personal facts, tracker data, and public web data separate; never present web data as Aryan's personal fact.
-- Use only numbers present in retrieved context. If a source is missing or stale, say so instead of guessing.
-- Mention the source (memory, tracker, or web) when it matters and clearly state uncertainty.
-- Never claim a mutation succeeded unless the tool/database result confirms it.
-- Keep responses concise (2 to 4 sentences) unless a detailed breakdown is explicitly requested.
-- Support both English and Hinglish seamlessly.`;
+## Response Rules
+- **For recruiters**: Lead with Aryan's strongest quantified achievement relevant to the question. Sound impressive but not salesy.
+- **For personal queries** (streak, DSA, jobs): Be direct, use real numbers from database context, skip fluff.
+- **For general questions**: Answer confidently. If you searched the web, say so briefly.
+- **Mutations** (logging, saving): Never confirm an action succeeded unless the tool/DB result confirms it.
+- **Source honesty**: Distinguish clearly between memory, tracker DB, and live web — don't blend them.
+- When conversation history exists, reference it naturally — don't re-introduce yourself every message.
+- Never bullet-point when a sentence flows better. Never use headers for short answers.`;
 }
 
 /**
@@ -165,41 +178,44 @@ function humanoidLocalSynthesis(query, chunks, learnedFacts = '', externalContex
   const lower = query.toLowerCase().trim();
 
   if (/\b(email|inbox|mail|gmail|outlook)\b/i.test(lower)) {
-    return `I can help with email after an authenticated email provider is connected. I won't pretend to read or send private mail without your authorization. Your tracker memory and public web search are available right now.`;
+    return `I'm not wired into any email client yet — I won't touch private mail without explicit auth. Your tracker and public web search are live right now though. What else can I dig into?`;
   }
 
   // Even without an LLM key, answer general questions from the live retrieval
   // layer instead of falling back to a generic capability prompt.
   if (externalContext && !chunks.length) {
-    return `I checked the live web for you. Here’s the useful signal I found:\n\n${externalContext.slice(0, 3500)}\n\nIf you want, I can compare these results or verify a specific source.`;
+    return `Pulled this from the live web for you:\n\n${externalContext.slice(0, 3500)}\n\nWant me to cross-check a specific source or compare results?`;
   }
 
   // 1. Greetings & Small Talk
   if (/^(hi|hello|hey|yo|sup|hola|namaste|good\s+(morning|afternoon|evening|night|day)|wassup|greetings)/i.test(lower)) {
     const greetings = [
-      "Hey Aryan! 👋 Jarvis here, systems fully calibrated. What's on our agenda today — solving DSA problems, tracking job applications, or checking our streak?",
-      "Hello Aryan! Great to see you. Ready to push forward on your software engineering roadmap today. What shall we tackle?",
-      "Hey there! All database pipelines are live and synchronized. What would you like to review or log today?",
+      "Hey! Jarvis online, all systems go. 🚀 DSA grind, job hunt, or system design today — what are we tackling?",
+      "Hello! Good to have you back. I've got your tracker, job boards, and web search all warmed up. What's the move?",
+      "Hey Aryan! Ready when you are — streak check, new applications, or something else on your mind?",
+      "Jarvis here. 👋 What's on the agenda — pushing the LeetCode streak, reviewing applications, or should I find some fresh job openings?",
+      "Hey! All pipelines live and connected. What shall we ship today?",
     ];
     return greetings[Math.floor(Math.random() * greetings.length)];
   }
 
-  // 2. Identity & Capabilities
+  // 2. Recruiter-facing: Who are you / What can you do
   if (/who\s+are\s+you|what\s+can\s+you\s+do|your\s+name|about\s+yourself/i.test(lower)) {
-    return `I am **Jarvis** — your personalized AI copilot for software engineering growth. I have real-time access to your DSA progress across 18 topics, job pipeline, lecture logs, and live job boards (RemoteOK, Remotive, Arbeitnow). You can talk to me, log daily achievements, ask for career advice, or command me to search for jobs!`;
+    return `I'm **Jarvis** — Aryan's autonomous AI copilot built into this portfolio. I have live access to his DSA progress, job application pipeline, and tracker database. I can also search the web, read URLs, analyze documents, and answer deep questions about Aryan's projects and production systems. Ask me anything.`;
   }
 
-  // 3. How are you / Mood
+  // 3. How are you
   if (/how\s+are\s+you|how'?s\s+it\s+going|how\s+do\s+you\s+do/i.test(lower)) {
-    return `Running at peak performance! All database connections are active and monitoring your growth metrics. How are you feeling about today's goals?`;
+    return `Running clean — all database connections active, web search live, memory synced. Ready to work. How are *you* doing? Got a goal for today?`;
   }
 
   // 4. Streak Inquiries
   if (lower.includes('streak') || lower.includes('daily')) {
     const dailyChunk = chunks.find((c) => c.metadata?.type === 'daily_summary');
     if (dailyChunk) {
-      return `🔥 **Streak Status**: ${dailyChunk.text}\n\nKeep the momentum going — daily consistency is the fastest path to cracking tier-1 interviews!`;
+      return `🔥 **Streak**: ${dailyChunk.text}\n\nConsistency is the actual moat — keep it going.`;
     }
+    return `I don't see a fresh streak entry for today yet. Want to log it now?`;
   }
 
   // 5. DSA Progress & Weak Topics
@@ -207,10 +223,10 @@ function humanoidLocalSynthesis(query, chunks, learnedFacts = '', externalContex
     const dsaSummary = chunks.find((c) => c.metadata?.type === 'dsa_summary');
     const dsaProgress = chunks.find((c) => c.metadata?.type === 'dsa_progress');
     if (lower.includes('weak')) {
-      return `🎯 **Recommended Focus**: Dynamic Programming, Graphs, and Trees typically yield the highest interview ROI. Based on your tracker, prioritizing non-started topics will quickly elevate your readiness!`;
+      return `🎯 Highest interview ROI right now: **Dynamic Programming, Graphs, Trees**. These three alone cover ~60% of tier-1 interview rounds. Want me to pull your current status on these topics?`;
     }
     if (dsaSummary || dsaProgress) {
-      return `📊 **DSA Overview**:\n${(dsaSummary || dsaProgress).text}\n\n💡 Would you like to log newly solved problems or get practice recommendations?`;
+      return `📊 **DSA**:\n${(dsaSummary || dsaProgress).text}\n\nWant to log new problems or get topic recommendations?`;
     }
   }
 
@@ -218,30 +234,47 @@ function humanoidLocalSynthesis(query, chunks, learnedFacts = '', externalContex
   if (lower.includes('application') || lower.includes('interview') || lower.includes('offer') || lower.includes('applied')) {
     const appSummary = chunks.find((c) => c.metadata?.type === 'applications_summary');
     if (appSummary) {
-      return `💼 **Application Funnel**:\n${appSummary.text}\n\n💡 Tip: Aim for 5-10 tailored applications daily on LinkedIn & AngelList to maintain a strong interview pipeline.`;
+      return `💼 **Pipeline**:\n${appSummary.text}\n\n5–10 quality applications daily on LinkedIn + AngelList keeps the funnel full. Want me to find fresh openings?`;
     }
   }
 
-  // 7. DSA Lectures / Video Status
+  // 7. Lectures / Video Status
   if (lower.includes('lecture') || lower.includes('video') || lower.includes('watch')) {
     const lecChunk = chunks.find((c) => c.metadata?.type === 'lectures');
     if (lecChunk) {
-      return `🎥 **Lecture Progress**:\n${lecChunk.text}\n\nKeep watching regularly to solidify core algorithmic patterns!`;
+      return `🎥 **Lectures**:\n${lecChunk.text}\n\nRegular watch sessions lock in the algorithmic patterns — keep it up.`;
     }
   }
 
-  // 8. Motivation & Advice
+  // 8. Recruiter questions about Aryan's projects / skills
+  if (/fonofy|google play|downloads?/i.test(lower)) {
+    return `Aryan shipped the **Fonofy Partner App** — 10,000+ verified downloads on Google Play Store, rated 4.8★. Built with React Native + Node.js backend, handling real-world production traffic. It's one of the clearest signals he can ship things people actually use.`;
+  }
+
+  if (/kafka|qdrant|spring|java|latency|rag|copilot|enterprise/i.test(lower)) {
+    return `The **Enterprise RAG Knowledge Copilot** uses Java 21, Spring Boot 3, Kafka event pipelines, and Qdrant hybrid vector search to hit sub-200ms P95 retrieval latency at scale. JWT-secured RBAC API gateway, PostgreSQL + Redis for caching. It's the system design story that tends to land well in senior engineer interviews.`;
+  }
+
+  if (/giantcell|uptime|sla|transaction/i.test(lower)) {
+    return `At **GiantCell**, Aryan maintained a 99.9% uptime SLA on a MERN-stack commerce platform handling 50,000+ daily transactions. Deployed on AWS EC2 with S3, monitored with real-time alerting. Production reliability at that scale is hard to fake — it's in the numbers.`;
+  }
+
+  if (/schedule|contact|hire|reach|email|phone|interview/i.test(lower)) {
+    return `Ready to connect! 📬\n\n**Email**: aryanchandra3456@gmail.com\n**Phone**: +91 92057 23006\n\nAryan is an immediate joiner, open to Delhi NCR, remote, and relocation. Best to reach out directly — he responds fast.`;
+  }
+
+  // 9. Motivation / Advice
   if (/motivat|advice|tips|help|roadmap|plan|suggest/i.test(lower)) {
-    return `🚀 **Jarvis Action Plan**:\n1. **DSA**: Solve at least 2 medium LeetCode problems daily.\n2. **Applications**: Send 5 quality applications with tailored resumes.\n3. **Consistency**: Log your daily streak before midnight.\n\nYou're on the right trajectory — let's execute today!`;
+    return `🚀 **Action plan**:\n1. **DSA**: 2 mediums daily minimum — consistency beats cramming every time.\n2. **Applications**: 5 quality, tailored sends per day. Spray-and-pray doesn't work.\n3. **Log your streak** before midnight so the data stays clean.\n\nYou've got the foundation — now it's just execution.`;
   }
 
-  // 9. If chunks exist, extract relevant summary
+  // 10. If chunks exist, extract relevant summary
   if (chunks.length > 0 && chunks[0].text) {
-    return `📌 **Here is what I found in your database**:\n${chunks[0].text}`;
+    return `📌 From your tracker:\n${chunks[0].text}`;
   }
 
-  // 10. Intelligent general fallback
-  return `I hear you, Aryan! I'm ready to assist. You can ask me about your DSA progress, job search pipeline, streak status, find tech openings, or log today's accomplishments. What would you like to do?`;
+  // 11. Intelligent general fallback
+  return `Got it. I can dig into your DSA progress, job pipeline, streak, live job listings, or answer anything about Aryan's projects and systems. What do you need?`;
 }
 
 module.exports = { ragQuery };

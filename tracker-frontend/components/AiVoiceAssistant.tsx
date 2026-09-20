@@ -110,6 +110,9 @@ export const AiVoiceAssistant: React.FC = () => {
   const microphoneStreamRef = useRef<MediaStream | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const statusTimerRef = useRef<number | null>(null);
+  const autoRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [autoRetryCountdown, setAutoRetryCountdown] = useState<number | null>(null);
+  const autoRetryCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Initialize and load persistent history
   useEffect(() => {
@@ -669,8 +672,8 @@ Feel free to ask me anything about Aryan's technical depth, system design decisi
         
         const isLocalHost = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
         const errorText = isLocalHost
-          ? '⚡ Connection interrupted. Please ensure local backend is active on port 5000.'
-          : '⚡ Cloud backend server is spinning up (Render free tier cold start). Please click Retry in a few seconds.';
+          ? '🔌 Local backend went quiet — make sure the Node server is running on port 5000, then hit Retry.'
+          : "Hey, I just woke up from a power nap 😴 — Render puts me to sleep after a few minutes of quiet. I'll auto-retry in a moment. You can also hit **Retry** to bring me back instantly.";
 
         setMessages((prev) =>
           prev.map((m) =>
@@ -683,12 +686,49 @@ Feel free to ask me anything about Aryan's technical depth, system design decisi
               : m
           )
         );
+
+        // Auto-retry after 18 seconds with countdown — so recruiter never has to click
+        if (!isLocalHost) {
+          // Clear any existing auto-retry
+          if (autoRetryTimerRef.current) clearTimeout(autoRetryTimerRef.current);
+          if (autoRetryCountdownRef.current) clearInterval(autoRetryCountdownRef.current);
+
+          const RETRY_SECONDS = 18;
+          setAutoRetryCountdown(RETRY_SECONDS);
+
+          autoRetryCountdownRef.current = setInterval(() => {
+            setAutoRetryCountdown((prev) => {
+              if (prev === null || prev <= 1) {
+                if (autoRetryCountdownRef.current) clearInterval(autoRetryCountdownRef.current);
+                autoRetryCountdownRef.current = null;
+                return null;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+
+          autoRetryTimerRef.current = setTimeout(() => {
+            setAutoRetryCountdown(null);
+            if (autoRetryCountdownRef.current) clearInterval(autoRetryCountdownRef.current);
+            autoRetryCountdownRef.current = null;
+            autoRetryTimerRef.current = null;
+            setConnectionError(false);
+            // Silent auto-retry — user sees Jarvis respond as if nothing happened
+            setMessages((prev) => prev.filter((m) => m.id !== aiId));
+            handleSend(query);
+          }, RETRY_SECONDS * 1000);
+        }
       };
     },
     [input, selectedFile, filePreview, loading, speak, visionProvider, visionModel, reasoningEffort, webSearch]
   );
 
   const retryLastPrompt = useCallback(() => {
+    // Cancel any pending auto-retry and fire immediately
+    if (autoRetryTimerRef.current) { clearTimeout(autoRetryTimerRef.current); autoRetryTimerRef.current = null; }
+    if (autoRetryCountdownRef.current) { clearInterval(autoRetryCountdownRef.current); autoRetryCountdownRef.current = null; }
+    setAutoRetryCountdown(null);
+    setConnectionError(false);
     if (lastPrompt && !loading) handleSend(lastPrompt);
   }, [handleSend, lastPrompt, loading]);
 
@@ -922,7 +962,11 @@ Feel free to ask me anything about Aryan's technical depth, system design decisi
                 {connectionError ? <WifiOff size={14} /> : <Sparkles size={14} className="animate-spin" />}
                 <span>{statusMessage}</span>
                 {loading && <span className="jarvis-elapsed"><Clock3 size={12} /> {elapsed}s</span>}
-                {connectionError && <button onClick={retryLastPrompt} disabled={loading}>Retry <ChevronRight size={13} /></button>}
+                {connectionError && (
+                  <button onClick={retryLastPrompt} disabled={loading}>
+                    Retry {autoRetryCountdown !== null ? `(${autoRetryCountdown}s)` : ''} <ChevronRight size={13} />
+                  </button>
+                )}
               </div>
             )}
 
