@@ -14,12 +14,14 @@ import {
   BriefcaseBusiness,
   Menu,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { ExcelUploadModal } from './ExcelUploadModal';
 import ThemeToggle from './ThemeToggle';
 import { getAuthToken, getAuthUser } from '@/lib/auth';
 
 const navItems = [
+  { label: '3D Profile',   href: '/profile',      icon: Sparkles },
   { label: 'Dashboard',    href: '/dashboard',    icon: LayoutDashboard },
   { label: 'DSA Progress', href: '/dsa-progress', icon: BarChart3 },
   { label: 'Daily Log',    href: '/daily-tracker', icon: CalendarCheck },
@@ -35,7 +37,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [role, setRole] = useState('member');
-  const isHome = pathname === '/';
+  const isHome = pathname === '/' || pathname === '/profile';
 
   useEffect(() => {
     const refreshAuth = () => {

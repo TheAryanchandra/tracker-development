@@ -194,7 +194,7 @@ npm run dev
 | Event Name | Payload Data | Trigger Condition |
 |---|---|---|
 | `CONNECTED` | `{ message, clientCount, timestamp }` | Client establishes WS connection on `/ws` |
-| `SHEET_SYNCED` | `{ totalChanges, duration, results }` | 1-minute Google Sheets cron completes |
+| `SHEET_SYNCED` | `{ totalChanges, duration, results }Ma'am, can I stay here or do you want me to go outside?  ` | 1-minute Google Sheets cron completes |
 | `DATA_UPDATED` | `{ source, changes }` | Database upsert/write operation occurs |
 | `STATS_REFRESH`| `{ reason }` | Dashboard needs to recalculate metrics |
 | `AI_ACTION` | `{ action, entities }` | Jarvis executes an action (e.g. `DAILY_LOG`, `DSA_UPDATED`) |

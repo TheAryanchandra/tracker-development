@@ -12,6 +12,7 @@ const fetch = globalThis.fetch;
 const cheerio = require('cheerio');
 const vectorStore = require('./vectorStore');
 const assistantCache = require('../services/assistantCache');
+const { summarizeText } = require('./hfService');
 
 const scrapeCache = new Map();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
@@ -198,6 +199,19 @@ async function scrapeUrl(url) {
     const urlType = detectUrlType(url);
     const content = extractPageContent($, urlType);
 
+    // Rule 4: Compress scraped web content with Hugging Face summarizer before entering context (~150 tokens)
+    const rawContentText = [content.description, content.body, content.readme].filter(Boolean).join('\n\n');
+    let compressedSummary = rawContentText;
+    if (rawContentText.length > 250) {
+      try {
+        compressedSummary = await summarizeText(rawContentText, 150);
+        console.log(`[HF Summarizer] Compressed scraped content for ${url} from ${rawContentText.length} chars to ${compressedSummary.length} chars (~${Math.round(compressedSummary.length / 4)} tokens)`);
+      } catch (sumErr) {
+        console.warn('[HF Summarizer] Summarization fallback for', url, sumErr.message);
+      }
+    }
+    content.compressedSummary = compressedSummary;
+
     const result = {
       url,
       urlType,
@@ -208,7 +222,7 @@ async function scrapeUrl(url) {
 
     scrapeCache.set(url, result);
 
-    const chunkText = `[Web Scrape: ${url}]\nType: ${urlType}\nTitle: ${content.title || ''}\nDescription: ${content.description || ''}\nBody: ${content.body || content.description || ''}`;
+    const chunkText = `[Web Scrape: ${url}]\nType: ${urlType}\nTitle: ${content.title || ''}\nSummary: ${content.compressedSummary || content.description || ''}`;
     vectorStore.addChunk({
       id: `scrape-${Buffer.from(url).toString('base64url').slice(0, 90)}`,
       text: chunkText,
@@ -227,22 +241,24 @@ function formatScrapeResult(result) {
     return `❌ Could not scrape ${result.url}: ${result.error}.`;
   }
 
+  const summary = result.compressedSummary || result.description || '';
+
   switch (result.type) {
     case 'job_description':
       return `🔍 **Job Posting from ${result.url}**\n\n` +
         `**Role**: ${result.title || 'N/A'}\n` +
         `**Company**: ${result.company || 'N/A'}\n` +
         `**Location**: ${result.location || 'N/A'}\n\n` +
-        `**Overview**:\n${result.description?.slice(0, 800) || 'N/A'}`;
+        `**Overview (Compressed)**:\n${summary}`;
 
     case 'leetcode_problem':
-      return `💻 **LeetCode: ${result.title}** (${result.difficulty || 'Problem'})\n\n${result.description?.slice(0, 600) || 'N/A'}`;
+      return `💻 **LeetCode: ${result.title}** (${result.difficulty || 'Problem'})\n\n${summary}`;
 
     case 'github_repo':
-      return `📦 **GitHub Repository: ${result.title}**\n\n${result.description}\n\n${result.readme?.slice(0, 500) || ''}`;
+      return `📦 **GitHub Repository: ${result.title}**\n\n${summary}`;
 
     default:
-      return `🌐 **Page Summary: ${result.title || result.url}**\n\n${result.description || ''}\n\n${(result.body || '').slice(0, 600)}`;
+      return `🌐 **Page Summary: ${result.title || result.url}**\n\n${summary}`;
   }
 }
 

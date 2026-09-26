@@ -21,6 +21,7 @@ const {
 const { searchJobsPaginated, formatJobsForResponse } = require('../ai/jobSearcher');
 const { broadcast, WS_EVENTS } = require('../services/websocketService');
 const { analyzeImage, supportedModels } = require('../ai/kieClient');
+const { predictRouteShadow } = require('../ai/hfRouter');
 
 // Search only when the question needs fresh public information. Casual chat,
 // memory, and tracker questions should stay fast and use the local RAG model.
@@ -54,6 +55,9 @@ exports.handleAiChat = async (req, res) => {
 
     // 2. Classify intent
     const { intent, entities } = classify(prompt);
+
+    // Rule 3: Run HF Router in Shadow Mode (non-blocking observation alongside live flow)
+    predictRouteShadow(prompt, intent);
 
     // 3. Load context
     const history = memoryStore.getContextString(sessionId);
@@ -230,6 +234,7 @@ exports.handleAiStream = async (req, res) => {
     send({ type: 'status', status: 'started', message: 'Jarvis is working', done: false });
     autoLearnFromMessage(String(prompt), 'user').catch(() => {});
     const { intent, entities } = classify(String(prompt));
+    predictRouteShadow(String(prompt), intent);
     const history = memoryStore.getContextString(String(sessionId));
     const learnedFacts = await getLearnedFactsContext();
 

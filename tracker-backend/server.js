@@ -38,6 +38,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/portfolio', require('./routes/portfolioRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/jarvis', require('./routes/aiRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 // Require authentication for all private tracker & admin routes below

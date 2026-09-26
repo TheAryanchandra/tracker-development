@@ -200,11 +200,18 @@ GitHub: https://github.com/TheAryanchandra | LinkedIn: https://linkedin.com/in/a
               <span className="pf-badge pf-badge-green pf-show-sm">Available SDE-1</span>
             </div>
             <div className="pf-nav-links">
-              {[['#apps', 'Apps (10K+)'], ['#projects', 'Projects'], ['#skills', 'Tech Stack'], ['#contact', 'Contact']].map(([href, label]) => (
+              {[['/profile', '3D Profile 🚀'], ['#apps', 'Apps (10K+)'], ['#projects', 'Projects'], ['#skills', 'Tech Stack'], ['#contact', 'Contact']].map(([href, label]) => (
                 <a key={href} href={href} className="pf-nav-link">{label}</a>
               ))}
             </div>
             <div className="pf-nav-actions">
+              <Link
+                href="/profile"
+                className="pf-btn pf-btn-accent pf-btn-sm pf-show-md"
+                style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000', fontWeight: 'bold' }}
+              >
+                <Sparkles size={13} /> 3D Profile
+              </Link>
               <a
                 href={resumeUrl}
                 target="_blank"
@@ -247,11 +254,18 @@ GitHub: https://github.com/TheAryanchandra | LinkedIn: https://linkedin.com/in/a
               <p className="pf-hero-bio">{info.bio}</p>
 
               <div className="pf-hero-actions">
+                <Link
+                  href="/profile"
+                  className="pf-btn pf-btn-accent"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000', fontWeight: 'bold' }}
+                >
+                  <Sparkles size={16} /> 3D Interactive Profile
+                </Link>
                 <a
                   href={resumeUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="pf-btn pf-btn-accent"
+                  className="pf-btn pf-btn-outline"
                   style={{ cursor: 'pointer' }}
                   title="View Aryan Chandra's Resume on Google Drive"
                 >

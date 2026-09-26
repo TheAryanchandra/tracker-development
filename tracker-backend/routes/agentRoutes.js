@@ -16,6 +16,8 @@ const toolRegistry = require('../ai/ToolRegistry');
 const contextManager = require('../ai/ContextManager');
 const taskStateEngine = require('../ai/TaskStateEngine');
 const { runAgentLoop } = require('../ai/agentOrchestrator');
+const { getShadowStats } = require('../ai/hfRouter');
+const { runLangGraphAgent } = require('../ai/langgraphAgent');
 const AgentTask = require('../models/AgentTask');
 
 // GET /api/agent/status
@@ -71,13 +73,36 @@ router.post('/model', (req, res) => {
   }
 });
 
-// POST /api/agent/run — Run an agent loop query
+// POST /api/agent/run — Run an agent loop query (original orchestrator)
 router.post('/run', async (req, res) => {
   try {
     const { prompt, sessionId = 'agent-admin' } = req.body;
     if (!prompt) return res.status(400).json({ success: false, message: 'Prompt is required' });
 
     const result = await runAgentLoop(prompt, sessionId);
+    res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/agent/router-shadow — Inspect Rule 3 Shadow Mode router predictions
+router.get('/router-shadow', (req, res) => {
+  try {
+    const stats = getShadowStats();
+    res.json({ success: true, shadowRouter: stats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/agent/langgraph-run — Run the token-efficient StateGraph alongside agentOrchestrator (Rule 5)
+router.post('/langgraph-run', async (req, res) => {
+  try {
+    const { prompt, sessionId = 'langgraph-test' } = req.body;
+    if (!prompt) return res.status(400).json({ success: false, message: 'Prompt is required' });
+
+    const result = await runLangGraphAgent(prompt, sessionId);
     res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

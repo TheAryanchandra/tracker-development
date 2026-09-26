@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, ShieldCheck, FileSpreadsheet, Menu, BarChart3, CalendarCheck, Home, LogOut } from 'lucide-react';
+import { Search, ShieldCheck, FileSpreadsheet, Menu, BarChart3, CalendarCheck, Home, LogOut, Sparkles } from 'lucide-react';
 import { ExcelUploadModal } from './ExcelUploadModal';
 import ThemeToggle from './ThemeToggle';
 import { clearAuth, getAuthToken } from '@/lib/auth';
@@ -12,7 +12,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const isHome = pathname === '/';
+  const isHome = pathname === '/' || pathname === '/profile';
 
   React.useEffect(() => {
     const refreshAuth = () => setAuthenticated(Boolean(getAuthToken()));
@@ -54,6 +54,14 @@ export default function Navbar() {
 
         {/* Header Actions & Quick Route Links */}
         <div className="flex items-center gap-2">
+          <Link
+            href="/profile"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:opacity-90 text-xs font-semibold transition"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>3D Profile</span>
+          </Link>
+
           <Link
             href="/"
             className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--card-flat)] border border-[var(--card-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-semibold transition"
