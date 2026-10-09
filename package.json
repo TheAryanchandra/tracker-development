@@ -1,0 +1,13 @@
+{
+  "name": "tracker-development",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tracker development root workspace",
+  "scripts": {
+    "start": "npm --prefix tracker-backend start",
+    "dev": "npm --prefix tracker-backend start",
+    "backend": "npm --prefix tracker-backend start",
+    "frontend": "npm --prefix tracker-frontend dev",
+    "build:frontend": "npm --prefix tracker-frontend build"
+  }
+}

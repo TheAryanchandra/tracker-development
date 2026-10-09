@@ -13,7 +13,13 @@ if (dns.setDefaultResultOrder) {
 }
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI || 'mongodb+srv://tracker-backend:1234@cluster0.20h5i3g.mongodb.net/tracker?retryWrites=true&w=majority';
+  const uri = process.env.MONGO_URI;
+
+  if (!uri) {
+    console.warn('[MongoDB Warning]: MONGO_URI is not set in environment variables.');
+    console.log('[MongoDB]: Running with active In-Memory Fallback Cache.');
+    return;
+  }
 
   try {
     const conn = await mongoose.connect(uri, {
