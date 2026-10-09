@@ -165,6 +165,28 @@ function UserAvatar() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+interface BrowserSpeechRecognitionEvent {
+  results: {
+    length: number;
+    [index: number]: {
+      isFinal: boolean;
+      [index: number]: { transcript: string };
+    };
+  };
+  resultIndex: number;
+}
+
+interface BrowserSpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((e: BrowserSpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
 export const AiVoiceAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [chipCategory, setChipCategory] = useState<'recruiter' | 'tracker'>('recruiter');
@@ -188,7 +210,7 @@ export const AiVoiceAssistant: React.FC = () => {
   const [visionModels, setVisionModels] = useState<Array<{ id: string; label: string }>>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<unknown>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognitionInstance | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
@@ -265,14 +287,14 @@ export const AiVoiceAssistant: React.FC = () => {
   // ── Speech recognition ────────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const SR = (window as unknown as Record<string, unknown>).SpeechRecognition as (new () => SpeechRecognition) | undefined
-      || (window as unknown as Record<string, unknown>).webkitSpeechRecognition as (new () => SpeechRecognition) | undefined;
+    const SR = (window as unknown as Record<string, unknown>).SpeechRecognition as (new () => BrowserSpeechRecognitionInstance) | undefined
+      || (window as unknown as Record<string, unknown>).webkitSpeechRecognition as (new () => BrowserSpeechRecognitionInstance) | undefined;
     if (!SR) return;
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
     r.lang = 'en-US';
-    r.onresult = (e: SpeechRecognitionEvent) => {
+    r.onresult = (e: BrowserSpeechRecognitionEvent) => {
       const interim = Array.from(e.results)
         .filter((res) => !res.isFinal)
         .map((res) => res[0].transcript).join('');
@@ -295,7 +317,7 @@ export const AiVoiceAssistant: React.FC = () => {
     r.onend = () => {
       if (voiceSessionRef.current && !speakingRef.current) {
         restartVoiceRef.current = window.setTimeout(() => {
-          try { (recognitionRef.current as SpeechRecognition)?.start(); setListening(true); } catch { /* noop */ }
+          try { recognitionRef.current?.start(); setListening(true); } catch { /* noop */ }
         }, 180);
       } else setListening(false);
     };
@@ -338,7 +360,7 @@ export const AiVoiceAssistant: React.FC = () => {
     if (restartVoiceRef.current) window.clearTimeout(restartVoiceRef.current);
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
     setListening(false);
-    (recognitionRef.current as SpeechRecognition)?.stop();
+    recognitionRef.current?.stop();
     microphoneStreamRef.current?.getTracks().forEach(t => t.stop());
     microphoneStreamRef.current = null;
     audioContextRef.current?.close().catch(() => {});
@@ -368,12 +390,12 @@ export const AiVoiceAssistant: React.FC = () => {
       source.connect(analyser);
       analyserRef.current = analyser;
       setListening(true);
-      try { (recognitionRef.current as SpeechRecognition).start(); } catch { /* noop */ }
+      try { recognitionRef.current?.start(); } catch { /* noop */ }
       drawVisualizer();
     } catch {
       voiceSessionRef.current = true;
       setListening(true);
-      (recognitionRef.current as SpeechRecognition).start();
+      try { recognitionRef.current?.start(); } catch { /* noop */ }
     }
   }, [drawVisualizer]);
 
@@ -401,7 +423,7 @@ export const AiVoiceAssistant: React.FC = () => {
     })[0] || voices[0];
     if (best) utt.voice = best;
     utt.rate = 0.96; utt.pitch = 0.9;
-    utt.onend = () => { speakingRef.current = false; if (voiceSessionRef.current) { restartVoiceRef.current = window.setTimeout(() => { try { (recognitionRef.current as SpeechRecognition)?.start(); setListening(true); } catch { /* noop */ } }, 220); } };
+    utt.onend = () => { speakingRef.current = false; if (voiceSessionRef.current) { restartVoiceRef.current = window.setTimeout(() => { try { recognitionRef.current?.start(); setListening(true); } catch { /* noop */ } }, 220); } };
     utt.onerror = () => { if (requestId !== speechRequestRef.current) return; speakingRef.current = false; setStatusMessage('Voice playback was unavailable.'); window.setTimeout(() => setStatusMessage(null), 3500); };
     window.speechSynthesis.speak(utt);
   }, [tts]);

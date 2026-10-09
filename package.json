@@ -4,10 +4,11 @@
   "private": true,
   "description": "Tracker development root workspace",
   "scripts": {
+    "build": "npm --prefix tracker-frontend run build",
     "start": "npm --prefix tracker-backend start",
     "dev": "npm --prefix tracker-backend start",
     "backend": "npm --prefix tracker-backend start",
     "frontend": "npm --prefix tracker-frontend dev",
-    "build:frontend": "npm --prefix tracker-frontend build"
+    "build:frontend": "npm --prefix tracker-frontend run build"
   }
 }
