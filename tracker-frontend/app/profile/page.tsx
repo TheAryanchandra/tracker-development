@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import ProfileShowcase from '@/components/ProfileShowcase';
+import CinematicPortfolio from '@/components/CinematicPortfolio';
 
 export const metadata: Metadata = {
   title: 'Profile & 3D Interactive Showcase | Aryan Chandra — Software Engineer (SDE-1 / SWE-1)',
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ProfilePage() {
-  return <ProfileShowcase />;
+  return <CinematicPortfolio />;
 }

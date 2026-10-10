@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import ProfileShowcase from '@/components/ProfileShowcase';
+import CinematicPortfolio from '@/components/CinematicPortfolio';
 
 export const metadata: Metadata = {
-  title: 'Aryan Chandra — Software Engineer (SDE-1 / SWE-1) | 3D Interactive Portfolio',
+  title: 'Aryan Chandra — Software Engineer (SDE-1 / SWE-1) | Cinematic 3D Web Experience',
   description:
-    'Futuristic 3D portfolio of Aryan Chandra — Software Engineer specializing in Java 21, Spring Boot 3, Node.js, Next.js, and autonomous 3D Humanoid AI Copilot architectures.',
+    'Immersive 3D portfolio of Aryan Chandra — Software Engineer specializing in Java 21, Spring Boot 3, Node.js, Next.js, and autonomous 3D Humanoid AI Copilot architectures.',
 };
 
 export default function Page() {
-  return <ProfileShowcase />;
+  return <CinematicPortfolio />;
 }
