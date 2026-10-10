@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { usePathname } from "next/navigation";
 import {
   fetchAiModels,
   getStreamUrl,
@@ -264,6 +265,8 @@ interface BrowserSpeechRecognitionInstance {
 export const AiVoiceAssistant: React.FC<{ hideTriggerButton?: boolean }> = ({
   hideTriggerButton = false,
 }) => {
+  const pathname = usePathname();
+  const isPortfolio = pathname === "/" || pathname === "/profile";
   const [open, setOpen] = useState(false);
   const [chipCategory, setChipCategory] = useState<"recruiter" | "tracker">(
     "recruiter",
@@ -976,6 +979,8 @@ export const AiVoiceAssistant: React.FC<{ hideTriggerButton?: boolean }> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // JSX — Humanoid Jarvis UI
   // ─────────────────────────────────────────────────────────────────────────
+  if (isPortfolio) return null;
+
   return (
     <>
       {/* ── Floating Trigger Button ─────────────────────────────────────── */}
