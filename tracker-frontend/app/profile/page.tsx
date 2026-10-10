@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
-import CinematicPortfolio from '@/components/CinematicPortfolio';
+import IglooPortfolio from '@/components/IglooPortfolio';
 
 export const metadata: Metadata = {
-  title: 'Profile & 3D Interactive Showcase | Aryan Chandra — Software Engineer (SDE-1 / SWE-1)',
+  title: 'Aryan Chandra // 3D Glacial Profile & Systems Architecture',
   description:
-    'Interactive 3D profile and engineering portfolio of Aryan Chandra — Software Engineer specializing in Java 21, Spring Boot, Node.js, Next.js, Gemini AI agents, and mobile architectures.',
+    'Interactive 3D Igloo experience showcasing Aryan Chandra\'s distributed systems engineering, AI agents, and mobile ecosystem.',
 };
 
 export default function ProfilePage() {
-  return <CinematicPortfolio />;
+  return <IglooPortfolio />;
 }
