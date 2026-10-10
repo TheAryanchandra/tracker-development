@@ -15,7 +15,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-export type ObjectType = 'architect' | 'neural' | 'pipeline';
+export type ObjectType = 'architect' | 'neural' | 'pipeline' | 'humanoid';
 export type ThemeColor = 'gold' | 'cyan' | 'emerald' | 'violet';
 
 interface ThemeConfig {
@@ -97,6 +97,11 @@ const OBJECT_META: Record<ObjectType, { label: string; tag: string; desc: string
     label: 'Data Pipeline',
     tag: 'Real-Time Streaming',
     desc: 'WebSocket events, Kafka, 50K+ daily transactions',
+  },
+  humanoid: {
+    label: 'Humanoid AI',
+    tag: '3D Agentic Copilot',
+    desc: 'Real-time conversational 3D AI assistant with live lipsync',
   },
 };
 
@@ -526,7 +531,28 @@ export default function ThreeProfileCanvas({
     let group: THREE.Group;
     if (type === 'architect') group = buildArchitect(theme);
     else if (type === 'neural') group = buildNeural(theme);
-    else group = buildPipeline(theme);
+    else if (type === 'pipeline') group = buildPipeline(theme);
+    else {
+      // Procedural Humanoid
+      group = new THREE.Group();
+      const skull = new THREE.Mesh(new THREE.SphereGeometry(1.05, 32, 24), makeMat(theme));
+      skull.scale.set(0.95, 1.15, 1);
+      group.add(skull);
+      const visor = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.85, 0.85, 0.35, 24, 1, true, -Math.PI * 0.35, Math.PI * 0.7),
+        new THREE.MeshPhysicalMaterial({ color: 0x060814, emissive: theme.primary, emissiveIntensity: 0.8, metalness: 0.9 })
+      );
+      visor.position.set(0, 0.15, 0.25);
+      visor.rotation.y = -Math.PI * 0.35;
+      group.add(visor);
+      const jaw = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.8, 16), makeMat(theme));
+      jaw.rotation.x = Math.PI;
+      jaw.position.set(0, -0.4, 0.2);
+      group.add(jaw);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.015, 16, 64), makeGlowMat(theme, 0.5));
+      ring.name = 'humanoidRing';
+      group.add(ring);
+    }
 
     s.currentGroup = group;
     s.activeType = type;
@@ -913,16 +939,18 @@ export default function ThreeProfileCanvas({
       <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2 pointer-events-none">
         {/* Object Selector Tabs */}
         <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 shadow-lg">
-          {(['architect', 'neural', 'pipeline'] as ObjectType[]).map(type => {
+          {(['architect', 'neural', 'pipeline', 'humanoid'] as ObjectType[]).map(type => {
             const icons: Record<ObjectType, React.ReactNode> = {
               architect: <Cpu className="w-3.5 h-3.5" />,
               neural: <Bot className="w-3.5 h-3.5" />,
               pipeline: <Layers className="w-3.5 h-3.5" />,
+              humanoid: <Sparkles className="w-3.5 h-3.5" />,
             };
             const labels: Record<ObjectType, string> = {
               architect: 'Architect',
               neural: 'Neural Core',
               pipeline: 'Pipeline',
+              humanoid: 'Humanoid',
             };
             const isActive = activeObject === type;
             return (
