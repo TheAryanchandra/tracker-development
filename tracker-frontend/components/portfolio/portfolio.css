@@ -144,7 +144,7 @@
 
 /* ── Layout ────────────────────────────────────────────────────────────── */
 .nx-main { position: relative; z-index: 10; }
-.nx-section { position: relative; padding: clamp(96px, 14vh, 160px) clamp(18px, 5vw, 72px); }
+.nx-section { position: relative; padding: clamp(48px, 6vh, 76px) clamp(18px, 5vw, 72px); }
 .nx-wrap { max-width: 1180px; margin: 0 auto; }
 .nx-eyebrow {
   display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-mono); font-size: 11px;

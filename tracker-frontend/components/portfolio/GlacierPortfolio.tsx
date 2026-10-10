@@ -275,9 +275,9 @@ export default function GlacierPortfolio() {
       {/* ── 4. Main Scroll Chapters ─────────────────────────────────── */}
       <main className="nx-main">
         {/* ── CHAPTER 01: INTRO / HERO (EXACT SPLIT LAYOUT FROM SCREENSHOT) ── */}
-        <section id="hero" className="nx-section pt-28 pb-16">
+        <section id="hero" className="nx-section pt-16 sm:pt-20 pb-6">
           <div className="nx-wrap">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-220px)]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
               {/* LEFT COLUMN: HERO TEXT & ACTIONS */}
               <div className="lg:col-span-5 space-y-6">
                 {/* Status Badge */}
@@ -357,7 +357,7 @@ export default function GlacierPortfolio() {
             </div>
 
             {/* ── BOTTOM METRICS BAR (EXACT MATCH FROM SCREENSHOT) ───── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 mt-12 border-t border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 mt-6 border-t border-white/10">
               {/* Metric 1: 99.9% Uptime + Sine Wave Sparkline */}
               <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                 <div>
@@ -420,8 +420,8 @@ export default function GlacierPortfolio() {
         </section>
 
         {/* ── CHAPTER 02: EXPERIENCE SIGNALS ────────────────────────── */}
-        <section id="experience" className="nx-section py-24 border-t border-white/10">
-          <div className="nx-wrap space-y-12">
+        <section id="experience" className="nx-section py-14 sm:py-16 border-t border-white/10">
+          <div className="nx-wrap space-y-8">
             <div>
               <span className="nx-eyebrow">02 / Experience</span>
               <h2 className="nx-h2">
@@ -464,8 +464,8 @@ export default function GlacierPortfolio() {
         </section>
 
         {/* ── CHAPTER 03: SIGNATURE 2D SYSTEMS ARCHITECTURE LAB ──────── */}
-        <section id="systems" className="nx-section py-24 border-t border-white/10 bg-slate-950/40">
-          <div className="nx-wrap space-y-12">
+        <section id="systems" className="nx-section py-14 sm:py-16 border-t border-white/10 bg-slate-950/40">
+          <div className="nx-wrap space-y-8">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <span className="nx-eyebrow">03 / Systems Lab</span>
@@ -492,8 +492,8 @@ export default function GlacierPortfolio() {
         </section>
 
         {/* ── CHAPTER 04: FEATURED PROJECTS & SHIPPED CONSUMER APPS ──── */}
-        <section id="projects" className="nx-section py-24 border-t border-white/10">
-          <div className="nx-wrap space-y-16">
+        <section id="projects" className="nx-section py-14 sm:py-16 border-t border-white/10">
+          <div className="nx-wrap space-y-10">
             <div>
               <span className="nx-eyebrow">04 / Projects</span>
               <h2 className="nx-h2">
@@ -610,8 +610,8 @@ export default function GlacierPortfolio() {
         </section>
 
         {/* ── CHAPTER 05: TECHNICAL STACK & PRINCIPLES ───────────────── */}
-        <section id="stack" className="nx-section py-24 border-t border-white/10">
-          <div className="nx-wrap space-y-16">
+        <section id="stack" className="nx-section py-14 sm:py-16 border-t border-white/10">
+          <div className="nx-wrap space-y-10">
             <div>
               <span className="nx-eyebrow">05 / Stack & Principles</span>
               <h2 className="nx-h2">
@@ -686,8 +686,8 @@ export default function GlacierPortfolio() {
         </section>
 
         {/* ── CHAPTER 06: CONTACT TRANSMISSION ──────────────────────── */}
-        <section id="contact" className="nx-section py-24 border-t border-white/10">
-          <div className="nx-wrap space-y-12">
+        <section id="contact" className="nx-section py-14 sm:py-16 border-t border-white/10">
+          <div className="nx-wrap space-y-8">
             <div>
               <span className="nx-eyebrow">06 / Contact</span>
               <h2 className="nx-h2">
