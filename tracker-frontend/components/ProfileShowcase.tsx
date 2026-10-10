@@ -386,10 +386,10 @@ export default function ProfileShowcase() {
             </div>
 
             {/* Three.js Canvas */}
-            <ThreeProfileCanvas initialObject="architect" initialTheme="gold" showControls={true} />
+            <ThreeProfileCanvas initialObject="humanoid" initialTheme="gold" showControls={true} />
 
             <div className="flex items-center justify-between text-[11px] text-[var(--text-tertiary)] px-2">
-              <span>3 Professional 3D Models: System Architect · Neural Core · Data Pipeline</span>
+              <span>4 Cybernetic 3D Models: Humanoid Copilot · System Architect · Neural Core · Data Pipeline</span>
               <span className="font-mono text-amber-500/80">WebGL 2.0 Accelerated</span>
             </div>
           </div>

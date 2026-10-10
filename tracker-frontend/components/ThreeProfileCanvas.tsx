@@ -140,7 +140,7 @@ interface ThreeProfileCanvasProps {
 }
 
 export default function ThreeProfileCanvas({
-  initialObject = 'architect',
+  initialObject = 'humanoid',
   initialTheme = 'gold',
   className = '',
   showControls = true,

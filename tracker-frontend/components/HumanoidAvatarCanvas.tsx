@@ -7,9 +7,9 @@ export type HumanoidState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'er
 
 interface HumanoidAvatarCanvasProps {
   state?: HumanoidState;
-  audioAmplitude?: number; // 0 to 1 for live lipsync
+  audioAmplitude?: number; // 0 to 1 for live lip-sync
   className?: string;
-  size?: number; // width & height in px, or responsive container if not given
+  size?: number;
   interactive?: boolean;
 }
 
@@ -31,7 +31,6 @@ export default function HumanoidAvatarCanvas({
   });
   const [hasWebGL, setHasWebGL] = useState(true);
 
-  // Keep stateRef up to date for the animation loop
   useEffect(() => {
     stateRef.current.state = state;
     stateRef.current.audioAmplitude = audioAmplitude;
@@ -41,7 +40,6 @@ export default function HumanoidAvatarCanvas({
     const container = mountRef.current;
     if (!container) return;
 
-    // WebGL support check
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -59,8 +57,8 @@ export default function HumanoidAvatarCanvas({
 
     // 1. Scene & Camera
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 0, 5.2);
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+    camera.position.set(0, 0, 4.6);
 
     // 2. Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -71,155 +69,169 @@ export default function HumanoidAvatarCanvas({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.35;
     container.appendChild(renderer.domElement);
 
-    // 3. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // 3. Futuristic Lighting
+    const ambientLight = new THREE.AmbientLight(0x0c1022, 1.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xf59e0b, 2.5); // Warm Amber
-    keyLight.position.set(3, 4, 3);
+    // Key Light (Warm Cyber Gold)
+    const keyLight = new THREE.DirectionalLight(0xf59e0b, 3.2);
+    keyLight.position.set(3.5, 4, 3.5);
     scene.add(keyLight);
 
-    const rimLight = new THREE.DirectionalLight(0x6366f1, 2.8); // Cyber Indigo
-    rimLight.position.set(-3, -2, -2);
+    // Rim Light (Electric Cyan)
+    const rimLight = new THREE.DirectionalLight(0x06b6d4, 3.5);
+    rimLight.position.set(-3.5, -2, -2.5);
     scene.add(rimLight);
 
-    const coreLight = new THREE.PointLight(0xf59e0b, 3, 4);
-    coreLight.position.set(0, 0.1, 0.2);
-    scene.add(coreLight);
+    // Under Glow (Neon Purple)
+    const underLight = new THREE.PointLight(0x8b5cf6, 2.5, 6);
+    underLight.position.set(0, -2, 1);
+    scene.add(underLight);
 
     // 4. Humanoid Head Hierarchy
-    const avatarRoot = new THREE.Group();
-    scene.add(avatarRoot);
+    const avatarGroup = new THREE.Group();
+    scene.add(avatarGroup);
 
-    // Cranium (Upper Cyber Skull)
-    const craniumGeo = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.65);
-    const craniumMat = new THREE.MeshStandardMaterial({
-      color: 0x111322,
-      roughness: 0.2,
-      metalness: 0.9,
+    // Materials
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: 0x0f111a,
+      roughness: 0.18,
+      metalness: 0.92,
     });
-    const cranium = new THREE.Mesh(craniumGeo, craniumMat);
-    cranium.scale.set(0.95, 1.1, 1);
-    avatarRoot.add(cranium);
 
-    // Crown Plate (Futuristic Top Shell)
-    const crownGeo = new THREE.CylinderGeometry(0.65, 0.9, 0.35, 16);
-    const crownMat = new THREE.MeshStandardMaterial({
-      color: 0x1e2238,
-      roughness: 0.3,
-      metalness: 0.8,
-    });
-    const crown = new THREE.Mesh(crownGeo, crownMat);
-    crown.position.set(0, 0.85, -0.1);
-    avatarRoot.add(crown);
-
-    // Optic Visor (Curved holographic eye shield)
-    const visorGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.32, 24, 1, true, -Math.PI * 0.35, Math.PI * 0.7);
-    const visorMat = new THREE.MeshPhysicalMaterial({
-      color: 0x070914,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 0.6,
-      roughness: 0.1,
-      metalness: 0.9,
-      transmission: 0.6,
-      transparent: true,
-      opacity: 0.92,
-    });
-    const visor = new THREE.Mesh(visorGeo, visorMat);
-    visor.position.set(0, 0.15, 0.25);
-    visor.rotation.y = -Math.PI * 0.35;
-    avatarRoot.add(visor);
-
-    // Ocular Eye Nodes (Left & Right glowing scanner optics)
-    const eyeGeo = new THREE.SphereGeometry(0.08, 16, 16);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-
-    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(-0.35, 0.15, 0.95);
-    avatarRoot.add(leftEye);
-
-    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(0.35, 0.15, 0.95);
-    avatarRoot.add(rightEye);
-
-    // Lower Mandible / Jaw (Movable for Lip-Sync)
-    const jawPivot = new THREE.Group();
-    jawPivot.position.set(0, -0.2, 0.1); // Pivot near jaw joint
-    avatarRoot.add(jawPivot);
-
-    const jawGeo = new THREE.ConeGeometry(0.7, 0.8, 16);
-    const jawMat = new THREE.MeshStandardMaterial({
-      color: 0x181a2e,
+    const plateMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1d2e,
       roughness: 0.25,
       metalness: 0.85,
     });
-    const jaw = new THREE.Mesh(jawGeo, jawMat);
-    jaw.rotation.x = Math.PI;
-    jaw.position.set(0, -0.3, 0.2);
-    jaw.scale.set(0.85, 0.9, 0.9);
-    jawPivot.add(jaw);
 
-    // Cybernetic Chin Accent
-    const chinGeo = new THREE.BoxGeometry(0.3, 0.15, 0.3);
-    const chinMat = new THREE.MeshStandardMaterial({
+    const goldAccentMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       emissive: 0xd97706,
-      emissiveIntensity: 0.5,
+      emissiveIntensity: 0.6,
+      roughness: 0.12,
+      metalness: 0.95,
     });
-    const chin = new THREE.Mesh(chinGeo, chinMat);
-    chin.position.set(0, -0.7, 0.25);
+
+    const visorMat = new THREE.MeshPhysicalMaterial({
+      color: 0x050712,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.85,
+      roughness: 0.08,
+      metalness: 0.95,
+      transmission: 0.55,
+      transparent: true,
+      opacity: 0.95,
+    });
+
+    // Cranium Shell (Upper Head)
+    const craniumGeo = new THREE.SphereGeometry(1.02, 36, 28, 0, Math.PI * 2, 0, Math.PI * 0.68);
+    const cranium = new THREE.Mesh(craniumGeo, chassisMat);
+    cranium.scale.set(0.95, 1.12, 1.0);
+    avatarGroup.add(cranium);
+
+    // Temporal Ear Pods (Left & Right Cyber Nodes)
+    [-1.02, 1.02].forEach((x, idx) => {
+      const earGeo = new THREE.CylinderGeometry(0.22, 0.26, 0.18, 16);
+      const ear = new THREE.Mesh(earGeo, plateMat);
+      ear.rotation.z = Math.PI / 2;
+      ear.position.set(x, 0.1, 0.05);
+      avatarGroup.add(ear);
+
+      const earRingGeo = new THREE.TorusGeometry(0.2, 0.02, 8, 24);
+      const earRing = new THREE.Mesh(earRingGeo, goldAccentMat);
+      earRing.rotation.y = Math.PI / 2;
+      earRing.position.set(x + (idx === 0 ? -0.08 : 0.08), 0.1, 0.05);
+      earRing.name = `earRing_${idx}`;
+      avatarGroup.add(earRing);
+    });
+
+    // Crown Crest (Sleek aerodynamic top plate)
+    const crestGeo = new THREE.BoxGeometry(0.3, 0.12, 1.2);
+    const crest = new THREE.Mesh(crestGeo, goldAccentMat);
+    crest.position.set(0, 1.15, -0.1);
+    crest.rotation.x = -Math.PI * 0.08;
+    avatarGroup.add(crest);
+
+    // Optic Visor (Curved Panoramic Cyber Shield)
+    const visorGeo = new THREE.CylinderGeometry(0.88, 0.88, 0.36, 32, 1, true, -Math.PI * 0.36, Math.PI * 0.72);
+    const visor = new THREE.Mesh(visorGeo, visorMat);
+    visor.position.set(0, 0.18, 0.28);
+    visor.rotation.y = -Math.PI * 0.36;
+    avatarGroup.add(visor);
+
+    // Dual Ocular Scanner Reticles (Luminous Optic Nodes)
+    const eyeGeo = new THREE.SphereGeometry(0.075, 16, 16);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(-0.35, 0.18, 0.98);
+    avatarGroup.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(0.35, 0.18, 0.98);
+    avatarGroup.add(rightEye);
+
+    // Moveable Lower Mandible / Jaw for Real-Time Lip-Sync
+    const jawPivot = new THREE.Group();
+    jawPivot.position.set(0, -0.15, 0.1); // Pivot near jaw joint
+    avatarGroup.add(jawPivot);
+
+    const jawGeo = new THREE.ConeGeometry(0.72, 0.85, 16);
+    const jaw = new THREE.Mesh(jawGeo, chassisMat);
+    jaw.rotation.x = Math.PI;
+    jaw.position.set(0, -0.35, 0.22);
+    jaw.scale.set(0.86, 0.88, 0.88);
+    jawPivot.add(jaw);
+
+    // Chin Micro-Emitter
+    const chinGeo = new THREE.BoxGeometry(0.28, 0.12, 0.25);
+    const chin = new THREE.Mesh(chinGeo, goldAccentMat);
+    chin.position.set(0, -0.74, 0.28);
     jawPivot.add(chin);
 
-    // Spinning Neural Core (Inside Cranium)
-    const coreGeo = new THREE.DodecahedronGeometry(0.4, 0);
-    const coreMat = new THREE.MeshBasicMaterial({
+    // Internal Glowing Neural Matrix
+    const matrixGeo = new THREE.IcosahedronGeometry(0.42, 1);
+    const matrixMat = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
       wireframe: true,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.65,
     });
-    const neuralCore = new THREE.Mesh(coreGeo, coreMat);
-    neuralCore.position.set(0, 0.2, -0.1);
-    avatarRoot.add(neuralCore);
+    const neuralMatrix = new THREE.Mesh(matrixGeo, matrixMat);
+    neuralMatrix.position.set(0, 0.25, -0.05);
+    avatarGroup.add(neuralMatrix);
 
-    // Orbital Holographic Rings
-    const ringGeo1 = new THREE.TorusGeometry(1.6, 0.015, 16, 64);
-    const ringMat1 = new THREE.MeshBasicMaterial({
-      color: 0xf59e0b,
-      transparent: true,
-      opacity: 0.45,
-    });
-    const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+    // Orbital Holographic Gyroscope Rings
+    const ring1Geo = new THREE.TorusGeometry(1.65, 0.016, 16, 64);
+    const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.55 });
+    const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
     scene.add(ring1);
 
-    const ringGeo2 = new THREE.TorusGeometry(1.85, 0.012, 16, 64);
-    const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x6366f1,
-      transparent: true,
-      opacity: 0.35,
-    });
-    const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
-    ring2.rotation.x = Math.PI * 0.4;
+    const ring2Geo = new THREE.TorusGeometry(1.9, 0.012, 16, 64);
+    const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.45 });
+    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.rotation.x = Math.PI * 0.45;
     scene.add(ring2);
 
-    // Ambient Floating Neural Particles
-    const particleCount = 45;
+    // Quantum Particle Aura
+    const particleCount = 55;
     const particleGeo = new THREE.BufferGeometry();
     const particlePositions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePositions[i] = (Math.random() - 0.5) * 6;
-      particlePositions[i + 1] = (Math.random() - 0.5) * 6;
-      particlePositions[i + 2] = (Math.random() - 0.5) * 4;
+      particlePositions[i] = (Math.random() - 0.5) * 5.5;
+      particlePositions[i + 1] = (Math.random() - 0.5) * 5.5;
+      particlePositions[i + 2] = (Math.random() - 0.5) * 3.5;
     }
     particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     const particleMat = new THREE.PointsMaterial({
       color: 0xf59e0b,
       size: 0.04,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.65,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     scene.add(particles);
@@ -230,10 +242,9 @@ export default function HumanoidAvatarCanvas({
       const rect = container.getBoundingClientRect();
       const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      stateRef.current.targetX = nx * 0.35;
-      stateRef.current.targetY = ny * 0.25;
+      stateRef.current.targetX = nx * 0.32;
+      stateRef.current.targetY = ny * 0.22;
     };
-
     window.addEventListener('mousemove', handleMouseMove);
 
     // Resize Handler
@@ -249,80 +260,81 @@ export default function HumanoidAvatarCanvas({
     };
     window.addEventListener('resize', handleResize);
 
-    // 5. Animation Loop
+    // 5. High-Frequency Animation Loop
     let animId = 0;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
       const current = stateRef.current;
 
-      // Mouse Lerp Smooth Head Rotation
-      current.mouseX += (current.targetX - current.mouseX) * 0.08;
-      current.mouseY += (current.targetY - current.mouseY) * 0.08;
+      // Smooth Head Tracking with spring interpolation
+      current.mouseX += (current.targetX - current.mouseX) * 0.09;
+      current.mouseY += (current.targetY - current.mouseY) * 0.09;
 
-      avatarRoot.rotation.y = current.mouseX;
-      avatarRoot.rotation.x = -current.mouseY;
+      avatarGroup.rotation.y = current.mouseX;
+      avatarGroup.rotation.x = -current.mouseY;
 
-      // State-specific procedural behaviors
+      // State Machine Procedural Animation
       if (current.state === 'idle') {
-        // Subtle Breathing
-        avatarRoot.position.y = Math.sin(elapsed * 1.5) * 0.06;
-        neuralCore.rotation.y = elapsed * 0.5;
-        neuralCore.rotation.x = elapsed * 0.3;
+        // Natural Cyber Breathing
+        avatarGroup.position.y = Math.sin(elapsed * 1.6) * 0.05;
+        neuralMatrix.rotation.y = elapsed * 0.45;
+        neuralMatrix.rotation.x = elapsed * 0.25;
         jawPivot.rotation.x = 0;
-        visorMat.emissive.setHex(0xf59e0b);
-        visorMat.emissiveIntensity = 0.4 + Math.sin(elapsed * 2) * 0.15;
-        ring1.rotation.z = elapsed * 0.2;
-        ring2.rotation.y = elapsed * 0.25;
+        visorMat.emissive.setHex(0xf59e0b); // Gold
+        visorMat.emissiveIntensity = 0.5 + Math.sin(elapsed * 2.5) * 0.15;
+        ring1.rotation.z = elapsed * 0.18;
+        ring2.rotation.y = elapsed * 0.22;
       } else if (current.state === 'listening') {
-        // Alert posture + audio reactive ring pulse
-        avatarRoot.position.y = Math.sin(elapsed * 2) * 0.04;
-        neuralCore.rotation.y = elapsed * 1.2;
-        visorMat.emissive.setHex(0x06b6d4); // Cyan Listening
-        visorMat.emissiveIntensity = 0.8 + Math.sin(elapsed * 4) * 0.3;
+        // Cyan Acoustic Resonance
+        avatarGroup.position.y = Math.sin(elapsed * 2.2) * 0.03;
+        neuralMatrix.rotation.y = elapsed * 1.4;
+        visorMat.emissive.setHex(0x06b6d4); // Cyan
+        visorMat.emissiveIntensity = 0.9 + Math.sin(elapsed * 5) * 0.3;
+        eyeMat.color.setHex(0x67e8f9);
         jawPivot.rotation.x = 0;
+        ring1.rotation.z = elapsed * 0.8;
+        ring2.rotation.y = elapsed * 0.9;
+      } else if (current.state === 'thinking') {
+        // Violet Neural Processing Surge
+        avatarGroup.position.y = Math.sin(elapsed * 3.5) * 0.04;
+        neuralMatrix.rotation.y = elapsed * 3.8;
+        neuralMatrix.rotation.x = elapsed * 2.2;
+        visorMat.emissive.setHex(0x8b5cf6); // Purple
+        visorMat.emissiveIntensity = 1.0 + Math.sin(elapsed * 8) * 0.4;
+        eyeMat.color.setHex(0xc084fc);
+        jawPivot.rotation.x = 0;
+        ring1.rotation.z = elapsed * 1.6;
+        ring2.rotation.y = elapsed * -1.8;
+      } else if (current.state === 'speaking') {
+        // Live Lip-Sync Mouth Articulation
+        const targetJawDrop = Math.max(0.06, current.audioAmplitude * 0.45 + (Math.sin(elapsed * 14) * 0.12));
+        jawPivot.rotation.x = THREE.MathUtils.lerp(jawPivot.rotation.x, targetJawDrop, 0.4);
+
+        avatarGroup.position.y = Math.sin(elapsed * 2.8) * 0.035;
+        neuralMatrix.rotation.y = elapsed * 1.9;
+        visorMat.emissive.setHex(0xf59e0b); // Amber
+        visorMat.emissiveIntensity = 0.85 + current.audioAmplitude * 0.9;
+        eyeMat.color.setHex(0xfef08a);
         ring1.rotation.z = elapsed * 0.6;
         ring2.rotation.y = elapsed * 0.7;
-      } else if (current.state === 'thinking') {
-        // Fast spinning neural core + violet/amber pulse
-        avatarRoot.position.y = Math.sin(elapsed * 3) * 0.05;
-        neuralCore.rotation.y = elapsed * 3.5;
-        neuralCore.rotation.x = elapsed * 2.0;
-        visorMat.emissive.setHex(0x8b5cf6); // Purple Thinking
-        visorMat.emissiveIntensity = 0.9 + Math.sin(elapsed * 6) * 0.4;
-        jawPivot.rotation.x = 0;
-        ring1.rotation.z = elapsed * 1.2;
-        ring2.rotation.y = elapsed * -1.5;
-      } else if (current.state === 'speaking') {
-        // Live Lipsync: rotate jaw based on audioAmplitude or speech waveform
-        const targetJawDrop = Math.max(0.08, current.audioAmplitude * 0.45 + (Math.sin(elapsed * 12) * 0.12));
-        jawPivot.rotation.x = THREE.MathUtils.lerp(jawPivot.rotation.x, targetJawDrop, 0.35);
-
-        avatarRoot.position.y = Math.sin(elapsed * 2.5) * 0.04;
-        neuralCore.rotation.y = elapsed * 1.8;
-        visorMat.emissive.setHex(0xf59e0b); // Radiant Amber Speaking
-        visorMat.emissiveIntensity = 0.7 + current.audioAmplitude * 0.8;
-        ring1.rotation.z = elapsed * 0.5;
-        ring2.rotation.y = elapsed * 0.6;
       } else if (current.state === 'error') {
-        // Crimson warning glow
+        // Crimson Alert
         visorMat.emissive.setHex(0xef4444);
-        visorMat.emissiveIntensity = 1.0;
-        avatarRoot.position.x = Math.sin(elapsed * 15) * 0.02;
+        visorMat.emissiveIntensity = 1.1;
+        eyeMat.color.setHex(0xf87171);
+        avatarGroup.position.x = Math.sin(elapsed * 18) * 0.02;
         jawPivot.rotation.x = 0;
       }
 
-      // Slowly rotate particle field
-      particles.rotation.y = elapsed * 0.05;
-
+      particles.rotation.y = elapsed * 0.04;
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // Cleanup
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('mousemove', handleMouseMove);
@@ -335,7 +347,6 @@ export default function HumanoidAvatarCanvas({
     };
   }, [size, interactive]);
 
-  // Graceful fallback for browsers without WebGL
   if (!hasWebGL) {
     return (
       <div className={`relative flex items-center justify-center ${className}`}>

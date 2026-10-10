@@ -329,17 +329,23 @@ export const AiVoiceAssistant: React.FC = () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setMessages(JSON.parse(saved));
-      } else {
-        setMessages([
-          {
-            id: "welcome-0",
-            sender: "ai",
-            text: `👋 Greetings! I'm **Jarvis**, Aryan Chandra's autonomous AI engineering copilot.\n\nI have full context on Aryan's production systems, codebase, and career achievements:\n• **Production Mobile Apps:** Shipped **Fonofy Partner App** (10,000+ downloads on Google Play Store, 4.8★)\n• **Distributed Backends:** Java 21, Spring Boot 3, Kafka event pipelines & Qdrant hybrid vector search (sub-200ms P95)\n• **Agentic AI:** Top Builder Award in Google Cloud Agentic Premier League (LangGraph + Cloud Run)\n• **Availability:** Immediate for **SDE-1 / Software Engineering** roles (Delhi NCR, Open to Remote & Relocation)\n\nFeel free to ask me anything about Aryan's technical depth, system design decisions, or request a quick candidate screen brief!`,
-            ts: now(),
-          },
-        ]);
+        const parsed = JSON.parse(saved);
+        const valid = Array.isArray(parsed)
+          ? parsed.filter((m: Message) => Boolean(m.text && m.text.trim().length > 0))
+          : [];
+        if (valid.length > 0) {
+          setMessages(valid);
+          return;
+        }
       }
+      setMessages([
+        {
+          id: "welcome-0",
+          sender: "ai",
+          text: `👋 Greetings! I'm **Jarvis**, Aryan Chandra's autonomous AI engineering copilot.\n\nI have full context on Aryan's production systems, codebase, and career achievements:\n• **Production Mobile Apps:** Shipped **Fonofy Partner App** (10,000+ downloads on Google Play Store, 4.8★)\n• **Distributed Backends:** Java 21, Spring Boot 3, Kafka event pipelines & Qdrant hybrid vector search (sub-200ms P95)\n• **Agentic AI:** Top Builder Award in Google Cloud Agentic Premier League (LangGraph + Cloud Run)\n• **Availability:** Immediate for **SDE-1 / Software Engineering** roles (Delhi NCR, Open to Remote & Relocation)\n\nFeel free to ask me anything about Aryan's technical depth, system design decisions, or request a quick candidate screen brief!`,
+          ts: now(),
+        },
+      ]);
     } catch {
       /* noop */
     }
@@ -1314,7 +1320,9 @@ export const AiVoiceAssistant: React.FC = () => {
               scrollbarColor: "#ffffff08 transparent",
             }}
           >
-            {messages.map((msg) => (
+            {messages
+              .filter((m) => (m.text && m.text.trim().length > 0) || m.streaming)
+              .map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 group ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}
@@ -1381,10 +1389,12 @@ export const AiVoiceAssistant: React.FC = () => {
                   >
                     {msg.sender === "ai" ? (
                       <div className="prose prose-invert prose-sm max-w-none text-xs leading-relaxed space-y-1.5">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.text || (msg.streaming ? "" : "")}
-                        </ReactMarkdown>
-                        {msg.streaming && <DnaTyping />}
+                        {msg.text ? (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.text}
+                          </ReactMarkdown>
+                        ) : null}
+                        {msg.streaming && !msg.text ? <DnaTyping /> : null}
                       </div>
                     ) : (
                       <div className="whitespace-pre-wrap font-medium">
@@ -1411,11 +1421,11 @@ export const AiVoiceAssistant: React.FC = () => {
                   {/* Meta */}
                   <div
                     className="flex items-center gap-2 px-1 text-[9px] font-medium"
-                    style={{ color: "#333" }}
+                    style={{ color: "#444" }}
                   >
                     <span>{msg.ts}</span>
                     {msg.actionExecuted && (
-                      <span className="text-emerald-600 flex items-center gap-0.5">
+                      <span className="text-emerald-500 flex items-center gap-0.5">
                         <Zap size={9} /> DB Saved
                       </span>
                     )}
@@ -1429,24 +1439,6 @@ export const AiVoiceAssistant: React.FC = () => {
                 </div>
               </div>
             ))}
-
-            {/* Standalone thinking indicator */}
-            {loading &&
-              !messages.some((m) => m.streaming && m.text.length > 0) && (
-                <div className="flex gap-3 items-end">
-                  <JarvisAvatar size={28} pulse />
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{
-                      background: "linear-gradient(135deg, #16162a, #1a1a30)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      borderRadius: "4px 16px 16px 16px",
-                    }}
-                  >
-                    <DnaTyping />
-                  </div>
-                </div>
-              )}
 
             {/* Status */}
             {statusMessage && (

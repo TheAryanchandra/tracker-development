@@ -1,28 +1,12 @@
-import PortfolioClient from '@/components/PortfolioClient';
+import type { Metadata } from 'next';
+import ProfileShowcase from '@/components/ProfileShowcase';
 
-// Enable Next.js Incremental Static Regeneration (ISR)
-export const revalidate = 60;
+export const metadata: Metadata = {
+  title: 'Aryan Chandra — Software Engineer (SDE-1 / SWE-1) | 3D Interactive Portfolio',
+  description:
+    'Futuristic 3D portfolio of Aryan Chandra — Software Engineer specializing in Java 21, Spring Boot 3, Node.js, Next.js, and autonomous 3D Humanoid AI Copilot architectures.',
+};
 
-export default async function Page() {
-  let initialStats = null;
-  let initialPortfolio = null;
-
-  try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000/api';
-    const [statsRes, portfolioRes] = await Promise.all([
-      fetch(`${backendUrl}/dashboard/stats`, { next: { revalidate: 60 } }).then(r => r.json()).catch(() => null),
-      fetch(`${backendUrl}/portfolio`, { next: { revalidate: 60 } }).then(r => r.json()).catch(() => null),
-    ]);
-
-    if (statsRes?.success && statsRes?.data) {
-      initialStats = statsRes.data;
-    }
-    if (portfolioRes?.success && portfolioRes?.portfolio) {
-      initialPortfolio = portfolioRes.portfolio;
-    }
-  } catch (err) {
-    console.warn('[ISR Page] Could not fetch static pre-render data during build, using fallbacks:', err);
-  }
-
-  return <PortfolioClient initialStats={initialStats} initialPortfolio={initialPortfolio} />;
+export default function Page() {
+  return <ProfileShowcase />;
 }
