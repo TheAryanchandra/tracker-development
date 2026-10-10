@@ -164,6 +164,51 @@ export const PROJECTS: Project[] = [
     href: 'https://github.com/TheAryanchandra',
     accent: '#86efac',
   },
+  {
+    id: 'tutor',
+    title: 'Concept Learning Engine — Adaptive AI Tutor',
+    kicker: 'Adaptive Pedagogy · Knowledge Graphs',
+    oneLiner: 'Personalized learning engine with concept prerequisite graphs and dense semantic retrieval.',
+    problem:
+      'Students and engineers learning complex CS concepts often get stuck due to unidentified knowledge gaps in prerequisite topics.',
+    approach: [
+      'Engineered directed acyclic graph (DAG) mapping topic dependencies and prerequisite trees.',
+      'Semantic document retrieval over course materials using dense embeddings.',
+      'Adaptive diagnostic evaluation with structured schema validation for real-time gap discovery.',
+      'Interactive quiz generation and conversational remediation loop.',
+    ],
+    impact: ['Automated knowledge gap diagnosis', 'DAG concept prerequisite tracking', 'Grounded educational explanations'],
+    stack: ['Python', 'Next.js', 'FastAPI', 'MongoDB', 'OpenAI Embeddings'],
+    href: 'https://github.com/TheAryanchandra',
+    accent: '#f472b6',
+  },
+];
+
+export const ENGINEERING_PRINCIPLES = [
+  {
+    num: '01',
+    title: 'High Concurrency via Virtual Threads',
+    summary: 'Project Loom fibers over reactive WebFlux',
+    desc: 'Java 21 virtual threads handle blocking network and vector database I/O with negligible memory footprint, preserving clean synchronous code and full stacktraces.',
+  },
+  {
+    num: '02',
+    title: 'Event-Driven Decoupling',
+    summary: 'Apache Kafka partitions isolate query traffic',
+    desc: 'Heavy document OCR, embedding, and order processing are offloaded to Kafka topics. Ingestion spikes never degrade user-facing sub-200ms query latency.',
+  },
+  {
+    num: '03',
+    title: 'Idempotency & Cache Integrity',
+    summary: 'Distributed Redis locks & ACID transactions',
+    desc: 'Distributed mutex locks prevent race conditions in inventory and payment transactions; TTL jitter on cache keys protects databases against thundering herds.',
+  },
+  {
+    num: '04',
+    title: 'Grounded RAG with Hybrid Fusion',
+    summary: 'Dense HNSW + Sparse BM25 Lexical search',
+    desc: 'Pure vector similarity fails on exact technical codes; hybrid Reciprocal Rank Fusion guarantees both semantic understanding and keyword precision with verified citations.',
+  },
 ];
 
 export const APPS = [
@@ -309,9 +354,8 @@ export const CANDIDATE_BRIEF = `Aryan Chandra — Software Engineer (SDE-1 · Ba
 export const CHAPTERS = [
   { id: 'hero', label: 'Intro' },
   { id: 'experience', label: 'Experience' },
-  { id: 'lab', label: 'System Lab' },
-  { id: 'work', label: 'Work' },
+  { id: 'systems', label: 'Systems' },
+  { id: 'projects', label: 'Projects' },
   { id: 'stack', label: 'Stack' },
-  { id: 'terminal', label: 'Terminal' },
   { id: 'contact', label: 'Contact' },
 ];

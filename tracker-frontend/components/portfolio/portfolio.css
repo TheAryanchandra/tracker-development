@@ -194,7 +194,8 @@
   font-family: var(--f-display); font-weight: 600; letter-spacing: -0.05em; line-height: 0.88;
   font-size: clamp(56px, 11vw, 168px); margin: 26px 0 22px;
 }
-.nx-hero h1 .l2 { display: block; color: transparent; -webkit-text-stroke: 1px rgba(165, 228, 255, 0.55); }
+.nx-hero h1 .l2 { display: block; color: transparent; -webkit-text-stroke: 1.5px #ffffff; }
+.nx-stroke-text { color: transparent !important; -webkit-text-stroke: 1.5px #ffffff; }
 .nx-role { font-family: var(--f-mono); font-size: clamp(13px, 1.3vw, 16px); color: var(--text-2); display: flex; align-items: center; gap: 10px; min-height: 26px; }
 .nx-role b { color: var(--ice); font-weight: 500; }
 .nx-caret { display: inline-block; width: 8px; height: 18px; background: var(--ice); animation: nxBlink 1s steps(1) infinite; vertical-align: middle; }

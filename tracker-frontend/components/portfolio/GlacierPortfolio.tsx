@@ -27,6 +27,11 @@ import {
   X,
   Smartphone,
   Trophy,
+  Server,
+  ShieldCheck,
+  Cpu,
+  Database,
+  Users,
 } from 'lucide-react';
 
 import './portfolio.css';
@@ -37,13 +42,14 @@ import {
   PROJECTS,
   APPS,
   SKILL_GROUPS,
+  ENGINEERING_PRINCIPLES,
   CHAPTERS,
   CANDIDATE_BRIEF,
   projectsUsingSkill,
   Project,
 } from './data';
 import CoreCanvas from './CoreCanvas';
-import SystemLabCanvas, { ArchitectureNode } from './SystemLabCanvas';
+import InteractiveArchitectureLab from './InteractiveArchitectureLab';
 import DevTerminal from './DevTerminal';
 import RecruiterDrawer from './RecruiterDrawer';
 import CommandPalette from './CommandPalette';
@@ -64,13 +70,9 @@ export default function GlacierPortfolio() {
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   const [activeSkillName, setActiveSkillName] = useState<string | null>(null);
 
-  // Copilot query state
-  const [copilotInitialPrompt, setCopilotInitialPrompt] = useState<string | undefined>();
-
   // Sound
   const [soundOn, setSoundOn] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const noiseSourceRef = useRef<AudioNode | null>(null);
 
   // Contact form
   const [contactName, setContactName] = useState('');
@@ -81,23 +83,23 @@ export default function GlacierPortfolio() {
   const [submitted, setSubmitted] = useState(false);
   const [copiedBio, setCopiedBio] = useState(false);
 
-  // Simulated Telemetry counter on load
+  // Telemetry counter on initial page load
   useEffect(() => {
     let current = 0;
     const timer = setInterval(() => {
-      current += Math.floor(Math.random() * 18) + 12;
+      current += Math.floor(Math.random() * 20) + 14;
       if (current >= 100) {
         current = 100;
         clearInterval(timer);
         setTimeout(() => setLoadingDone(true), 250);
       }
       setLoadingCount(current);
-    }, 45);
+    }, 40);
 
     return () => clearInterval(timer);
   }, []);
 
-  // Scroll tracking to feed 3D Canvas chapter & progress
+  // Scroll tracking to feed chapter indicator
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -107,14 +109,12 @@ export default function GlacierPortfolio() {
       setScrollProgress(progress);
       setScrolledTop(scrollY > 40);
 
-      // Chapter mapping based on scroll position
-      if (progress < 0.14) setActiveChapter(0);
-      else if (progress < 0.28) setActiveChapter(1);
-      else if (progress < 0.46) setActiveChapter(2);
-      else if (progress < 0.64) setActiveChapter(3);
-      else if (progress < 0.78) setActiveChapter(4);
-      else if (progress < 0.9) setActiveChapter(5);
-      else setActiveChapter(6);
+      if (progress < 0.16) setActiveChapter(0);
+      else if (progress < 0.32) setActiveChapter(1);
+      else if (progress < 0.52) setActiveChapter(2);
+      else if (progress < 0.72) setActiveChapter(3);
+      else if (progress < 0.88) setActiveChapter(4);
+      else setActiveChapter(5);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -132,58 +132,6 @@ export default function GlacierPortfolio() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  // Ambient Web Audio Wind Synthesizer
-  const toggleSound = () => {
-    if (!soundOn) {
-      try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AudioCtx();
-        audioCtxRef.current = ctx;
-
-        const bufSize = ctx.sampleRate * 2;
-        const noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-        const out = noiseBuf.getChannelData(0);
-        let b0 = 0, b1 = 0, b2 = 0;
-        for (let i = 0; i < bufSize; i++) {
-          const w = Math.random() * 2 - 1;
-          b0 = 0.99 * b0 + w * 0.05;
-          b1 = 0.96 * b1 + w * 0.1;
-          b2 = 0.86 * b2 + w * 0.25;
-          out[i] = (b0 + b1 + b2) * 0.12;
-        }
-
-        const source = ctx.createBufferSource();
-        source.buffer = noiseBuf;
-        source.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(280, ctx.currentTime);
-
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.01, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 1.2);
-
-        source.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        source.start();
-        noiseSourceRef.current = source;
-        setSoundOn(true);
-      } catch {
-        /* audio blocked */
-      }
-    } else {
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close().catch(() => {});
-        setSoundOn(false);
-      }
-    }
-  };
 
   const copyCandidateBrief = () => {
     navigator.clipboard.writeText(CANDIDATE_BRIEF);
@@ -239,13 +187,13 @@ export default function GlacierPortfolio() {
       {/* ── 1. Telemetry Loader Overlay ────────────────────────────── */}
       <div className={`nx-loader ${loadingDone ? 'done' : ''}`}>
         <div className="nx-loader-row">
-          <span>Aryan Chandra // SDE-1 Portfolio Engine</span>
-          <span>JVM 21 • KRaft • Qdrant</span>
+          <span>Aryan Chandra // SDE-1 Production Systems</span>
+          <span>Java 21 • Kafka • Qdrant</span>
         </div>
         <div className="text-center">
           <div className="nx-loader-count">{loadingCount}%</div>
           <p className="mt-2 text-xs font-mono text-zinc-400">
-            Initializing 3D Glacier Shaders & Distributed Mesh…
+            Initializing 3D Distributed Mesh & Architecture Runtime…
           </p>
         </div>
         <div className="nx-loader-bar">
@@ -259,199 +207,229 @@ export default function GlacierPortfolio() {
         style={{ width: `${Math.round(scrollProgress * 100)}%` }}
       />
 
-      {/* ── 3. Background 3D Ice Core Canvas ─────────────────────────── */}
-      <CoreCanvas chapter={activeChapter} progress={scrollProgress} />
-      <div className="nx-vignette" />
-      <div className="nx-grain" />
-
-      {/* ── 4. Fixed Top Header Chrome ──────────────────────────────── */}
+      {/* ── 3. Fixed Top Header Chrome (Matching Reference Screenshot) ─ */}
       <header className={`nx-top ${scrolledTop ? 'scrolled' : ''}`}>
-        {/* Brand */}
-        <Link href="#hero" className="nx-brand">
-          <div className="nx-brand-mark">AC</div>
-          <div className="nx-brand-text">
-            <b>{PROFILE.shortName}</b>
-            <small>Software Engineer // SDE-1</small>
+        {/* Brand Left */}
+        <Link href="#hero" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 border border-sky-400/40 flex items-center justify-center font-bold text-sm text-sky-300 shadow-md group-hover:border-sky-300 transition">
+            AC
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white tracking-wider font-sans uppercase">
+              ARYAN CHANDRA
+            </div>
+            <div className="text-[10px] text-zinc-400 font-sans">Software Engineer</div>
           </div>
         </Link>
 
-        {/* Central Chapter Nav Pills (Desktop) */}
-        <nav className="nx-nav">
+        {/* Center Pill Navigation (Exact Match from Screenshot) */}
+        <nav className="hidden md:flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-950/80 border border-white/10 backdrop-blur-xl">
           {CHAPTERS.map((ch, idx) => (
             <a
               key={ch.id}
               href={`#${ch.id}`}
-              className={activeChapter === idx ? 'active' : ''}
+              className={`px-3.5 py-1 rounded-full text-xs font-medium transition flex items-center gap-1.5 ${
+                activeChapter === idx
+                  ? 'bg-sky-400/20 text-sky-300 border border-sky-400/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
             >
-              {ch.label}
+              {activeChapter === idx && <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block" />}
+              <span>{ch.label}</span>
             </a>
           ))}
         </nav>
 
-        {/* Action Controls */}
-        <div className="nx-top-actions">
-          {/* Sound Toggle */}
-          <button
-            onClick={toggleSound}
-            className="nx-btn sm icon ghost"
-            title={soundOn ? 'Mute Ambient Glacial Wind' : 'Enable Ambient Sound'}
-          >
-            {soundOn ? <Volume2 size={15} className="text-sky-300" /> : <VolumeX size={15} />}
-          </button>
-
-          {/* Command Palette Trigger */}
+        {/* Action Controls Right */}
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setCmdOpen(true)}
             className="nx-btn sm ghost flex items-center gap-2"
-            title="Open Command Palette (Ctrl+K)"
+            title="Quick Search (Ctrl+K)"
           >
             <Search size={13} />
-            <span className="hide-sm">Quick Search</span>
-            <span className="nx-kbd hide-sm">⌘K</span>
+            <span className="hidden lg:inline text-xs">⌘K</span>
           </button>
 
-          {/* Recruiter Drawer Trigger */}
           <button
             onClick={() => setRecruiterOpen(true)}
-            className="nx-btn sm amber flex items-center gap-1.5"
+            className="nx-btn sm amber hidden sm:flex items-center gap-1.5"
           >
             <Briefcase size={13} />
             <span>Recruiter Assessment</span>
           </button>
 
-          {/* Resume PDF */}
+          {/* Resume Pill (Matching Screenshot Button) */}
           <a
             href={PROFILE.resume}
             target="_blank"
             rel="noreferrer"
-            className="nx-btn sm primary flex items-center gap-1.5"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-400/20 to-sky-300/30 border border-sky-400/50 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-sky-500/10 hover:border-sky-300 transition"
           >
-            <Download size={13} />
-            <span className="hide-sm">Resume</span>
+            <Download size={14} />
+            <span>Resume</span>
           </a>
         </div>
       </header>
 
-      {/* ── 5. Fixed Vertical Chapter Rail (Right) ───────────────────── */}
-      <nav className="nx-rail" aria-label="Chapter Rail">
-        {CHAPTERS.map((ch, idx) => (
-          <a
-            key={ch.id}
-            href={`#${ch.id}`}
-            className={activeChapter === idx ? 'active' : ''}
-          >
-            <span>{ch.label}</span>
-            <i />
-          </a>
-        ))}
-      </nav>
-
-      {/* ── 6. Main Scroll Chapters ─────────────────────────────────── */}
+      {/* ── 4. Main Scroll Chapters ─────────────────────────────────── */}
       <main className="nx-main">
-        {/* ── CHAPTER 01: INTRO / HERO ──────────────────────────────── */}
-        <section id="hero" className="nx-section nx-hero">
+        {/* ── CHAPTER 01: INTRO / HERO (EXACT SPLIT LAYOUT FROM SCREENSHOT) ── */}
+        <section id="hero" className="nx-section pt-28 pb-16">
           <div className="nx-wrap">
-            <div className="nx-hero-grid">
-              <div>
-                <div className="nx-status">
-                  <span className="nx-dot" />
-                  <span>Immediate Joiner // SDE-1 & Systems Engineering Roles</span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center min-h-[calc(100vh-220px)]">
+              {/* LEFT COLUMN: HERO TEXT & ACTIONS */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Status Badge */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>OPEN TO SDE-1 / BACKEND ROLES</span>
                 </div>
 
-                <h1>
-                  <span>ARYAN</span>
-                  <span className="l2">CHANDRA</span>
-                </h1>
-
-                <div className="nx-role">
-                  <span>Specializing in</span>
-                  <b>Distributed Java 21, Kafka, & Autonomous AI</b>
-                  <span className="nx-caret" />
+                {/* Massive Headline (ARYAN / CHANDRA hollow stroke text) */}
+                <div className="space-y-0.5">
+                  <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white uppercase font-sans leading-none">
+                    ARYAN
+                  </h1>
+                  <h1 className="text-5xl sm:text-7xl font-black tracking-tight nx-stroke-text uppercase font-sans leading-none">
+                    CHANDRA
+                  </h1>
                 </div>
 
-                <p className="nx-lead mt-4">
-                  Software engineer with production-proven microservices at scale.
-                  Shipped mobile applications to over <strong className="text-white">10,000+ real users</strong> on Google Play Store,
-                  maintained <strong className="text-white">99.9% uptime SLA</strong> over 50,000+ daily transactions, and won the
-                  Google Cloud Agentic Premier League Top Builder Award.
+                {/* Subheadline */}
+                <div className="text-base sm:text-lg font-bold text-sky-300 font-sans tracking-wide">
+                  Distributed systems • Java • Kafka • Applied AI
+                </div>
+
+                {/* Intro Paragraph */}
+                <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans max-w-lg">
+                  Software engineer building scalable backend systems and AI-powered applications. Passionate about distributed systems, real-world products and technology that makes an impact.
                 </p>
 
-                <div className="nx-hero-cta">
-                  <button
-                    onClick={() => setRecruiterOpen(true)}
-                    className="nx-btn primary"
+                {/* Action Buttons (Explore projects + Download résumé) */}
+                <div className="flex flex-wrap items-center gap-3.5 pt-2">
+                  <a
+                    href="#projects"
+                    className="px-5 py-3 rounded-2xl bg-sky-300 hover:bg-sky-200 text-slate-950 font-bold text-sm flex items-center gap-2 transition shadow-lg shadow-sky-400/25"
                   >
-                    <span>Recruiter Briefing</span>
-                    <ArrowRight size={14} />
-                  </button>
+                    <div className="w-5 h-5 rounded-full bg-slate-950 text-white flex items-center justify-center">
+                      <ArrowUpRight size={13} />
+                    </div>
+                    <span>Explore projects</span>
+                  </a>
 
-                  <button
-                    onClick={() => handleOpenCopilotWithQuery('Screen Aryan as an SDE-1 candidate with his top 3 strengths')}
-                    className="nx-btn"
+                  <a
+                    href={PROFILE.resume}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-5 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/20 text-white font-semibold text-sm flex items-center gap-2 transition backdrop-blur-md"
                   >
-                    <Sparkles size={14} className="text-amber-400" />
-                    <span>Screen with Jarvis</span>
-                  </button>
+                    <Download size={15} />
+                    <span>Download résumé</span>
+                  </a>
 
                   <button
                     onClick={copyCandidateBrief}
-                    className="nx-btn ghost"
+                    className="px-3.5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition"
                     title="Copy 1-page candidate summary"
                   >
-                    {copiedBio ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                    <span>{copiedBio ? 'Copied' : 'Copy Brief'}</span>
+                    {copiedBio ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
                   </button>
                 </div>
               </div>
 
-              {/* Side Fast Coordinates Card */}
-              <div className="nx-hero-side">
-                <div className="nx-panel nx-hero-card">
-                  <h3>Candidate Coordinates</h3>
-                  <dl className="nx-kv">
-                    <dt>Target</dt>
-                    <dd className="font-semibold text-sky-300">SDE-1 / SWE-1 / Backend Engineer</dd>
-                    <dt>Location</dt>
-                    <dd>{PROFILE.location}</dd>
-                    <dt>Mobility</dt>
-                    <dd className="text-emerald-400">{PROFILE.relocation}</dd>
-                    <dt>Education</dt>
-                    <dd>{PROFILE.education}</dd>
-                    <dt>DSA Solved</dt>
-                    <dd className="font-mono text-amber-300">420+ Problems (14-Day Streak)</dd>
-                  </dl>
+              {/* RIGHT COLUMN: 3D DISTRIBUTED SYSTEMS TOPOLOGY */}
+              <div className="lg:col-span-7 relative min-h-[460px] lg:min-h-[580px] flex items-center justify-center">
+                {/* Top-Right Indicator from Screenshot: 01 / INTRO */}
+                <div className="absolute top-2 right-4 z-10 flex items-center gap-2.5 text-xs font-mono text-zinc-400">
+                  <span>01 / INTRO</span>
+                  <div className="flex flex-col gap-1 items-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                    <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                    <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                  </div>
                 </div>
+
+                {/* 3D Core Canvas (Pedestals + Central Glowing Core + Laser Pulses) */}
+                <CoreCanvas chapter={activeChapter} progress={scrollProgress} />
               </div>
             </div>
 
-            {/* Metrics Counter Grid */}
-            <div className="nx-metrics">
-              {METRICS.map((m, idx) => (
-                <div key={idx} className="nx-metric">
-                  <div className="nx-metric-v text-sky-200">
-                    {m.prefix || ''}{m.value.toLocaleString()}{m.suffix}
+            {/* ── BOTTOM METRICS BAR (EXACT MATCH FROM SCREENSHOT) ───── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 mt-12 border-t border-white/10">
+              {/* Metric 1: 99.9% Uptime + Sine Wave Sparkline */}
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                <div>
+                  <div className="text-3xl sm:text-4xl font-black font-sans text-white tracking-tight">
+                    99.9%
                   </div>
-                  <div className="nx-metric-l">{m.label}</div>
-                  <div className="nx-metric-h">{m.hint}</div>
+                  <div className="text-xs font-mono text-zinc-400 mt-0.5">uptime</div>
                 </div>
-              ))}
+                {/* SVG Smooth Sine Wave Sparkline */}
+                <svg width="100" height="34" viewBox="0 0 100 34" fill="none">
+                  <path
+                    d="M2 24 C 20 2, 35 32, 55 12 C 72 -4, 85 24, 98 14"
+                    stroke="#38bdf8"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+
+              {/* Metric 2: 50K+ Daily Transactions + Mini Bar Chart */}
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                <div>
+                  <div className="text-3xl sm:text-4xl font-black font-sans text-white tracking-tight">
+                    50K+
+                  </div>
+                  <div className="text-xs font-mono text-zinc-400 mt-0.5">daily transactions</div>
+                </div>
+                {/* SVG Mini Bar Chart */}
+                <svg width="80" height="34" viewBox="0 0 80 34" fill="none">
+                  <rect x="6" y="20" width="8" height="14" rx="2" fill="#38bdf8" opacity="0.4" />
+                  <rect x="22" y="14" width="8" height="20" rx="2" fill="#38bdf8" opacity="0.6" />
+                  <rect x="38" y="8" width="8" height="26" rx="2" fill="#38bdf8" opacity="0.8" />
+                  <rect x="54" y="2" width="8" height="32" rx="2" fill="#38bdf8" />
+                </svg>
+              </div>
+
+              {/* Metric 3: 10K+ Real Users + Overlapping User Circles */}
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
+                <div>
+                  <div className="text-3xl sm:text-4xl font-black font-sans text-white tracking-tight">
+                    10K+
+                  </div>
+                  <div className="text-xs font-mono text-zinc-400 mt-0.5">real users</div>
+                </div>
+                {/* SVG Overlapping Circles */}
+                <div className="flex items-center -space-x-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-sky-500/30 flex items-center justify-center text-[10px] text-sky-200 font-bold">
+                    4.8★
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-indigo-500/30 flex items-center justify-center text-[10px] text-indigo-200 font-bold">
+                    App
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-emerald-500/30 flex items-center justify-center text-[10px] text-emerald-200 font-bold">
+                    Play
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* ── CHAPTER 02: EXPERIENCE SIGNALS ────────────────────────── */}
-        <section id="experience" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
-              <div>
-                <span className="nx-eyebrow">Chapter 02</span>
-                <h2 className="nx-h2">
-                  Proven <em>Production Signals</em>
-                </h2>
-                <p className="nx-lead">
-                  Battle-tested experience across enterprise oil corporations and high-throughput commerce products.
-                </p>
-              </div>
+        <section id="experience" className="nx-section py-24 border-t border-white/10">
+          <div className="nx-wrap space-y-12">
+            <div>
+              <span className="nx-eyebrow">02 / Experience</span>
+              <h2 className="nx-h2">
+                Verified <em>Production Signals</em>
+              </h2>
+              <p className="nx-lead">
+                Battle-tested engineering across enterprise fuel corporations and high-throughput healthcare commerce products.
+              </p>
             </div>
 
             <div className="nx-timeline">
@@ -485,47 +463,45 @@ export default function GlacierPortfolio() {
           </div>
         </section>
 
-        {/* ── CHAPTER 03: SYSTEM ARCHITECTURE LAB ───────────────────── */}
-        <section id="lab" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
+        {/* ── CHAPTER 03: SIGNATURE 2D SYSTEMS ARCHITECTURE LAB ──────── */}
+        <section id="systems" className="nx-section py-24 border-t border-white/10 bg-slate-950/40">
+          <div className="nx-wrap space-y-12">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <span className="nx-eyebrow">Chapter 03</span>
+                <span className="nx-eyebrow">03 / Systems Lab</span>
                 <h2 className="nx-h2">
-                  Interactive <em>System Lab</em>
+                  Interactive <em>Architecture Map</em>
                 </h2>
                 <p className="nx-lead">
-                  Explore the 3D distributed mesh powering Aryan's enterprise RAG platform.
-                  Adjust throughput load or inject simulated chaos to evaluate resilience.
+                  Explore how requests travel through the API gateway, Kafka event partitions, Java 21 Project Loom fibers, and the RAG semantic vector retrieval pipeline.
                 </p>
               </div>
 
               <button
-                onClick={() => handleOpenCopilotWithQuery('Explain the Java 21 Kafka architecture in detail')}
-                className="nx-btn sm ghost"
+                onClick={() => handleOpenCopilotWithQuery('Explain the Java 21 Virtual Threads and Kafka architecture in detail')}
+                className="nx-btn sm ghost flex items-center gap-1.5"
               >
                 <Sparkles size={13} className="text-sky-300" />
-                <span>Ask Architecture Trade-Offs</span>
+                <span>Ask Jarvis Architecture Trade-Offs</span>
               </button>
             </div>
 
-            <SystemLabCanvas />
+            {/* Interactive 2D Architecture Component */}
+            <InteractiveArchitectureLab />
           </div>
         </section>
 
-        {/* ── CHAPTER 04: FEATURED WORK & SHIPPED APPS ──────────────── */}
-        <section id="work" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
-              <div>
-                <span className="nx-eyebrow">Chapter 04</span>
-                <h2 className="nx-h2">
-                  Featured <em>Production Artifacts</em>
-                </h2>
-                <p className="nx-lead">
-                  Open-source flagships, benchmarked latencies, and consumer apps live on app stores.
-                </p>
-              </div>
+        {/* ── CHAPTER 04: FEATURED PROJECTS & SHIPPED CONSUMER APPS ──── */}
+        <section id="projects" className="nx-section py-24 border-t border-white/10">
+          <div className="nx-wrap space-y-16">
+            <div>
+              <span className="nx-eyebrow">04 / Projects</span>
+              <h2 className="nx-h2">
+                Production Artifacts & <em>Case Studies</em>
+              </h2>
+              <p className="nx-lead">
+                Verified systems with public GitHub codebases, benchmarked P95 latencies, and real consumer traction.
+              </p>
             </div>
 
             {/* Flagship Projects Grid */}
@@ -581,16 +557,14 @@ export default function GlacierPortfolio() {
             </div>
 
             {/* Shipped Mobile Apps Sub-Section */}
-            <div className="mt-16">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold font-sans">
-                    Shipped Consumer Mobile Apps (10,000+ Installs)
-                  </h3>
-                  <p className="text-xs font-mono text-zinc-400">
-                    Production apps on Google Play Store and Apple App Store
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold font-sans text-white">
+                  Shipped Mobile Ecosystem (10,000+ Downloads)
+                </h3>
+                <p className="text-xs font-mono text-zinc-400">
+                  Consumer apps live on Google Play Store and Apple App Store
+                </p>
               </div>
 
               <div className="nx-apps">
@@ -635,27 +609,20 @@ export default function GlacierPortfolio() {
           </div>
         </section>
 
-        {/* ── CHAPTER 05: CORE STACK & INTERACTIVE MAPPING ──────────── */}
-        <section id="stack" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
-              <div>
-                <span className="nx-eyebrow">Chapter 05</span>
-                <h2 className="nx-h2">
-                  Core <em>Technical Matrix</em>
-                </h2>
-                <p className="nx-lead">
-                  Hover or tap any skill to see which production projects and systems rely on it.
-                </p>
-              </div>
-
-              {activeSkillName && (
-                <div className="nx-stack-hint">
-                  Active filter: <b>{activeSkillName}</b> (highlighted in projects)
-                </div>
-              )}
+        {/* ── CHAPTER 05: TECHNICAL STACK & PRINCIPLES ───────────────── */}
+        <section id="stack" className="nx-section py-24 border-t border-white/10">
+          <div className="nx-wrap space-y-16">
+            <div>
+              <span className="nx-eyebrow">05 / Stack & Principles</span>
+              <h2 className="nx-h2">
+                Core <em>Technical Matrix</em>
+              </h2>
+              <p className="nx-lead">
+                Hover or tap any skill to see which production projects and systems rely on it.
+              </p>
             </div>
 
+            {/* Skill Matrix */}
             <div className="nx-stack">
               {SKILL_GROUPS.map((group) => (
                 <div key={group.id} className="nx-panel nx-skill-group">
@@ -679,41 +646,56 @@ export default function GlacierPortfolio() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* ── CHAPTER 06: DEVELOPER TERMINAL ────────────────────────── */}
-        <section id="terminal" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
+            {/* Engineering Principles */}
+            <div className="space-y-6 pt-8">
               <div>
-                <span className="nx-eyebrow">Chapter 06</span>
-                <h2 className="nx-h2">
-                  Interactive <em>CLI Console</em>
-                </h2>
-                <p className="nx-lead">
-                  For engineers and terminal lovers. Run CLI commands to inspect background daemons, DSA streak, and metrics.
+                <h3 className="text-2xl font-bold font-sans text-white">
+                  Engineering Principles & System Design
+                </h3>
+                <p className="text-xs font-mono text-zinc-400">
+                  Architectural rules applied across Aryan's microservices and applied AI platforms
                 </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {ENGINEERING_PRINCIPLES.map((ep) => (
+                  <div key={ep.num} className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono text-sky-400">
+                      <span>PRINCIPLE // {ep.num}</span>
+                      <span className="text-zinc-500">{ep.summary}</span>
+                    </div>
+                    <h4 className="text-lg font-bold font-sans text-white">{ep.title}</h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed">{ep.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <DevTerminal />
+            {/* Developer Terminal */}
+            <div className="space-y-4 pt-8">
+              <div>
+                <h3 className="text-xl font-bold font-sans text-white">Developer CLI Console</h3>
+                <p className="text-xs font-mono text-zinc-400">
+                  Interactive bash interface to run diagnostic queries on candidate credentials
+                </p>
+              </div>
+              <DevTerminal />
+            </div>
           </div>
         </section>
 
-        {/* ── CHAPTER 07: CONTACT TRANSMISSION ──────────────────────── */}
-        <section id="contact" className="nx-section">
-          <div className="nx-wrap">
-            <div className="nx-sec-head">
-              <div>
-                <span className="nx-eyebrow">Chapter 07</span>
-                <h2 className="nx-h2">
-                  Initiate <em>Transmission</em>
-                </h2>
-                <p className="nx-lead">
-                  Open for SDE-1 / Software Engineering / AI Engineer opportunities. Available for immediate onboarding.
-                </p>
-              </div>
+        {/* ── CHAPTER 06: CONTACT TRANSMISSION ──────────────────────── */}
+        <section id="contact" className="nx-section py-24 border-t border-white/10">
+          <div className="nx-wrap space-y-12">
+            <div>
+              <span className="nx-eyebrow">06 / Contact</span>
+              <h2 className="nx-h2">
+                Initiate <em>Transmission</em>
+              </h2>
+              <p className="nx-lead">
+                Open for Software Engineer / SDE-1 / AI Engineer roles. Available immediately for interviews.
+              </p>
             </div>
 
             <div className="nx-contact">
