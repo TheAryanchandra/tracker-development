@@ -133,6 +133,17 @@ server.listen(PORT, '0.0.0.0', () => {
     }, PING_INTERVAL);
     console.log(`[Keepalive] Anti-sleep active → pinging ${pingUrl} every 14 min`);
   }
+
+  // ── Memory Watchdog (Prevents Container OOM Restarts) ────────
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    const rssMB = Math.round(mem.rss / 1024 / 1024);
+    const heapMB = Math.round(mem.heapUsed / 1024 / 1024);
+    if (rssMB > 350) {
+      console.warn(`[Watchdog] Elevated RAM: RSS=${rssMB}MB, Heap=${heapMB}MB.`);
+      if (global.gc) { try { global.gc(); } catch (e) {} }
+    }
+  }, 2 * 60 * 1000);
 });
 
 // Nodemon restart trigger: 2026-09-18 07:12 IST

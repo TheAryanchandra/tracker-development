@@ -28,6 +28,25 @@ async function getTransformers() {
   return { pipeline, env };
 }
 
+const os = require('os');
+
+function shouldSkipLocalHf() {
+  if (process.env.DISABLE_LOCAL_HF === 'true' || process.env.LOW_MEMORY_MODE === 'true') {
+    return true;
+  }
+  // Check current memory usage - if process RSS is high, protect the container from crashing
+  try {
+    const mem = process.memoryUsage();
+    const rssMB = mem.rss / (1024 * 1024);
+    // On 512MB tiers (Render/low-spec), prevent ONNX loading if already using >260MB
+    const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_STATIC_URL);
+    if (!isRailway && rssMB > 260) {
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
 // Singletons for pipelines
 let embeddingPipeline = null;
 let classificationPipeline = null;
@@ -42,6 +61,9 @@ let summarizationLoading = false;
  */
 async function generateEmbedding(text) {
   if (!text || typeof text !== 'string') return null;
+  if (shouldSkipLocalHf()) {
+    return null;
+  }
 
   try {
     if (!embeddingPipeline && !embeddingLoading) {
@@ -78,6 +100,9 @@ async function generateEmbedding(text) {
  */
 async function classifyIntent(text, candidateLabels) {
   if (!text || typeof text !== 'string' || !Array.isArray(candidateLabels)) {
+    return null;
+  }
+  if (shouldSkipLocalHf()) {
     return null;
   }
 
@@ -117,6 +142,11 @@ async function classifyIntent(text, candidateLabels) {
 async function summarizeText(text, maxWords = 150) {
   if (!text || typeof text !== 'string') return '';
   if (text.length < 250) return text; // already brief
+
+  // Use fast, 0-RAM extractive compression unless heavy ONNX summarization is explicitly enabled
+  if (process.env.ENABLE_HEAVY_HF_SUMMARIZER !== 'true' || shouldSkipLocalHf()) {
+    return extractKeySummary(text, maxWords);
+  }
 
   try {
     if (!summarizationPipeline && !summarizationLoading) {

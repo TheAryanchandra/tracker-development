@@ -13,7 +13,7 @@ if (dns.setDefaultResultOrder) {
 }
 
 const connectDB = async () => {
-  const uri = process.env.MONGO_URI;
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!uri) {
     console.warn('[MongoDB Warning]: MONGO_URI is not set in environment variables.');

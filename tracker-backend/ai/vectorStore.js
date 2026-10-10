@@ -131,6 +131,9 @@ class VectorStore {
    */
   async _queueEmbeddingGeneration() {
     if (this.embeddingGenerationInProgress) return;
+    if (process.env.DISABLE_LOCAL_HF === 'true' || process.env.LOW_MEMORY_MODE === 'true') {
+      return;
+    }
     this.embeddingGenerationInProgress = true;
 
     setImmediate(async () => {
