@@ -5,18 +5,12 @@ import * as THREE from 'three';
 import {
   Zap,
   RotateCw,
-  Maximize2,
   Minimize2,
-  Sparkles,
-  ArrowRight,
-  ExternalLink,
-  Bot,
-  Activity,
   Layers,
-  CheckCircle2,
   X,
   Volume2,
   VolumeX,
+  Bot,
 } from 'lucide-react';
 
 export interface SubsystemDetail {
@@ -47,30 +41,30 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     throughput: '48,000 req/s',
     sla: '99.99%',
     tags: ['Netty SSL Termination', 'Token Bucket Limiter', 'JWT RBAC Verification', 'CORS Guard'],
-    tradeoff: 'Stateless JWT signature verification performed at ingress edge to prevent unauthorized RPC packets from consuming downstream cluster CPU.',
+    tradeoff: 'Stateless JWT signature verification performed at ingress edge to protect downstream services from unauthorized RPC traffic.',
     copilotPrompt: 'Explain how your API Gateway handles rate limiting, JWT validation, and SSL termination in production.',
     iconGlyph: '🌐',
   },
   clients: {
     id: 'clients',
-    title: 'CLIENTS & CONSUMERS',
+    title: 'CLIENTS',
     category: 'Edge Applications',
-    subtitle: 'Web App · Mobile App · External Partner Services',
+    subtitle: 'Web App · Mobile App · External Services',
     tech: 'Next.js 14 App Router, React Native (Fonofy 10K+)',
     protocol: 'HTTPS / WSS / gRPC',
     latency: 'Client-side',
     throughput: '10,000+ app users',
     sla: '4.8★ Play Store',
-    tags: ['HTTP / HTTPS', 'REST · gRPC', 'Bi-directional WSS', 'Local Keychain'],
+    tags: ['Web App', 'Mobile App', 'External Services', 'HTTP / HTTPS', 'REST · gRPC'],
     tradeoff: 'Optimistic client-side cache updates with rollback handlers for instant UX during mobile trade-in device inspections.',
     copilotPrompt: 'How did you build and deploy the Fonofy mobile application on the Google Play Store with 10K+ downloads?',
-    iconGlyph: '📱',
+    iconGlyph: '💻',
   },
   kafka: {
     id: 'kafka',
-    title: 'KAFKA EVENT BUS',
+    title: 'KAFKA',
     category: 'Distributed Message Backbone',
-    subtitle: 'Event Streaming · Real-time Pub/Sub Data',
+    subtitle: 'Event Streaming · Real-time Data',
     tech: 'Apache Kafka 3.6, Spring Kafka, KRaft Quorum',
     protocol: 'Binary TCP / SASL Scram',
     latency: '3.8ms P95',
@@ -83,22 +77,22 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
   },
   workers: {
     id: 'workers',
-    title: 'ASYNC WORKERS',
+    title: 'WORKERS',
     category: 'Background Compute Tier',
-    subtitle: 'Background Jobs · Async Processing · AI Ingestion',
+    subtitle: 'Background Jobs · Async Processing',
     tech: 'Java 21 Project Loom Fibers, Node.js Worker Cluster',
     protocol: 'Kafka Consumer Group / BullMQ',
     latency: 'Async / 45ms P95',
     throughput: '50,000 txns/day',
     sla: '99.9% Uptime',
-    tags: ['Media Processing', 'AI Inference', 'Payment Webhooks', 'Data Pipelines'],
+    tags: ['Media Processing', 'AI Inference', 'Notifications', 'Data Pipelines'],
     tradeoff: 'Idempotent transaction deduplication keys prevent duplicate charge execution or duplicate document chunking on consumer rebalance.',
     copilotPrompt: 'Explain how Java 21 Virtual Threads (Project Loom) improved throughput in your background worker pipelines.',
     iconGlyph: '⚙️',
   },
   vector: {
     id: 'vector',
-    title: 'VECTOR SEARCH & RAG',
+    title: 'VECTOR SEARCH',
     category: 'Applied AI Knowledge Tier',
     subtitle: 'Embeddings · Similarity Search · RAG · Semantic Retrieval',
     tech: 'Qdrant Vector DB / MongoDB Atlas Vector Search',
@@ -106,14 +100,14 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     latency: '14ms P95 Search',
     throughput: '1,500 qps',
     sla: 'Sub-200ms E2E',
-    tags: ['Qdrant HNSW', 'Dense MiniLM-L6', 'Sparse BM25 Fusion', 'Grounded Citations'],
+    tags: ['Embeddings', 'Similarity Search', 'RAG', 'Semantic Retrieval', 'Qdrant HNSW'],
     tradeoff: 'Reciprocal Rank Fusion (RRF) combines dense vector cosine similarity with BM25 lexical search to eliminate hallucination in technical document retrieval.',
     copilotPrompt: 'How does your Enterprise RAG pipeline extract text, generate vector embeddings, and assemble context for LLM generation?',
     iconGlyph: '🧠',
   },
   database: {
     id: 'database',
-    title: 'DATABASE & CACHE',
+    title: 'DATABASE',
     category: 'Persistent Data Tier',
     subtitle: 'PostgreSQL · MongoDB · Redis · Scalable Storage',
     tech: 'PostgreSQL 16, MongoDB Atlas, Redis 7 In-Memory',
@@ -121,7 +115,7 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     latency: '0.4ms Redis · 6ms Postgres',
     throughput: '98.4% Cache Hit',
     sla: 'ACID Compliant',
-    tags: ['PostgreSQL 16 ACID', 'Redis 7 Cache (0.4ms)', 'MongoDB Atlas', 'Write-Through Cache'],
+    tags: ['PostgreSQL', 'MongoDB', 'Redis', 'Scalable Storage'],
     tradeoff: 'PostgreSQL provides strict ACID transactions for order balances while MongoDB stores semi-structured device telemetry and document chunks.',
     copilotPrompt: 'What is your database caching strategy with Redis, and how do you prevent cache stampedes (thundering herd)?',
     iconGlyph: '🗄️',
@@ -129,7 +123,7 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
 };
 
 const PEDESTAL_COORDS = [
-  { id: 'gateway', x: 0.1, y: 2.85, z: -1.2, width: 3.5, height: 1.75 },
+  { id: 'gateway', x: 0.2, y: 2.8, z: -1.2, width: 3.5, height: 1.75 },
   { id: 'clients', x: -4.5, y: 0.35, z: 0.2, width: 3.3, height: 1.65 },
   { id: 'kafka', x: 4.4, y: 1.85, z: -0.6, width: 3.5, height: 1.75 },
   { id: 'workers', x: 4.5, y: -0.55, z: 0.8, width: 3.5, height: 1.75 },
@@ -146,13 +140,13 @@ function playSynthChime(freq = 580) {
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.6, ctx.currentTime + 0.14);
-    gain.gain.setValueAtTime(0.06, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.05, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    osc.stop(ctx.currentTime + 0.13);
   } catch {
     // Ignore audio errors if blocked by browser policy
   }
@@ -171,7 +165,6 @@ export default function CoreCanvas({ chapter, progress }: Props) {
   const [autoRotate, setAutoRotate] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // References to communicate with Three.js animation loop without re-triggering effects
   const selectedIdRef = useRef<string | null>(null);
   const hoveredIdRef = useRef<string | null>(null);
   const trafficSurgeRef = useRef<boolean>(false);
@@ -182,11 +175,14 @@ export default function CoreCanvas({ chapter, progress }: Props) {
   trafficSurgeRef.current = trafficSurgeActive;
   autoRotateRef.current = autoRotate;
 
-  // External trigger handler to focus node or trigger pulse from other components
   const triggerPulseRef = useRef<(() => void) | null>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
 
   const handleSelectNode = useCallback((id: string) => {
+    if (id === 'core') {
+      handleFirePulse();
+      return;
+    }
     const detail = SUBSYSTEMS[id];
     if (detail) {
       setSelectedSubsystem(detail);
@@ -245,7 +241,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x04060a, 0.032);
+    scene.fog = new THREE.FogExp2(0x030712, 0.035);
 
     const defaultCameraPos = new THREE.Vector3(0, 1.15, 11.6);
     const defaultCameraTarget = new THREE.Vector3(0.15, 0.25, 0);
@@ -283,46 +279,36 @@ export default function CoreCanvas({ chapter, progress }: Props) {
     gridHelper.rotation.x = 0.08;
     scene.add(gridHelper);
 
-    // ── 4. Central Electric Core ─────────────────────────────────
+    // ── 4. Central Electric Core (Smooth Luminous Plasma Orb — NO WIREFRAME LINES) ──
     const coreGroup = new THREE.Group();
     coreGroup.position.set(0.15, 0.35, 0);
     scene.add(coreGroup);
 
-    // Core Spheres
-    const sphereGeo = new THREE.SphereGeometry(1.08, 36, 36);
+    // Outer Glowing Electric Sphere
+    const sphereGeo = new THREE.SphereGeometry(1.18, 48, 48);
     const sphereMat = new THREE.MeshStandardMaterial({
       color: 0x38bdf8,
-      emissive: 0x0284c7,
-      emissiveIntensity: 2.8,
+      emissive: 0x0ea5e9,
+      emissiveIntensity: 3.2,
       roughness: 0.1,
-      metalness: 0.9,
+      metalness: 0.85,
     });
     const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+    sphereMesh.userData = { id: 'core' };
     coreGroup.add(sphereMesh);
 
-    // Inner bright plasma core
-    const innerGeo = new THREE.SphereGeometry(0.86, 24, 24);
+    // Inner Radiant Core
+    const innerGeo = new THREE.SphereGeometry(0.92, 32, 32);
     const innerMat = new THREE.MeshBasicMaterial({ color: 0xf0f9ff });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     coreGroup.add(innerMesh);
 
-    // Wireframe outer containment shell
-    const outerShellGeo = new THREE.IcosahedronGeometry(1.35, 2);
-    const outerShellMat = new THREE.MeshBasicMaterial({
-      color: 0x7dd3fc,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.32,
-    });
-    const outerShellMesh = new THREE.Mesh(outerShellGeo, outerShellMat);
-    coreGroup.add(outerShellMesh);
-
-    // Orbital Rings
+    // 3 Sleek Orbital Rings (Pure Glowing Tori — NO POLYGON WIRES)
     const rings: THREE.Mesh[] = [];
     const ringConfigs = [
-      { r: 1.55, w: 0.024, col: 0x38bdf8, rotX: Math.PI / 2.2, rotZ: 0.4 },
-      { r: 1.9, w: 0.02, col: 0x818cf8, rotX: Math.PI / 1.7, rotZ: -0.6 },
-      { r: 2.25, w: 0.018, col: 0x38bdf8, rotX: Math.PI / 2.6, rotZ: 1.1 },
+      { r: 1.6, w: 0.022, col: 0x38bdf8, rotX: Math.PI / 2.2, rotZ: 0.4 },
+      { r: 1.95, w: 0.018, col: 0x818cf8, rotX: Math.PI / 1.7, rotZ: -0.6 },
+      { r: 2.3, w: 0.016, col: 0x38bdf8, rotX: Math.PI / 2.6, rotZ: 1.1 },
     ];
 
     ringConfigs.forEach((cfg) => {
@@ -338,80 +324,80 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       rings.push(rMesh);
     });
 
-    // ── 5. High-Resolution 1024x512 Billboard Canvas Textures ────
+    // ── 5. High-Resolution Billboard Canvas Textures (Matching Design Reference) ──
     const createHighDefPedestalTexture = (detail: SubsystemDetail) => {
       const c = document.createElement('canvas');
       c.width = 1024;
       c.height = 512;
       const ctx = c.getContext('2d')!;
 
-      // Deep dark sleek glass background with 100% opacity for maximum readability
-      ctx.fillStyle = '#060b18';
+      // Dark translucent glass card background
+      ctx.fillStyle = 'rgba(6, 12, 26, 0.94)';
       ctx.beginPath();
-      ctx.roundRect(14, 14, 996, 484, 28);
+      ctx.roundRect(14, 14, 996, 484, 24);
       ctx.fill();
 
-      // Inner subtle gradient fill
+      // Sleek subtle inner gradient
       const innerGrad = ctx.createLinearGradient(0, 14, 0, 498);
-      innerGrad.addColorStop(0, 'rgba(14, 165, 233, 0.12)');
+      innerGrad.addColorStop(0, 'rgba(14, 165, 233, 0.15)');
       innerGrad.addColorStop(1, 'rgba(6, 11, 24, 0.95)');
       ctx.fillStyle = innerGrad;
       ctx.beginPath();
-      ctx.roundRect(16, 16, 992, 480, 26);
+      ctx.roundRect(16, 16, 992, 480, 22);
       ctx.fill();
 
-      // Glowing Neon Border (Electric Cyan)
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = '#00f0ff';
+      // Fine Neon Cyan Glowing Border (matching reference image)
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
       ctx.stroke();
 
-      // Top Header Gradient Accent Bar
-      const topBarGrad = ctx.createLinearGradient(24, 20, 1000, 20);
-      topBarGrad.addColorStop(0, '#00f0ff');
-      topBarGrad.addColorStop(0.5, '#38bdf8');
+      // Top glowing cyan-to-violet accent line
+      const topBarGrad = ctx.createLinearGradient(24, 18, 1000, 18);
+      topBarGrad.addColorStop(0, '#38bdf8');
+      topBarGrad.addColorStop(0.5, '#60a5fa');
       topBarGrad.addColorStop(1, '#818cf8');
       ctx.fillStyle = topBarGrad;
-      ctx.fillRect(36, 26, 952, 8);
+      ctx.fillRect(36, 18, 952, 4);
 
       // Icon Badge Square
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.25)';
+      ctx.fillStyle = 'rgba(14, 165, 233, 0.2)';
       ctx.beginPath();
-      ctx.roundRect(46, 56, 88, 88, 20);
+      ctx.roundRect(46, 50, 84, 84, 18);
       ctx.fill();
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // Icon Glyph
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 44px sans-serif';
+      ctx.font = 'bold 42px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(detail.iconGlyph, 90, 100);
+      ctx.fillText(detail.iconGlyph, 88, 92);
 
-      // Subsystem Title (Crisp bold white text)
+      // Subsystem Title (Crisp bold uppercase white text)
       ctx.textAlign = 'left';
       ctx.fillStyle = '#ffffff';
       ctx.font = '900 48px "Space Grotesk", sans-serif';
-      ctx.fillText(detail.title, 154, 88);
+      ctx.fillText(detail.title, 150, 80);
 
-      // Category Pill
+      // Category / Tech Line
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 22px monospace';
-      ctx.fillText(detail.category.toUpperCase(), 156, 126);
+      ctx.fillText(detail.category.toUpperCase(), 152, 118);
 
       // Subtitle (Role & Features)
       ctx.fillStyle = '#94a3b8';
       ctx.font = '600 24px "Inter", sans-serif';
-      ctx.fillText(detail.subtitle, 48, 184);
+      ctx.fillText(detail.subtitle, 48, 175);
 
       // Divider Line
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
-      ctx.fillRect(48, 210, 928, 2);
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+      ctx.fillRect(48, 198, 928, 2);
 
       // Tags Badges (Pills)
       let tagX = 48;
-      let tagY = 236;
+      let tagY = 224;
       ctx.font = 'bold 22px monospace';
 
       detail.tags.forEach((tag, idx) => {
@@ -420,30 +406,30 @@ export default function CoreCanvas({ chapter, progress }: Props) {
 
         if (tagX + tagW > 960) {
           tagX = 48;
-          tagY += 52;
+          tagY += 50;
         }
 
-        ctx.fillStyle = idx === 0 ? 'rgba(14, 165, 233, 0.28)' : 'rgba(15, 23, 42, 0.9)';
+        ctx.fillStyle = idx === 0 ? 'rgba(14, 165, 233, 0.25)' : 'rgba(15, 23, 42, 0.85)';
         ctx.beginPath();
-        ctx.roundRect(tagX, tagY, tagW, 42, 10);
+        ctx.roundRect(tagX, tagY, tagW, 40, 10);
         ctx.fill();
 
-        ctx.strokeStyle = idx === 0 ? '#00f0ff' : 'rgba(56, 189, 248, 0.4)';
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = idx === 0 ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.fillStyle = idx === 0 ? '#38bdf8' : '#e2e8f0';
-        ctx.fillText(tag, tagX + 18, tagY + 28);
+        ctx.fillStyle = idx === 0 ? '#38bdf8' : '#cbd5e1';
+        ctx.fillText(tag, tagX + 18, tagY + 27);
 
         tagX += tagW + 16;
       });
 
       // Bottom Status Footer Bar
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.7)';
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.75)';
       ctx.beginPath();
-      ctx.roundRect(48, 410, 928, 54, 14);
+      ctx.roundRect(48, 412, 928, 52, 12);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -477,14 +463,17 @@ export default function CoreCanvas({ chapter, progress }: Props) {
     const pedestalMeshes: PedestalMeshItem[] = [];
     const interactiveObjects: THREE.Object3D[] = [];
 
+    // Also register the core sphere for interaction
+    interactiveObjects.push(sphereMesh);
+
     PEDESTAL_COORDS.forEach((cfg) => {
       const detail = SUBSYSTEMS[cfg.id];
       const pGroup = new THREE.Group();
       pGroup.position.set(cfg.x, cfg.y, cfg.z);
       scene.add(pGroup);
 
-      // Machined chassis base
-      const baseGeo = new THREE.BoxGeometry(cfg.width, 0.26, 0.45);
+      // Chassis base pedestal
+      const baseGeo = new THREE.BoxGeometry(cfg.width, 0.24, 0.45);
       const baseMat = new THREE.MeshStandardMaterial({
         color: 0x071120,
         roughness: 0.2,
@@ -495,10 +484,10 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       pGroup.add(baseMesh);
 
       // Glowing Neon base rim
-      const rimGeo = new THREE.BoxGeometry(cfg.width * 1.02, 0.05, 0.48);
+      const rimGeo = new THREE.BoxGeometry(cfg.width * 1.02, 0.04, 0.48);
       const rimMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
       const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-      rimMesh.position.y = -cfg.height / 2 + 0.14;
+      rimMesh.position.y = -cfg.height / 2 + 0.13;
       pGroup.add(rimMesh);
 
       // High-Def Screen Mesh
@@ -576,7 +565,6 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       conduitLines.push({ curve, photons });
     });
 
-    // Burst packet triggering
     triggerPulseRef.current = () => {
       corePointLight.intensity = 18.0;
       setTimeout(() => {
@@ -622,17 +610,17 @@ export default function CoreCanvas({ chapter, progress }: Props) {
         const nodeId = clickedMesh.userData.id;
         if (nodeId) {
           handleSelectNode(nodeId);
-          // Focus camera towards clicked node
-          const cfg = PEDESTAL_COORDS.find((p) => p.id === nodeId);
-          if (cfg) {
-            targetCameraPos.set(cfg.x * 0.6, cfg.y * 0.6 + 0.3, 8.5);
-            targetLookAt.set(cfg.x, cfg.y, cfg.z);
+          if (nodeId !== 'core') {
+            const cfg = PEDESTAL_COORDS.find((p) => p.id === nodeId);
+            if (cfg) {
+              targetCameraPos.set(cfg.x * 0.6, cfg.y * 0.6 + 0.3, 8.5);
+              targetLookAt.set(cfg.x, cfg.y, cfg.z);
+            }
           }
           return;
         }
       }
 
-      // If clicked on empty space, initiate drag rotate
       isDragging = true;
     };
 
@@ -669,7 +657,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       }
 
       if (hitNodeId !== hoveredIdRef.current) {
-        setHoveredSubsystemId(hitNodeId);
+        setHoveredSubsystemId(hitNodeId === 'core' ? null : hitNodeId);
         domEl.style.cursor = hitNodeId ? 'pointer' : isDragging ? 'grabbing' : 'grab';
       }
 
@@ -691,8 +679,6 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       // Animate central core
       sphereMesh.rotation.y += dt * 0.6 * speedMultiplier;
       innerMesh.rotation.y -= dt * 1.0 * speedMultiplier;
-      outerShellMesh.rotation.y += dt * 0.3;
-      outerShellMesh.rotation.x += dt * 0.2;
 
       // Pulse core lighting
       corePointLight.intensity =
@@ -783,63 +769,64 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       {/* ── Three.js Canvas Container ───────────────────────────────── */}
       <div ref={containerRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing" />
 
-      {/* ── Interactive 3D Control Bar Overlay (Matching Design Prompt) ─ */}
-      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
+      {/* ── Top-Left Status Pill (Completely Clear of 01 / INTRO) ───── */}
+      <div className="absolute top-2 left-2 z-20 pointer-events-none">
         <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-sky-400/30 backdrop-blur-md text-xs font-mono text-zinc-300 shadow-lg">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="font-semibold text-white">LIVE SYSTEM TOPOLOGY</span>
           <span className="text-zinc-500">|</span>
           <span className="text-[11px] text-sky-300">Drag to Orbit · Click to Inspect</span>
         </div>
+      </div>
 
-        <div className="pointer-events-auto flex items-center gap-1.5">
-          <button
-            onClick={() => setSoundEnabled((v) => !v)}
-            className={`p-2 rounded-xl border backdrop-blur-md transition ${
-              soundEnabled
-                ? 'bg-sky-400/15 border-sky-400/40 text-sky-300'
-                : 'bg-slate-950/80 border-white/10 text-zinc-400 hover:text-white'
-            }`}
-            title={soundEnabled ? 'Mute Sound Effects' : 'Enable Audio Feedback'}
-          >
-            {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-          </button>
+      {/* ── Bottom-Left Interactive 3D Control Bar (Clean & Non-Intrusive) ─ */}
+      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button
+          onClick={handleFirePulse}
+          disabled={trafficSurgeActive}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-sky-400/40 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-lg hover:border-sky-300 hover:bg-slate-900 transition disabled:opacity-50"
+          title="Simulate 10,000 req/sec traffic surge across the pipeline"
+        >
+          <Zap size={13} className={trafficSurgeActive ? 'animate-bounce text-amber-300' : 'text-sky-300'} />
+          <span>Simulate Traffic Surge</span>
+        </button>
 
-          <button
-            onClick={handleFirePulse}
-            disabled={trafficSurgeActive}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-400/25 to-indigo-500/25 border border-sky-400/40 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-md hover:border-sky-300 transition disabled:opacity-50"
-            title="Simulate 10,000 req/sec traffic surge across the pipeline"
-          >
-            <Zap size={13} className={trafficSurgeActive ? 'animate-bounce text-amber-300' : 'text-sky-300'} />
-            <span className="hidden sm:inline">Simulate Traffic Surge</span>
-          </button>
+        <button
+          onClick={() => setAutoRotate((r) => !r)}
+          className={`p-2 rounded-xl border backdrop-blur-md transition ${
+            autoRotate
+              ? 'bg-sky-400/20 border-sky-400 text-sky-300'
+              : 'bg-slate-950/90 border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900'
+          }`}
+          title="Toggle 360° Auto-Orbit"
+        >
+          <RotateCw size={13} className={autoRotate ? 'animate-spin' : ''} />
+        </button>
 
-          <button
-            onClick={() => setAutoRotate((r) => !r)}
-            className={`p-2 rounded-xl border backdrop-blur-md transition ${
-              autoRotate
-                ? 'bg-sky-400/20 border-sky-400 text-sky-300'
-                : 'bg-slate-950/80 border-white/10 text-zinc-400 hover:text-white'
-            }`}
-            title="Toggle 360° Auto-Orbit"
-          >
-            <RotateCw size={13} className={autoRotate ? 'animate-spin' : ''} />
-          </button>
+        <button
+          onClick={() => setSoundEnabled((v) => !v)}
+          className={`p-2 rounded-xl border backdrop-blur-md transition ${
+            soundEnabled
+              ? 'bg-sky-400/15 border-sky-400/40 text-sky-300'
+              : 'bg-slate-950/90 border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900'
+          }`}
+          title={soundEnabled ? 'Mute Audio Effects' : 'Enable Audio Feedback'}
+        >
+          {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+        </button>
 
-          <button
-            onClick={handleResetCamera}
-            className="p-2 rounded-xl bg-slate-950/80 border border-white/10 text-zinc-400 hover:text-white backdrop-blur-md transition"
-            title="Reset Camera View"
-          >
-            <Minimize2 size={13} />
-          </button>
-        </div>
+        <button
+          onClick={handleResetCamera}
+          className="p-2 rounded-xl bg-slate-950/90 border border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900 backdrop-blur-md transition"
+          title="Reset Camera View"
+        >
+          <Minimize2 size={13} />
+        </button>
       </div>
 
       {/* ── Subsystem Quick Hover Pill ──────────────────────────────── */}
       {hoveredSubsystemId && !selectedSubsystem && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 animate-fade-in">
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 pointer-events-none z-20 animate-fade-in">
           <div className="px-4 py-2 rounded-2xl bg-slate-950/90 border border-sky-400/50 backdrop-blur-xl shadow-xl flex items-center gap-3">
             <span className="text-lg">{SUBSYSTEMS[hoveredSubsystemId]?.iconGlyph}</span>
             <div>
@@ -859,7 +846,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
 
       {/* ── Interactive Holographic Subsystem Inspector HUD ─────────── */}
       {selectedSubsystem && (
-        <div className="absolute inset-x-3 bottom-3 z-30 pointer-events-auto">
+        <div className="absolute inset-x-3 bottom-3 z-30 pointer-events-auto animate-fade-in">
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/95 border border-sky-400/60 backdrop-blur-2xl shadow-2xl text-left space-y-3">
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
