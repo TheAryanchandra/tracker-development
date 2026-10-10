@@ -261,7 +261,9 @@ interface BrowserSpeechRecognitionInstance {
   stop: () => void;
 }
 
-export const AiVoiceAssistant: React.FC = () => {
+export const AiVoiceAssistant: React.FC<{ hideTriggerButton?: boolean }> = ({
+  hideTriggerButton = false,
+}) => {
   const [open, setOpen] = useState(false);
   const [chipCategory, setChipCategory] = useState<"recruiter" | "tracker">(
     "recruiter",
@@ -283,7 +285,7 @@ export const AiVoiceAssistant: React.FC = () => {
   const [visionModel, setVisionModel] = useState("gpt-6-astra");
   const [reasoningEffort, setReasoningEffort] = useState("high");
   const [webSearch, setWebSearch] = useState(false);
-  const [show3dAvatar, setShow3dAvatar] = useState(true);
+  const [show3dAvatar, setShow3dAvatar] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [liveAmplitude, setLiveAmplitude] = useState(0);
   const [visionModels, setVisionModels] = useState<
@@ -331,7 +333,13 @@ export const AiVoiceAssistant: React.FC = () => {
       if (saved) {
         const parsed = JSON.parse(saved);
         const valid = Array.isArray(parsed)
-          ? parsed.filter((m: Message) => Boolean(m.text && m.text.trim().length > 0))
+          ? parsed.filter(
+              (m: Message) =>
+                Boolean(m.text && m.text.trim().length > 0) &&
+                !m.text.includes("Connection interrupted") &&
+                !m.text.includes("port 5000") &&
+                !m.text.includes("went quiet"),
+            )
           : [];
         if (valid.length > 0) {
           setMessages(valid);
@@ -700,6 +708,45 @@ export const AiVoiceAssistant: React.FC = () => {
     );
   };
 
+  const getSmartLocalReply = (query: string): string => {
+    const q = String(query || "").toLowerCase();
+    if (
+      q.includes("screen") ||
+      q.includes("hire") ||
+      q.includes("candidate") ||
+      q.includes("summary") ||
+      q.includes("why")
+    ) {
+      return `✦ **Candidate Screen Brief — Aryan Chandra**:\n\n• **Production Mobile Impact:** Shipped **Fonofy Partner App** with **10,000+ Google Play Store downloads** (4.8★ user rating).\n• **Enterprise Distributed Systems:** Built knowledge retrieval platform with **Java 21 virtual threads, Spring Boot 3, Apache Kafka streams**, and **Qdrant hybrid vector search** (sub-200ms P95 latency).\n• **Autonomous AI:** Top Builder Award in **Google Cloud Agentic Premier League** (LangGraph multi-agent state graphs on Cloud Run).\n• **Algorithmic Mastery:** **420+ LeetCode DSA** problems solved with an active 14-day streak.\n• **Immediate Availability:** Open for **SDE-1 / Software Engineering** roles (Delhi NCR, Open to Remote & Relocation).\n\nFeel free to ask for system design details or Aryan's resume!`;
+    }
+    if (
+      q.includes("kafka") ||
+      q.includes("spring") ||
+      q.includes("architecture") ||
+      q.includes("backend") ||
+      q.includes("java")
+    ) {
+      return `✦ **Enterprise Backend & Systems Architecture**:\n\n• **Runtime:** Java 21 with virtual threads (Project Loom) for high concurrency.\n• **Framework:** Spring Boot 3 + Spring AI with JWT-secured RBAC API Gateway.\n• **Event Ingestion:** Event-driven Apache Kafka cluster for asynchronous ingestion.\n• **Vector Retrieval:** Qdrant hybrid vector search combining dense HNSW embeddings with BM25 lexical keyword ranking.\n• **Latency:** Sub-200ms P95 latency achieved at scale.`;
+    }
+    if (
+      q.includes("fonofy") ||
+      q.includes("mobile") ||
+      q.includes("download") ||
+      q.includes("app")
+    ) {
+      return `✦ **Fonofy Partners Mobile Ecosystem**:\n\n• **10,000+ Live Downloads** on the Google Play Store (4.8★ rating).\n• **Tech Stack:** React Native, Node.js, Express, MongoDB, REST APIs.\n• **Features:** Automated device diagnostics, real-time trade-in grading algorithm, and live inventory sync for nationwide refurbished electronics commerce.`;
+    }
+    if (
+      q.includes("dsa") ||
+      q.includes("streak") ||
+      q.includes("problem") ||
+      q.includes("leetcode")
+    ) {
+      return `✦ **DSA & Algorithmic Excellence**:\n\n• **420+ Problems Solved** across LeetCode and Striver SDE Sheet.\n• **Current Streak:** 14 active consecutive days.\n• **Core Strengths:** Dynamic Programming, Graph Algorithms, Binary Trees, Sliding Window & Two Pointer, and System Design.`;
+    }
+    return `👋 Greetings! I have full context on Aryan's production systems, codebase, and achievements:\n• **10,000+ Play Store Downloads** (Fonofy Partner App)\n• **Distributed Systems:** Java 21, Spring Boot 3, Kafka & Qdrant (sub-200ms P95)\n• **Top Builder Award:** Google Cloud Agentic Premier League (LangGraph)\n\nAsk me anything about Aryan's technical depth, system architecture, or request a candidate screening brief!`;
+  };
+
   // ── Main send ─────────────────────────────────────────────────────────────
   const handleSend = useCallback(
     async (customPrompt?: string) => {
@@ -889,48 +936,14 @@ export const AiVoiceAssistant: React.FC = () => {
           /* noop */
         }
         setLoading(false);
-        setConnectionError(true);
         setStatusMessage(null);
-        const isLocal =
-          typeof window !== "undefined" &&
-          ["localhost", "127.0.0.1"].includes(window.location.hostname);
-        const errorText = isLocal
-          ? "🔌 Local backend went quiet — make sure the Node server is running on port 5000, then hit Retry."
-          : "Hey, I just woke up from a power nap 😴 — Render puts me to sleep after a few minutes of quiet. I'll auto-retry in a moment. You can also hit **Retry** to bring me back instantly.";
+        const localReply = getSmartLocalReply(query);
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === aiId ? { ...m, text: errorText, streaming: false } : m,
+            m.id === aiId ? { ...m, text: localReply, streaming: false } : m,
           ),
         );
-        if (!isLocal) {
-          if (autoRetryTimerRef.current)
-            clearTimeout(autoRetryTimerRef.current);
-          if (autoRetryCountdownRef.current)
-            clearInterval(autoRetryCountdownRef.current);
-          const RETRY = 18;
-          setAutoRetryCountdown(RETRY);
-          autoRetryCountdownRef.current = setInterval(() => {
-            setAutoRetryCountdown((prev) => {
-              if (prev === null || prev <= 1) {
-                if (autoRetryCountdownRef.current)
-                  clearInterval(autoRetryCountdownRef.current);
-                autoRetryCountdownRef.current = null;
-                return null;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-          autoRetryTimerRef.current = setTimeout(() => {
-            setAutoRetryCountdown(null);
-            if (autoRetryCountdownRef.current)
-              clearInterval(autoRetryCountdownRef.current);
-            autoRetryCountdownRef.current = null;
-            autoRetryTimerRef.current = null;
-            setConnectionError(false);
-            setMessages((prev) => prev.filter((m) => m.id !== aiId));
-            handleSend(query);
-          }, RETRY * 1000);
-        }
+        speak(localReply);
       };
     },
     [
@@ -966,25 +979,27 @@ export const AiVoiceAssistant: React.FC = () => {
   return (
     <>
       {/* ── Floating Trigger Button ─────────────────────────────────────── */}
-      <button
-        className="jarvis-trigger group"
-        onClick={() => {
-          unlockVoice();
-          setOpen((o) => !o);
-        }}
-        title="Open Jarvis AI Copilot"
-        aria-label={open ? "Close Jarvis" : "Open Jarvis"}
-        aria-expanded={open}
-      >
-        {open ? (
-          <X
-            size={19}
-            className="transition-transform group-hover:rotate-90 duration-300"
-          />
-        ) : (
-          <JarvisAvatar size={34} pulse={loading} />
-        )}
-      </button>
+      {!hideTriggerButton && (
+        <button
+          className="jarvis-trigger group"
+          onClick={() => {
+            unlockVoice();
+            setOpen((o) => !o);
+          }}
+          title="Open Jarvis AI Copilot"
+          aria-label={open ? "Close Jarvis" : "Open Jarvis"}
+          aria-expanded={open}
+        >
+          {open ? (
+            <X
+              size={19}
+              className="transition-transform group-hover:rotate-90 duration-300"
+            />
+          ) : (
+            <JarvisAvatar size={34} pulse={loading} />
+          )}
+        </button>
+      )}
 
       {/* ── Main Panel ──────────────────────────────────────────────────── */}
       {open && (
@@ -994,8 +1009,12 @@ export const AiVoiceAssistant: React.FC = () => {
           aria-modal="false"
           aria-label="Jarvis AI Copilot"
           style={{
-            background: "linear-gradient(180deg, #0d0d1c 0%, #07070f 100%)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(15, 23, 42, 0.94)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            border: "1px solid rgba(255, 255, 255, 0.16)",
+            boxShadow:
+              "0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.14)",
           }}
         >
           {/* ── HEADER ────────────────────────────────────────────────── */}

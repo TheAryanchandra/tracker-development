@@ -361,30 +361,28 @@ export default function IglooPortfolio() {
         {/* ── CHAPTER 01: HERO OPENING ───────────────────────────────── */}
         <section
           id="hero"
-          className="relative min-h-screen flex flex-col justify-center items-center text-center px-6 md:px-12 pointer-events-none"
+          className="relative min-h-screen flex flex-col justify-start items-center text-center px-6 md:px-12 pt-24 md:pt-32 pointer-events-none"
         >
-          <div className="max-w-3xl space-y-6 pt-16">
-            <div className="space-y-3 pointer-events-auto">
-              <span className="inline-block px-3 py-1 rounded-full text-[10px] tracking-widest uppercase bg-[#18212e]/10 border border-[#18212e]/15 text-[#18212e] font-semibold">
-                Available for SDE-1 / Software Engineering Roles
-              </span>
+          <div className="max-w-2xl space-y-4 pointer-events-auto bg-white/80 backdrop-blur-md border border-white/80 p-6 md:p-8 rounded-3xl shadow-xl shadow-slate-900/5">
+            <span className="inline-block px-3 py-1 rounded-full text-[10px] tracking-widest uppercase bg-[#18212e]/10 border border-[#18212e]/15 text-[#18212e] font-semibold">
+              Available for SDE-1 / Software Engineering Roles
+            </span>
 
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-[#18212e] font-sans uppercase">
-                ARYAN CHANDRA
-              </h1>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[#0f172a] font-sans uppercase">
+              ARYAN CHANDRA
+            </h1>
 
-              <p className="text-sm sm:text-base text-[#434f63] max-w-xl mx-auto leading-relaxed">
-                Software Engineer specializing in Java 21, Spring Boot 3, Kafka,
-                and autonomous multi-agent AI systems. Shipped consumer mobile apps
-                with over <strong className="text-[#18212e] font-bold">10,000+ Google Play Store downloads</strong>.
-              </p>
-            </div>
+            <p className="text-xs sm:text-sm text-[#334155] max-w-lg mx-auto leading-relaxed">
+              Software Engineer specializing in Java 21, Spring Boot 3, Kafka,
+              and autonomous multi-agent AI systems. Shipped consumer mobile apps
+              with over <strong className="text-[#0f172a] font-bold">10,000+ Google Play Store downloads</strong>.
+            </p>
 
             {/* Quick Actions */}
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2 pointer-events-auto">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
               <a
                 href="#projects"
-                className="px-5 py-2.5 rounded-md bg-[#18212e] text-white text-xs font-bold tracking-wider hover:bg-[#2d3748] transition-all flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-[#0f172a] text-white text-xs font-bold tracking-wider hover:bg-[#1e293b] transition-all flex items-center gap-2"
               >
                 <span>EXPLORE WORK</span>
                 <ArrowRight size={13} />
@@ -394,7 +392,7 @@ export default function IglooPortfolio() {
                 href={DEFAULT_RESUME_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 rounded-md bg-[#18212e]/10 hover:bg-[#18212e]/20 border border-[#18212e]/20 text-[#18212e] text-xs font-bold tracking-wider transition-all flex items-center gap-1.5"
+                className="px-4 py-2 rounded-lg bg-[#0f172a]/10 hover:bg-[#0f172a]/20 border border-[#0f172a]/20 text-[#0f172a] text-xs font-bold tracking-wider transition-all flex items-center gap-1.5"
               >
                 <FileText size={13} />
                 <span>RESUME (PDF)</span>
@@ -402,7 +400,7 @@ export default function IglooPortfolio() {
 
               <button
                 onClick={copyBrief}
-                className="px-4 py-2.5 rounded-md bg-[#18212e]/5 hover:bg-[#18212e]/15 border border-[#18212e]/15 text-[#434f63] hover:text-[#18212e] text-xs tracking-wider transition-all flex items-center gap-1.5"
+                className="px-3 py-2 rounded-lg bg-[#0f172a]/5 hover:bg-[#0f172a]/15 border border-[#0f172a]/15 text-[#475569] hover:text-[#0f172a] text-xs tracking-wider transition-all flex items-center gap-1.5"
                 title="Copy Quick Candidate Summary"
               >
                 {copiedBio ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
@@ -803,7 +801,7 @@ export default function IglooPortfolio() {
       </main>
 
       {/* ── 5. Integrated Jarvis 3D AI Assistant ────────────────────── */}
-      <AiVoiceAssistant />
+      <AiVoiceAssistant hideTriggerButton={true} />
     </div>
   );
 }

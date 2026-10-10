@@ -184,13 +184,12 @@ export default function IglooGlacialCanvas({
       for (let j = 0; j < tier.count; j++) {
         const angle = j * angleStep;
 
-        // Skip front blocks to create the arched entrance opening
-        if (tier.hasDoor && (angle > Math.PI * 0.32 && angle < Math.PI * 0.68)) {
+        // Skip front blocks for arched doorway tunnel
+        if (tier.hasDoor && (angle > Math.PI * 0.35 && angle < Math.PI * 0.65)) {
           continue;
         }
 
-        // Slight natural variance in stone cut
-        const widthVar = 0.48 + ((j * 13) % 7) * 0.02;
+        const widthVar = 0.52 + ((j * 17) % 5) * 0.02;
         const blockGeo = new THREE.BoxGeometry(widthVar, tier.height, tier.depth);
         const blockMesh = new THREE.Mesh(blockGeo, stoneMat);
         blockMesh.castShadow = true;
@@ -199,15 +198,13 @@ export default function IglooGlacialCanvas({
         const bx = Math.cos(angle) * tier.radius;
         const bz = Math.sin(angle) * tier.radius;
         blockMesh.position.set(bx, tier.y, bz);
-        blockMesh.rotation.y = -angle + Math.PI / 2;
 
-        // Incline blocks slightly toward dome apex
-        const tilt = (tierIdx / tiers.length) * 0.45;
-        blockMesh.rotation.x = tilt;
+        // Point block towards dome center so it aligns along dome perimeter
+        blockMesh.lookAt(0, tier.y * 0.5, 0);
 
         iglooGroup.add(blockMesh);
 
-        const normal = new THREE.Vector3(bx, tier.y, bz).normalize();
+        const normal = new THREE.Vector3(bx, tier.y * 0.5, bz).normalize();
         iglooBlocks.push({
           mesh: blockMesh,
           originalPos: blockMesh.position.clone(),
@@ -217,7 +214,7 @@ export default function IglooGlacialCanvas({
     });
 
     // Keystone Dome Capstone block
-    const capGeo = new THREE.CylinderGeometry(0.55, 0.7, 0.28, 8);
+    const capGeo = new THREE.CylinderGeometry(0.55, 0.7, 0.28, 12);
     const capMesh = new THREE.Mesh(capGeo, stoneMat);
     capMesh.position.set(0, 2.38, 0);
     capMesh.castShadow = true;
@@ -229,23 +226,22 @@ export default function IglooGlacialCanvas({
     });
 
     // ── 5. Protruding Arched Entrance Tunnel ────────────────────────
-    // Just like the reference image: an arched masonry tunnel jutting forward
     const tunnelGroup = new THREE.Group();
-    tunnelGroup.position.set(0, 0, 2.4);
+    tunnelGroup.position.set(0, 0, 2.3);
     iglooGroup.add(tunnelGroup);
 
     const archRings = 5;
     for (let r = 0; r < archRings; r++) {
-      const zOffset = r * 0.36;
+      const zOffset = r * 0.34;
       const stonesInArch = 7;
       const archRadius = 0.95;
 
       for (let s = 0; s < stonesInArch; s++) {
         const sAngle = (s / (stonesInArch - 1)) * Math.PI;
         const ax = Math.cos(sAngle) * archRadius;
-        const ay = Math.sin(sAngle) * archRadius + 0.15;
+        const ay = Math.sin(sAngle) * archRadius + 0.12;
 
-        const archStoneGeo = new THREE.BoxGeometry(0.32, 0.28, 0.34);
+        const archStoneGeo = new THREE.BoxGeometry(0.32, 0.26, 0.32);
         const archStone = new THREE.Mesh(archStoneGeo, stoneMat);
         archStone.position.set(ax, ay, zOffset);
         archStone.rotation.z = sAngle - Math.PI / 2;
@@ -256,7 +252,7 @@ export default function IglooGlacialCanvas({
         iglooBlocks.push({
           mesh: archStone,
           originalPos: archStone.position.clone().add(tunnelGroup.position),
-          normal: new THREE.Vector3(ax, ay, zOffset + 2.4).normalize(),
+          normal: new THREE.Vector3(ax * 0.5, ay * 0.3, zOffset + 2.0).normalize(),
         });
       }
     }
@@ -374,29 +370,28 @@ export default function IglooGlacialCanvas({
       }
       snowGeo.attributes.position.needsUpdate = true;
 
-      // ── Scroll-Linked 3D Exploration & Igloo Expansion ───────────
-      // When scrolling, the stone blocks of the igloo gently levitate / open up
-      const explodeFactor = Math.min(Math.max((scroll - 0.15) * 2.2, 0), 1);
+      // ── Scroll-Linked 3D Exploration & Subtle Breathing Aperture ──
+      // In the hero (scroll < 0.18), the igloo remains a pristine, solid dome
+      const explodeFactor = Math.min(Math.max((scroll - 0.18) * 1.6, 0), 1);
       iglooBlocks.forEach((b) => {
-        const offset = b.normal.clone().multiplyScalar(explodeFactor * 1.8);
+        const offset = b.normal.clone().multiplyScalar(explodeFactor * 0.55);
         b.mesh.position.copy(b.originalPos).add(offset);
-        b.mesh.rotation.y += explodeFactor * 0.05;
       });
 
       // ── Cinematic Camera Spline Journey ──────────────────────────
-      let targetCamX = px * 0.6;
-      let targetCamY = 2.4 - py * 0.4;
-      let targetCamZ = 8.2;
-      let targetLookY = 1.2;
+      let targetCamX = px * 0.4;
+      let targetCamY = 1.9 - py * 0.3;
+      let targetCamZ = 7.4;
+      let targetLookY = 1.0;
       let targetLookZ = 0;
 
       if (scroll < 0.2) {
         // Section 0: The Igloo Manifesto (Exact hero view matching the reference)
         const t = scroll / 0.2;
-        targetCamX = px * 0.6;
-        targetCamY = 2.4 - t * 0.4 - py * 0.3;
-        targetCamZ = 8.2 - t * 1.2;
-        targetLookY = 1.2;
+        targetCamX = px * 0.4;
+        targetCamY = 1.9 - t * 0.3 - py * 0.2;
+        targetCamZ = 7.4 - t * 0.8;
+        targetLookY = 1.0;
         targetLookZ = 0;
       } else if (scroll < 0.45) {
         // Section 1: The Foundry (Camera glides closer towards the arched tunnel)
