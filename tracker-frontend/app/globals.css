@@ -88,9 +88,31 @@ html { scroll-behavior: smooth; }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .theme-toggle svg { color: var(--accent); }
 
+html, body {
+  background: #04060a !important;
+  color-scheme: dark !important;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #04060a !important;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25) !important;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5) !important;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg-deep);
+  background: #04060a;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;

@@ -2,16 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import {
-  Zap,
-  RotateCw,
-  Minimize2,
-  Layers,
-  X,
-  Volume2,
-  VolumeX,
-  Bot,
-} from 'lucide-react';
+import { Layers, X, Bot, Zap, ArrowUpRight } from 'lucide-react';
 
 export interface SubsystemDetail {
   id: string;
@@ -26,7 +17,7 @@ export interface SubsystemDetail {
   tags: string[];
   tradeoff: string;
   copilotPrompt: string;
-  iconGlyph: string;
+  iconType: 'gateway' | 'clients' | 'kafka' | 'workers' | 'vector' | 'db';
 }
 
 export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
@@ -43,7 +34,7 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     tags: ['Netty SSL Termination', 'Token Bucket Limiter', 'JWT RBAC Verification', 'CORS Guard'],
     tradeoff: 'Stateless JWT signature verification performed at ingress edge to protect downstream services from unauthorized RPC traffic.',
     copilotPrompt: 'Explain how your API Gateway handles rate limiting, JWT validation, and SSL termination in production.',
-    iconGlyph: '🌐',
+    iconType: 'gateway',
   },
   clients: {
     id: 'clients',
@@ -55,10 +46,10 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     latency: 'Client-side',
     throughput: '10,000+ app users',
     sla: '4.8★ Play Store',
-    tags: ['Web App', 'Mobile App', 'External Services', 'HTTP / HTTPS', 'REST · gRPC'],
+    tags: ['HTTP / HTTPS', 'REST · gRPC', 'Bi-directional WSS'],
     tradeoff: 'Optimistic client-side cache updates with rollback handlers for instant UX during mobile trade-in device inspections.',
     copilotPrompt: 'How did you build and deploy the Fonofy mobile application on the Google Play Store with 10K+ downloads?',
-    iconGlyph: '💻',
+    iconType: 'clients',
   },
   kafka: {
     id: 'kafka',
@@ -73,7 +64,7 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     tags: ['user-events', 'order-events', 'notification-events', 'analytics-events'],
     tradeoff: 'Partitioned by merchant tenant ID for strict in-order processing while scaling horizontally across cluster consumer groups.',
     copilotPrompt: 'Why did you choose Kafka over RabbitMQ for your event streaming architecture, and how do you handle dead-letter queues?',
-    iconGlyph: '⚡',
+    iconType: 'kafka',
   },
   workers: {
     id: 'workers',
@@ -88,7 +79,7 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     tags: ['Media Processing', 'AI Inference', 'Notifications', 'Data Pipelines'],
     tradeoff: 'Idempotent transaction deduplication keys prevent duplicate charge execution or duplicate document chunking on consumer rebalance.',
     copilotPrompt: 'Explain how Java 21 Virtual Threads (Project Loom) improved throughput in your background worker pipelines.',
-    iconGlyph: '⚙️',
+    iconType: 'workers',
   },
   vector: {
     id: 'vector',
@@ -100,10 +91,10 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     latency: '14ms P95 Search',
     throughput: '1,500 qps',
     sla: 'Sub-200ms E2E',
-    tags: ['Embeddings', 'Similarity Search', 'RAG', 'Semantic Retrieval', 'Qdrant HNSW'],
+    tags: ['Embeddings', 'Similarity Search', 'RAG', 'Semantic Retrieval'],
     tradeoff: 'Reciprocal Rank Fusion (RRF) combines dense vector cosine similarity with BM25 lexical search to eliminate hallucination in technical document retrieval.',
     copilotPrompt: 'How does your Enterprise RAG pipeline extract text, generate vector embeddings, and assemble context for LLM generation?',
-    iconGlyph: '🧠',
+    iconType: 'vector',
   },
   database: {
     id: 'database',
@@ -118,17 +109,17 @@ export const SUBSYSTEMS: Record<string, SubsystemDetail> = {
     tags: ['PostgreSQL', 'MongoDB', 'Redis', 'Scalable Storage'],
     tradeoff: 'PostgreSQL provides strict ACID transactions for order balances while MongoDB stores semi-structured device telemetry and document chunks.',
     copilotPrompt: 'What is your database caching strategy with Redis, and how do you prevent cache stampedes (thundering herd)?',
-    iconGlyph: '🗄️',
+    iconType: 'db',
   },
 };
 
-const PEDESTAL_COORDS = [
-  { id: 'gateway', x: 0.2, y: 2.8, z: -1.2, width: 3.5, height: 1.75 },
-  { id: 'clients', x: -4.5, y: 0.35, z: 0.2, width: 3.3, height: 1.65 },
-  { id: 'kafka', x: 4.4, y: 1.85, z: -0.6, width: 3.5, height: 1.75 },
-  { id: 'workers', x: 4.5, y: -0.55, z: 0.8, width: 3.5, height: 1.75 },
-  { id: 'vector', x: -1.8, y: -2.15, z: 0.9, width: 3.4, height: 1.7 },
-  { id: 'database', x: 2.6, y: -2.25, z: 0.9, width: 3.4, height: 1.7 },
+const PEDESTAL_CONFIGS = [
+  { id: 'gateway', x: 0.15, y: 2.65, z: -1.2, rotX: 0.18, rotY: 0, rotZ: 0, width: 3.5, height: 1.7 },
+  { id: 'clients', x: -4.4, y: 0.4, z: 0.2, rotX: 0.08, rotY: 0.42, rotZ: 0, width: 3.2, height: 2.1 },
+  { id: 'kafka', x: 4.4, y: 1.85, z: -0.6, rotX: 0.1, rotY: -0.4, rotZ: 0, width: 3.8, height: 1.7 },
+  { id: 'workers', x: 4.5, y: -0.5, z: 0.8, rotX: -0.08, rotY: -0.4, rotZ: 0, width: 3.8, height: 1.7 },
+  { id: 'vector', x: -2.0, y: -2.1, z: 0.9, rotX: -0.22, rotY: 0.22, rotZ: 0, width: 3.5, height: 1.7 },
+  { id: 'database', x: 2.7, y: -2.2, z: 0.9, rotX: -0.22, rotY: -0.22, rotZ: 0, width: 3.5, height: 1.7 },
 ];
 
 function playSynthChime(freq = 580) {
@@ -161,43 +152,29 @@ export default function CoreCanvas({ chapter, progress }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedSubsystem, setSelectedSubsystem] = useState<SubsystemDetail | null>(null);
   const [hoveredSubsystemId, setHoveredSubsystemId] = useState<string | null>(null);
-  const [trafficSurgeActive, setTrafficSurgeActive] = useState(false);
-  const [autoRotate, setAutoRotate] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const selectedIdRef = useRef<string | null>(null);
   const hoveredIdRef = useRef<string | null>(null);
-  const trafficSurgeRef = useRef<boolean>(false);
-  const autoRotateRef = useRef<boolean>(false);
-
   selectedIdRef.current = selectedSubsystem ? selectedSubsystem.id : null;
   hoveredIdRef.current = hoveredSubsystemId;
-  trafficSurgeRef.current = trafficSurgeActive;
-  autoRotateRef.current = autoRotate;
 
   const triggerPulseRef = useRef<(() => void) | null>(null);
   const resetCameraRef = useRef<(() => void) | null>(null);
 
   const handleSelectNode = useCallback((id: string) => {
     if (id === 'core') {
-      handleFirePulse();
+      if (triggerPulseRef.current) triggerPulseRef.current();
+      playSynthChime(880);
       return;
     }
     const detail = SUBSYSTEMS[id];
     if (detail) {
       setSelectedSubsystem(detail);
-      if (soundEnabled) playSynthChime(640);
+      playSynthChime(640);
     }
-  }, [soundEnabled]);
+  }, []);
 
-  const handleFirePulse = () => {
-    setTrafficSurgeActive(true);
-    if (soundEnabled) playSynthChime(880);
-    if (triggerPulseRef.current) triggerPulseRef.current();
-    setTimeout(() => setTrafficSurgeActive(false), 2400);
-  };
-
-  const handleResetCamera = () => {
+  const handleCloseInspector = () => {
     setSelectedSubsystem(null);
     if (resetCameraRef.current) resetCameraRef.current();
   };
@@ -237,14 +214,14 @@ export default function CoreCanvas({ chapter, progress }: Props) {
     renderer.setSize(width, height);
     renderer.setClearColor(0x000000, 0);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.25;
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x030712, 0.035);
+    scene.fog = new THREE.FogExp2(0x04060a, 0.035);
 
-    const defaultCameraPos = new THREE.Vector3(0, 1.15, 11.6);
-    const defaultCameraTarget = new THREE.Vector3(0.15, 0.25, 0);
+    const defaultCameraPos = new THREE.Vector3(0, 0.95, 11.4);
+    const defaultCameraTarget = new THREE.Vector3(0.15, 0.2, 0);
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 80);
     camera.position.copy(defaultCameraPos);
 
@@ -257,58 +234,63 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       targetLookAt.copy(defaultCameraTarget);
     };
 
-    // ── 2. Cinematic Lighting ────────────────────────────────────
-    const ambLight = new THREE.AmbientLight(0x0c1e38, 2.5);
+    // ── 2. Cinematic Restrained Lighting ─────────────────────────
+    const ambLight = new THREE.AmbientLight(0x0a1428, 1.2);
     scene.add(ambLight);
 
-    const cyanLight = new THREE.DirectionalLight(0x38bdf8, 4.0);
-    cyanLight.position.set(8, 14, 10);
+    const cyanLight = new THREE.DirectionalLight(0x38bdf8, 2.0);
+    cyanLight.position.set(6, 12, 8);
     scene.add(cyanLight);
 
-    const violetLight = new THREE.DirectionalLight(0x818cf8, 2.8);
-    violetLight.position.set(-10, 8, -6);
+    const violetLight = new THREE.DirectionalLight(0x818cf8, 1.4);
+    violetLight.position.set(-8, 6, -5);
     scene.add(violetLight);
 
-    const corePointLight = new THREE.PointLight(0x38bdf8, 7.5, 20);
-    corePointLight.position.set(0, 0.5, 0);
+    const corePointLight = new THREE.PointLight(0x00f0ff, 4.0, 16);
+    corePointLight.position.set(0.15, 0.35, 0);
     scene.add(corePointLight);
 
     // ── 3. Cybernetic Ground Grid ────────────────────────────────
-    const gridHelper = new THREE.GridHelper(38, 38, 0x0284c7, 0x0f172a);
+    const gridHelper = new THREE.GridHelper(38, 38, 0x0369a1, 0x091224);
     gridHelper.position.set(0, -3.2, -1.0);
     gridHelper.rotation.x = 0.08;
     scene.add(gridHelper);
 
-    // ── 4. Central Electric Core (Smooth Luminous Plasma Orb — NO WIREFRAME LINES) ──
+    // ── 4. Central Electric Core (Radiant Cyan Orb — NO WIREFRAME) ──
     const coreGroup = new THREE.Group();
     coreGroup.position.set(0.15, 0.35, 0);
     scene.add(coreGroup);
 
-    // Outer Glowing Electric Sphere
-    const sphereGeo = new THREE.SphereGeometry(1.18, 48, 48);
+    // Main Deep Cyan Energy Sphere
+    const sphereGeo = new THREE.SphereGeometry(1.15, 48, 48);
     const sphereMat = new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0ea5e9,
-      emissiveIntensity: 3.2,
-      roughness: 0.1,
+      color: 0x0284c7,
+      emissive: 0x00e5ff,
+      emissiveIntensity: 2.2,
+      roughness: 0.15,
       metalness: 0.85,
     });
     const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
     sphereMesh.userData = { id: 'core' };
     coreGroup.add(sphereMesh);
 
-    // Inner Radiant Core
-    const innerGeo = new THREE.SphereGeometry(0.92, 32, 32);
-    const innerMat = new THREE.MeshBasicMaterial({ color: 0xf0f9ff });
-    const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-    coreGroup.add(innerMesh);
+    // Outer Soft Atmosphere Glow Halo
+    const haloGeo = new THREE.SphereGeometry(1.25, 32, 32);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.22,
+      blending: THREE.AdditiveBlending,
+    });
+    const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+    coreGroup.add(haloMesh);
 
-    // 3 Sleek Orbital Rings (Pure Glowing Tori — NO POLYGON WIRES)
+    // 3 Smooth Orbital Rings
     const rings: THREE.Mesh[] = [];
     const ringConfigs = [
-      { r: 1.6, w: 0.022, col: 0x38bdf8, rotX: Math.PI / 2.2, rotZ: 0.4 },
-      { r: 1.95, w: 0.018, col: 0x818cf8, rotX: Math.PI / 1.7, rotZ: -0.6 },
-      { r: 2.3, w: 0.016, col: 0x38bdf8, rotX: Math.PI / 2.6, rotZ: 1.1 },
+      { r: 1.58, w: 0.02, col: 0x38bdf8, rotX: Math.PI / 2.2, rotZ: 0.35 },
+      { r: 1.92, w: 0.016, col: 0x818cf8, rotX: Math.PI / 1.7, rotZ: -0.55 },
+      { r: 2.28, w: 0.014, col: 0x38bdf8, rotX: Math.PI / 2.6, rotZ: 1.05 },
     ];
 
     ringConfigs.forEach((cfg) => {
@@ -324,124 +306,264 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       rings.push(rMesh);
     });
 
-    // ── 5. High-Resolution Billboard Canvas Textures (Matching Design Reference) ──
+    // ── 5. Vector Graphics Generator (Exact Reference Card Design) ──
+    const drawCardVectorIcon = (ctx: CanvasRenderingContext2D, type: string, x: number, y: number, s: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.fillStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+
+      if (type === 'gateway') {
+        // Globe
+        ctx.beginPath();
+        ctx.arc(s / 2, s / 2, s / 2.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(s / 2, s / 2, s / 5, s / 2.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s / 2 - s / 2.2, s / 2);
+        ctx.lineTo(s / 2 + s / 2.2, s / 2);
+        ctx.stroke();
+      } else if (type === 'clients') {
+        // Devices
+        ctx.strokeRect(4, 6, s - 14, s / 1.8);
+        ctx.strokeRect(s / 2 - 2, s - 12, 16, 10);
+      } else if (type === 'kafka') {
+        // Event Tree
+        ctx.beginPath();
+        ctx.arc(10, s / 2, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s - 10, 12, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s - 10, s - 12, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(10, s / 2);
+        ctx.lineTo(s - 10, 12);
+        ctx.moveTo(10, s / 2);
+        ctx.lineTo(s - 10, s - 12);
+        ctx.stroke();
+      } else if (type === 'workers') {
+        // Gear
+        ctx.beginPath();
+        ctx.arc(s / 2, s / 2, s / 2.4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(s / 2, s / 2, s / 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (type === 'vector') {
+        // Layers
+        ctx.strokeRect(6, 6, s - 12, 10);
+        ctx.strokeRect(6, 20, s - 12, 10);
+        ctx.strokeRect(6, 34, s - 12, 10);
+      } else {
+        // Database Cylinder
+        ctx.beginPath();
+        ctx.ellipse(s / 2, 12, s / 2.4, 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(s / 2, 26, s / 2.4, 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(s / 2, 40, s / 2.4, 7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    };
+
     const createHighDefPedestalTexture = (detail: SubsystemDetail) => {
       const c = document.createElement('canvas');
       c.width = 1024;
       c.height = 512;
       const ctx = c.getContext('2d')!;
 
-      // Dark translucent glass card background
-      ctx.fillStyle = 'rgba(6, 12, 26, 0.94)';
+      // Deep solid dark obsidian backing (100% OPAQUE — no murky teal transparency)
+      ctx.fillStyle = '#060c18';
       ctx.beginPath();
-      ctx.roundRect(14, 14, 996, 484, 24);
+      ctx.roundRect(8, 8, 1008, 496, 20);
       ctx.fill();
 
-      // Sleek subtle inner gradient
-      const innerGrad = ctx.createLinearGradient(0, 14, 0, 498);
-      innerGrad.addColorStop(0, 'rgba(14, 165, 233, 0.15)');
-      innerGrad.addColorStop(1, 'rgba(6, 11, 24, 0.95)');
+      // Subtle gradient highlight
+      const innerGrad = ctx.createLinearGradient(0, 8, 0, 500);
+      innerGrad.addColorStop(0, '#09152a');
+      innerGrad.addColorStop(1, '#050a14');
       ctx.fillStyle = innerGrad;
       ctx.beginPath();
-      ctx.roundRect(16, 16, 992, 480, 22);
+      ctx.roundRect(10, 10, 1004, 492, 18);
       ctx.fill();
 
-      // Fine Neon Cyan Glowing Border (matching reference image)
+      // Razor-sharp glowing cyan neon border
       ctx.lineWidth = 3.5;
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
       ctx.stroke();
 
       // Top glowing cyan-to-violet accent line
-      const topBarGrad = ctx.createLinearGradient(24, 18, 1000, 18);
+      const topBarGrad = ctx.createLinearGradient(16, 12, 1008, 12);
       topBarGrad.addColorStop(0, '#38bdf8');
       topBarGrad.addColorStop(0.5, '#60a5fa');
       topBarGrad.addColorStop(1, '#818cf8');
       ctx.fillStyle = topBarGrad;
-      ctx.fillRect(36, 18, 952, 4);
+      ctx.fillRect(24, 12, 976, 4);
 
-      // Icon Badge Square
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.2)';
-      ctx.beginPath();
-      ctx.roundRect(46, 50, 84, 84, 18);
-      ctx.fill();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
+      if (detail.id === 'kafka' || detail.id === 'workers') {
+        // Split layout: Main Card (Left) + Stacked Event Tags (Right)
+        // Icon
+        drawCardVectorIcon(ctx, detail.iconType, 42, 48, 54);
 
-      // Icon Glyph
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 42px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(detail.iconGlyph, 88, 92);
+        // Title
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 48px "Space Grotesk", sans-serif';
+        ctx.fillText(detail.title, 114, 88);
 
-      // Subsystem Title (Crisp bold uppercase white text)
-      ctx.textAlign = 'left';
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 48px "Space Grotesk", sans-serif';
-      ctx.fillText(detail.title, 150, 80);
+        // Subtitle
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 24px "Inter", sans-serif';
+        ctx.fillText(detail.subtitle, 42, 160);
 
-      // Category / Tech Line
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 22px monospace';
-      ctx.fillText(detail.category.toUpperCase(), 152, 118);
+        // Right side stacked pills
+        const tagBoxX = 540;
+        let tagY = 48;
+        detail.tags.forEach((tag) => {
+          ctx.fillStyle = '#081324';
+          ctx.beginPath();
+          ctx.roundRect(tagBoxX, tagY, 440, 48, 10);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
 
-      // Subtitle (Role & Features)
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '600 24px "Inter", sans-serif';
-      ctx.fillText(detail.subtitle, 48, 175);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 20px monospace';
+          ctx.fillText(`▤  ${tag}`, tagBoxX + 20, tagY + 31);
+          tagY += 60;
+        });
 
-      // Divider Line
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
-      ctx.fillRect(48, 198, 928, 2);
+        // Bottom Telemetry Footer
+        ctx.fillStyle = '#040812';
+        ctx.fillRect(24, 410, 976, 68);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(24, 410, 976, 68);
 
-      // Tags Badges (Pills)
-      let tagX = 48;
-      let tagY = 224;
-      ctx.font = 'bold 22px monospace';
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = '#34d399';
+        ctx.fillText(`● LATENCY: ${detail.latency}`, 46, 452);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`THROUGHPUT: ${detail.throughput}`, 420, 452);
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillText(`SLA: ${detail.sla}`, 820, 452);
+      } else if (detail.id === 'clients') {
+        // Clients Layout (List of devices & protocols)
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 48px "Space Grotesk", sans-serif';
+        ctx.fillText('CLIENTS', 42, 76);
 
-      detail.tags.forEach((tag, idx) => {
-        const textMetrics = ctx.measureText(tag);
-        const tagW = textMetrics.width + 36;
+        const clientsItems = [
+          { icon: '💻', label: 'Web App' },
+          { icon: '📱', label: 'Mobile App' },
+          { icon: '⚙️', label: 'External Services' },
+        ];
 
-        if (tagX + tagW > 960) {
-          tagX = 48;
-          tagY += 50;
-        }
+        let itemY = 120;
+        clientsItems.forEach((ci) => {
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 28px sans-serif';
+          ctx.fillText(ci.icon, 46, itemY + 28);
 
-        ctx.fillStyle = idx === 0 ? 'rgba(14, 165, 233, 0.25)' : 'rgba(15, 23, 42, 0.85)';
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 26px "Inter", sans-serif';
+          ctx.fillText(ci.label, 96, itemY + 26);
+          itemY += 56;
+        });
+
+        // Protocol pill right side
+        ctx.fillStyle = '#081324';
         ctx.beginPath();
-        ctx.roundRect(tagX, tagY, tagW, 40, 10);
+        ctx.roundRect(500, 120, 480, 140, 14);
         ctx.fill();
-
-        ctx.strokeStyle = idx === 0 ? 'rgba(56, 189, 248, 0.8)' : 'rgba(56, 189, 248, 0.35)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        ctx.fillStyle = idx === 0 ? '#38bdf8' : '#cbd5e1';
-        ctx.fillText(tag, tagX + 18, tagY + 27);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 24px monospace';
+        ctx.fillText('HTTP / HTTPS', 530, 175);
+        ctx.fillText('REST · gRPC', 530, 220);
 
-        tagX += tagW + 16;
-      });
+        // Bottom Telemetry Footer
+        ctx.fillStyle = '#040812';
+        ctx.fillRect(24, 410, 976, 68);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(24, 410, 976, 68);
 
-      // Bottom Status Footer Bar
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.75)';
-      ctx.beginPath();
-      ctx.roundRect(48, 412, 928, 52, 12);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = '#34d399';
+        ctx.fillText(`● STATUS: ONLINE`, 46, 452);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`ACTIVE USERS: ${detail.throughput}`, 380, 452);
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillText(`STORE: ${detail.sla}`, 800, 452);
+      } else {
+        // Standard Card Layout (Gateway, Vector Search, Database)
+        drawCardVectorIcon(ctx, detail.iconType, 42, 48, 54);
 
-      ctx.font = 'bold 20px monospace';
-      ctx.fillStyle = '#34d399';
-      ctx.fillText(`● LATENCY: ${detail.latency}`, 68, 444);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 48px "Space Grotesk", sans-serif';
+        ctx.fillText(detail.title, 114, 88);
 
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(`THROUGHPUT: ${detail.throughput}`, 440, 444);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '600 24px "Inter", sans-serif';
+        ctx.fillText(detail.subtitle, 42, 160);
 
-      ctx.fillStyle = '#a78bfa';
-      ctx.fillText(`SLA: ${detail.sla}`, 810, 444);
+        // Tags badges
+        let tagX = 42;
+        let tagY = 220;
+        ctx.font = 'bold 22px monospace';
+
+        detail.tags.forEach((tag, idx) => {
+          const textMetrics = ctx.measureText(tag);
+          const tagW = textMetrics.width + 36;
+          if (tagX + tagW > 960) {
+            tagX = 42;
+            tagY += 54;
+          }
+
+          ctx.fillStyle = idx === 0 ? 'rgba(14, 165, 233, 0.25)' : '#081324';
+          ctx.beginPath();
+          ctx.roundRect(tagX, tagY, tagW, 44, 10);
+          ctx.fill();
+          ctx.strokeStyle = idx === 0 ? 'rgba(56, 189, 248, 0.7)' : 'rgba(56, 189, 248, 0.35)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = idx === 0 ? '#38bdf8' : '#cbd5e1';
+          ctx.fillText(tag, tagX + 18, tagY + 29);
+          tagX += tagW + 16;
+        });
+
+        // Bottom Telemetry Footer
+        ctx.fillStyle = '#040812';
+        ctx.fillRect(24, 410, 976, 68);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(24, 410, 976, 68);
+
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = '#34d399';
+        ctx.fillText(`● LATENCY: ${detail.latency}`, 46, 452);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`THROUGHPUT: ${detail.throughput}`, 420, 452);
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillText(`SLA: ${detail.sla}`, 820, 452);
+      }
 
       const tex = new THREE.CanvasTexture(c);
       tex.generateMipmaps = true;
@@ -451,7 +573,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       return tex;
     };
 
-    // ── 6. Construct Pedestals with Interactive Raycasting Meshes ──
+    // ── 6. Construct 3D Pedestals with Angled Perspective ─────────
     interface PedestalMeshItem {
       id: string;
       group: THREE.Group;
@@ -462,20 +584,19 @@ export default function CoreCanvas({ chapter, progress }: Props) {
 
     const pedestalMeshes: PedestalMeshItem[] = [];
     const interactiveObjects: THREE.Object3D[] = [];
-
-    // Also register the core sphere for interaction
     interactiveObjects.push(sphereMesh);
 
-    PEDESTAL_COORDS.forEach((cfg) => {
+    PEDESTAL_CONFIGS.forEach((cfg) => {
       const detail = SUBSYSTEMS[cfg.id];
       const pGroup = new THREE.Group();
       pGroup.position.set(cfg.x, cfg.y, cfg.z);
+      pGroup.rotation.set(cfg.rotX, cfg.rotY, cfg.rotZ);
       scene.add(pGroup);
 
       // Chassis base pedestal
       const baseGeo = new THREE.BoxGeometry(cfg.width, 0.24, 0.45);
       const baseMat = new THREE.MeshStandardMaterial({
-        color: 0x071120,
+        color: 0x050c18,
         roughness: 0.2,
         metalness: 0.9,
       });
@@ -490,31 +611,17 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       rimMesh.position.y = -cfg.height / 2 + 0.13;
       pGroup.add(rimMesh);
 
-      // High-Def Screen Mesh
+      // High-Def Screen Mesh (OPAQUE — no washed-out teal transparency)
       const tex = createHighDefPedestalTexture(detail);
       const screenGeo = new THREE.PlaneGeometry(cfg.width, cfg.height);
       const screenMat = new THREE.MeshBasicMaterial({
         map: tex,
-        transparent: true,
-        opacity: 1.0,
+        transparent: false,
         side: THREE.DoubleSide,
       });
       const screenMesh = new THREE.Mesh(screenGeo, screenMat);
       screenMesh.userData = { id: cfg.id };
       pGroup.add(screenMesh);
-
-      // Floor Hologram Ring Anchor
-      const anchorGeo = new THREE.RingGeometry(0.3, 0.85, 24);
-      const anchorMat = new THREE.MeshBasicMaterial({
-        color: 0x0284c7,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.4,
-      });
-      const anchorMesh = new THREE.Mesh(anchorGeo, anchorMat);
-      anchorMesh.rotation.x = Math.PI / 2;
-      anchorMesh.position.set(cfg.x, -3.1, cfg.z);
-      scene.add(anchorMesh);
 
       interactiveObjects.push(screenMesh);
       pedestalMeshes.push({
@@ -531,7 +638,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
     const conduitGroup = new THREE.Group();
     scene.add(conduitGroup);
 
-    PEDESTAL_COORDS.forEach((cfg) => {
+    PEDESTAL_CONFIGS.forEach((cfg) => {
       const pStart = new THREE.Vector3(coreGroup.position.x, coreGroup.position.y, coreGroup.position.z);
       const pEnd = new THREE.Vector3(cfg.x, cfg.y, cfg.z);
 
@@ -551,7 +658,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       const line = new THREE.Line(lineGeo, lineMat);
       conduitGroup.add(line);
 
-      // Photon packets
+      // Moving photon packets
       const photons: THREE.Mesh[] = [];
       const photonCount = 4;
       for (let k = 0; k < photonCount; k++) {
@@ -565,11 +672,14 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       conduitLines.push({ curve, photons });
     });
 
+    let pulseActive = false;
     triggerPulseRef.current = () => {
-      corePointLight.intensity = 18.0;
+      pulseActive = true;
+      corePointLight.intensity = 14.0;
       setTimeout(() => {
-        corePointLight.intensity = 7.5;
-      }, 400);
+        pulseActive = false;
+        corePointLight.intensity = 4.0;
+      }, 500);
     };
 
     // ── 8. Raycaster & Pointer Interaction ───────────────────────
@@ -593,7 +703,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
         const dy = e.clientY - prevPointer.y;
         orbitEuler.y -= dx * 0.005;
         orbitEuler.x -= dy * 0.005;
-        orbitEuler.x = Math.max(-0.6, Math.min(0.6, orbitEuler.x));
+        orbitEuler.x = Math.max(-0.5, Math.min(0.5, orbitEuler.x));
         prevPointer = { x: e.clientX, y: e.clientY };
       }
     };
@@ -611,9 +721,9 @@ export default function CoreCanvas({ chapter, progress }: Props) {
         if (nodeId) {
           handleSelectNode(nodeId);
           if (nodeId !== 'core') {
-            const cfg = PEDESTAL_COORDS.find((p) => p.id === nodeId);
+            const cfg = PEDESTAL_CONFIGS.find((p) => p.id === nodeId);
             if (cfg) {
-              targetCameraPos.set(cfg.x * 0.6, cfg.y * 0.6 + 0.3, 8.5);
+              targetCameraPos.set(cfg.x * 0.55, cfg.y * 0.55 + 0.25, 8.8);
               targetLookAt.set(cfg.x, cfg.y, cfg.z);
             }
           }
@@ -630,7 +740,7 @@ export default function CoreCanvas({ chapter, progress }: Props) {
 
     const onWheel = (e: WheelEvent) => {
       targetCameraPos.z += e.deltaY * 0.005;
-      targetCameraPos.z = Math.max(6.5, Math.min(16.0, targetCameraPos.z));
+      targetCameraPos.z = Math.max(7.0, Math.min(15.0, targetCameraPos.z));
     };
 
     const domEl = renderer.domElement;
@@ -666,28 +776,23 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       currentCameraTarget.lerp(targetLookAt, 0.05);
       camera.lookAt(currentCameraTarget);
 
-      // Auto rotate if enabled
-      if (autoRotateRef.current) {
-        scene.rotation.y += dt * 0.35;
-      } else {
-        scene.rotation.y = THREE.MathUtils.lerp(scene.rotation.y, orbitEuler.y, 0.08);
-        scene.rotation.x = THREE.MathUtils.lerp(scene.rotation.x, orbitEuler.x, 0.08);
-      }
+      // Smooth orbit rotation
+      scene.rotation.y = THREE.MathUtils.lerp(scene.rotation.y, orbitEuler.y, 0.08);
+      scene.rotation.x = THREE.MathUtils.lerp(scene.rotation.x, orbitEuler.x, 0.08);
 
-      const speedMultiplier = trafficSurgeRef.current ? 3.5 : 1.0;
+      const speedMultiplier = pulseActive ? 3.5 : 1.0;
 
       // Animate central core
-      sphereMesh.rotation.y += dt * 0.6 * speedMultiplier;
-      innerMesh.rotation.y -= dt * 1.0 * speedMultiplier;
+      sphereMesh.rotation.y += dt * 0.5 * speedMultiplier;
+      haloMesh.rotation.y -= dt * 0.3;
 
       // Pulse core lighting
-      corePointLight.intensity =
-        (trafficSurgeRef.current ? 12.0 : 6.0) + Math.sin(t * 4) * 1.5;
+      corePointLight.intensity = (pulseActive ? 10.0 : 4.0) + Math.sin(t * 3.5) * 1.0;
 
       // Rotate orbital rings
-      rings[0].rotation.z += dt * 0.9 * speedMultiplier;
-      rings[1].rotation.z -= dt * 1.1 * speedMultiplier;
-      rings[2].rotation.z += dt * 0.7 * speedMultiplier;
+      rings[0].rotation.z += dt * 0.8 * speedMultiplier;
+      rings[1].rotation.z -= dt * 1.0 * speedMultiplier;
+      rings[2].rotation.z += dt * 0.6 * speedMultiplier;
 
       // Hover elevation and floating motion for pedestals
       const selectedId = selectedIdRef.current;
@@ -698,14 +803,14 @@ export default function CoreCanvas({ chapter, progress }: Props) {
         const isHovered = hoveredId === id;
 
         const targetY = isSelected
-          ? basePos.y + 0.45
+          ? basePos.y + 0.35
           : isHovered
-          ? basePos.y + 0.25
-          : basePos.y + Math.sin(t * 1.6 + idx * 0.8) * 0.06;
+          ? basePos.y + 0.2
+          : basePos.y + Math.sin(t * 1.4 + idx * 0.8) * 0.05;
 
         group.position.y = THREE.MathUtils.lerp(group.position.y, targetY, 0.1);
 
-        const targetScale = isSelected ? 1.08 : isHovered ? 1.04 : 1.0;
+        const targetScale = isSelected ? 1.06 : isHovered ? 1.03 : 1.0;
         group.scale.setScalar(THREE.MathUtils.lerp(group.scale.x, targetScale, 0.1));
 
         // Highlight rim material color
@@ -769,66 +874,11 @@ export default function CoreCanvas({ chapter, progress }: Props) {
       {/* ── Three.js Canvas Container ───────────────────────────────── */}
       <div ref={containerRef} className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing" />
 
-      {/* ── Top-Left Status Pill (Completely Clear of 01 / INTRO) ───── */}
-      <div className="absolute top-2 left-2 z-20 pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-sky-400/30 backdrop-blur-md text-xs font-mono text-zinc-300 shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-semibold text-white">LIVE SYSTEM TOPOLOGY</span>
-          <span className="text-zinc-500">|</span>
-          <span className="text-[11px] text-sky-300">Drag to Orbit · Click to Inspect</span>
-        </div>
-      </div>
-
-      {/* ── Bottom-Left Interactive 3D Control Bar (Clean & Non-Intrusive) ─ */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2 pointer-events-auto">
-        <button
-          onClick={handleFirePulse}
-          disabled={trafficSurgeActive}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-sky-400/40 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-lg hover:border-sky-300 hover:bg-slate-900 transition disabled:opacity-50"
-          title="Simulate 10,000 req/sec traffic surge across the pipeline"
-        >
-          <Zap size={13} className={trafficSurgeActive ? 'animate-bounce text-amber-300' : 'text-sky-300'} />
-          <span>Simulate Traffic Surge</span>
-        </button>
-
-        <button
-          onClick={() => setAutoRotate((r) => !r)}
-          className={`p-2 rounded-xl border backdrop-blur-md transition ${
-            autoRotate
-              ? 'bg-sky-400/20 border-sky-400 text-sky-300'
-              : 'bg-slate-950/90 border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900'
-          }`}
-          title="Toggle 360° Auto-Orbit"
-        >
-          <RotateCw size={13} className={autoRotate ? 'animate-spin' : ''} />
-        </button>
-
-        <button
-          onClick={() => setSoundEnabled((v) => !v)}
-          className={`p-2 rounded-xl border backdrop-blur-md transition ${
-            soundEnabled
-              ? 'bg-sky-400/15 border-sky-400/40 text-sky-300'
-              : 'bg-slate-950/90 border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900'
-          }`}
-          title={soundEnabled ? 'Mute Audio Effects' : 'Enable Audio Feedback'}
-        >
-          {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-        </button>
-
-        <button
-          onClick={handleResetCamera}
-          className="p-2 rounded-xl bg-slate-950/90 border border-white/10 text-zinc-400 hover:text-white hover:bg-slate-900 backdrop-blur-md transition"
-          title="Reset Camera View"
-        >
-          <Minimize2 size={13} />
-        </button>
-      </div>
-
-      {/* ── Subsystem Quick Hover Pill ──────────────────────────────── */}
+      {/* ── Subsystem Quick Hover Tooltip ───────────────────────────── */}
       {hoveredSubsystemId && !selectedSubsystem && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 pointer-events-none z-20 animate-fade-in">
-          <div className="px-4 py-2 rounded-2xl bg-slate-950/90 border border-sky-400/50 backdrop-blur-xl shadow-xl flex items-center gap-3">
-            <span className="text-lg">{SUBSYSTEMS[hoveredSubsystemId]?.iconGlyph}</span>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none z-20 animate-fade-in">
+          <div className="px-4 py-2 rounded-2xl bg-slate-950/95 border border-sky-400/50 backdrop-blur-xl shadow-2xl flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
             <div>
               <div className="text-xs font-bold text-white tracking-wide">
                 {SUBSYSTEMS[hoveredSubsystemId]?.title}
@@ -850,29 +900,24 @@ export default function CoreCanvas({ chapter, progress }: Props) {
           <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/95 border border-sky-400/60 backdrop-blur-2xl shadow-2xl text-left space-y-3">
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/40 flex items-center justify-center text-xl">
-                  {selectedSubsystem.iconGlyph}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white tracking-wide font-sans">
+                    {selectedSubsystem.title}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 font-semibold">
+                    ONLINE // {selectedSubsystem.sla}
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-white tracking-wide font-sans">
-                      {selectedSubsystem.title}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 font-semibold">
-                      ONLINE // {selectedSubsystem.sla}
-                    </span>
-                  </div>
-                  <div className="text-xs text-sky-300 font-mono">
-                    {selectedSubsystem.tech}
-                  </div>
+                <div className="text-xs text-sky-300 font-mono">
+                  {selectedSubsystem.tech}
                 </div>
               </div>
 
               <button
-                onClick={handleResetCamera}
+                onClick={handleCloseInspector}
                 className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition"
-                title="Close Drawer"
+                title="Close Inspector"
               >
                 <X size={14} />
               </button>
@@ -916,7 +961,10 @@ export default function CoreCanvas({ chapter, progress }: Props) {
                 </button>
 
                 <button
-                  onClick={handleFirePulse}
+                  onClick={() => {
+                    if (triggerPulseRef.current) triggerPulseRef.current();
+                    playSynthChime(880);
+                  }}
                   className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition"
                 >
                   <Zap size={13} className="text-amber-400" />

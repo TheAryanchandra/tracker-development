@@ -21,13 +21,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <html lang="en" className="dark" style={{ backgroundColor: '#04060a', colorScheme: 'dark' }}>
+      <body style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#04060a', colorScheme: 'dark', overflowX: 'hidden' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#04060a' }}>
           <Sidebar />
-          <main className="page-main flex-1 overflow-y-auto flex flex-col" style={{ minWidth: 0 }}>
+          <main className="page-main flex-1 overflow-y-auto flex flex-col" style={{ minWidth: 0, backgroundColor: '#04060a' }}>
             <Navbar />
-            <div className="flex-1">
+            <div className="flex-1" style={{ backgroundColor: '#04060a' }}>
               {children}
             </div>
           </main>
