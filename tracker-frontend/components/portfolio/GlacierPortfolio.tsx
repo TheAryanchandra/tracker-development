@@ -32,6 +32,7 @@ import {
   Cpu,
   Database,
   Users,
+  Menu,
 } from 'lucide-react';
 
 import './portfolio.css';
@@ -66,6 +67,7 @@ export default function GlacierPortfolio() {
   // Drawers & Modals
   const [recruiterOpen, setRecruiterOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeProjectModal, setActiveProjectModal] = useState<Project | null>(null);
   const [highlightedProjectIds, setHighlightedProjectIds] = useState<string[]>([]);
   const [activeSkillName, setActiveSkillName] = useState<string | null>(null);
@@ -207,7 +209,7 @@ export default function GlacierPortfolio() {
         style={{ width: `${Math.round(scrollProgress * 100)}%` }}
       />
 
-      {/* ── 3. Fixed Top Header Chrome (Matching Reference Screenshot) ─ */}
+      {/* ── 3. Fixed Top Header Chrome ─────────────────────────────── */}
       <header className={`nx-top ${scrolledTop ? 'scrolled' : ''}`}>
         {/* Brand Left */}
         <Link href="#hero" className="flex items-center gap-3 group">
@@ -222,7 +224,7 @@ export default function GlacierPortfolio() {
           </div>
         </Link>
 
-        {/* Center Pill Navigation (Exact Match from Screenshot) */}
+        {/* Center Pill Navigation */}
         <nav className="hidden md:flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-950/80 border border-white/10 backdrop-blur-xl">
           {CHAPTERS.map((ch, idx) => (
             <a
@@ -241,7 +243,7 @@ export default function GlacierPortfolio() {
         </nav>
 
         {/* Action Controls Right */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => setCmdOpen(true)}
             className="nx-btn sm ghost flex items-center gap-2"
@@ -259,34 +261,80 @@ export default function GlacierPortfolio() {
             <span>Recruiter Assessment</span>
           </button>
 
-          {/* Resume Pill (Matching Screenshot Button) */}
+          {/* Resume Pill */}
           <a
             href={PROFILE.resume}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-400/20 to-sky-300/30 border border-sky-400/50 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-sky-500/10 hover:border-sky-300 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-sky-400/20 to-sky-300/30 border border-sky-400/50 text-sky-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-sky-500/10 hover:border-sky-300 transition"
           >
-            <Download size={14} />
+            <Download size={13} />
             <span>Resume</span>
           </a>
+
+          {/* Compact Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            className="md:hidden p-2 rounded-xl bg-slate-900 border border-white/10 text-zinc-300 hover:text-white transition"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4 p-4 rounded-2xl bg-slate-950/95 border border-white/15 backdrop-blur-2xl shadow-2xl space-y-2 z-50">
+            {CHAPTERS.map((ch, idx) => (
+              <a
+                key={ch.id}
+                href={`#${ch.id}`}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 rounded-xl text-xs font-medium transition ${
+                  activeChapter === idx
+                    ? 'bg-sky-400/20 text-sky-300 border border-sky-400/40'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {ch.label}
+              </a>
+            ))}
+            <div className="pt-2 border-t border-white/10 flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setRecruiterOpen(true);
+                }}
+                className="w-full nx-btn sm amber flex items-center justify-center gap-1.5"
+              >
+                <Briefcase size={13} />
+                <span>Recruiter Assessment</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── 4. Main Scroll Chapters ─────────────────────────────────── */}
       <main className="nx-main">
-        {/* ── CHAPTER 01: INTRO / HERO (EXACT SPLIT LAYOUT FROM SCREENSHOT) ── */}
+        {/* ── CHAPTER 01: INTRO / HERO (MINIMALIST SPLIT LAYOUT) ─────── */}
         <section id="hero" className="nx-section pt-16 sm:pt-20 pb-6">
           <div className="nx-wrap">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
               {/* LEFT COLUMN: HERO TEXT & ACTIONS */}
               <div className="lg:col-span-5 space-y-6">
-                {/* Status Badge */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>OPEN TO SDE-1 / BACKEND ROLES</span>
+                {/* Small Top Label */}
+                <div className="text-[11px] font-mono tracking-widest text-sky-400 font-semibold uppercase">
+                  SOFTWARE ENGINEER · BACKEND · APPLIED AI
                 </div>
 
-                {/* Massive Headline (ARYAN / CHANDRA hollow stroke text) */}
+                {/* Availability Indicator */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Available for SDE-1 / Software Engineering Roles</span>
+                </div>
+
+                {/* Headline: ARYAN CHANDRA */}
                 <div className="space-y-0.5">
                   <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white uppercase font-sans leading-none">
                     ARYAN
@@ -296,18 +344,18 @@ export default function GlacierPortfolio() {
                   </h1>
                 </div>
 
-                {/* Subheadline */}
-                <div className="text-base sm:text-lg font-bold text-sky-300 font-sans tracking-wide">
-                  Distributed systems • Java • Kafka • Applied AI
+                {/* Supporting Statement */}
+                <div className="text-lg sm:text-xl font-bold text-sky-200/90 font-sans tracking-tight">
+                  &ldquo;Building reliable systems. Shipping useful AI.&rdquo;
                 </div>
 
-                {/* Intro Paragraph */}
+                {/* Description */}
                 <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-sans max-w-lg">
-                  Software engineer building scalable backend systems and AI-powered applications. Passionate about distributed systems, real-world products and technology that makes an impact.
+                  Specialized in high-throughput backend architecture, distributed systems, full-stack products, and production AI engineering. Architected platforms serving 50,000+ daily transactions with 99.9% uptime.
                 </p>
 
-                {/* Action Buttons (Explore projects + Download résumé) */}
-                <div className="flex flex-wrap items-center gap-3.5 pt-2">
+                {/* Action Buttons: Primary CTA + Secondary CTA + GitHub / LinkedIn */}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
                   <a
                     href="#projects"
                     className="px-5 py-3 rounded-2xl bg-sky-300 hover:bg-sky-200 text-slate-950 font-bold text-sm flex items-center gap-2 transition shadow-lg shadow-sky-400/25"
@@ -315,7 +363,7 @@ export default function GlacierPortfolio() {
                     <div className="w-5 h-5 rounded-full bg-slate-950 text-white flex items-center justify-center">
                       <ArrowUpRight size={13} />
                     </div>
-                    <span>Explore projects</span>
+                    <span>Explore Projects</span>
                   </a>
 
                   <a
@@ -325,15 +373,36 @@ export default function GlacierPortfolio() {
                     className="px-5 py-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-white/20 text-white font-semibold text-sm flex items-center gap-2 transition backdrop-blur-md"
                   >
                     <Download size={15} />
-                    <span>Download résumé</span>
+                    <span>Download Resume</span>
+                  </a>
+
+                  {/* GitHub & LinkedIn Direct Links */}
+                  <a
+                    href={PROFILE.github}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition"
+                    title="GitHub Profile"
+                  >
+                    <Github size={16} />
+                  </a>
+
+                  <a
+                    href={PROFILE.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition"
+                    title="LinkedIn Profile"
+                  >
+                    <Linkedin size={16} />
                   </a>
 
                   <button
                     onClick={copyCandidateBrief}
-                    className="px-3.5 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition"
+                    className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition"
                     title="Copy 1-page candidate summary"
                   >
-                    {copiedBio ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
+                    {copiedBio ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   </button>
                 </div>
               </div>
@@ -849,46 +918,106 @@ export default function GlacierPortfolio() {
               </button>
             </div>
 
-            <h3>{activeProjectModal.title}</h3>
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              {activeProjectModal.problem}
-            </p>
+            <h3 className="text-xl sm:text-2xl font-bold font-sans text-white mt-1">
+              {activeProjectModal.title}
+            </h3>
 
-            <div className="nx-case">
-              <div>
-                <h5>Architectural Approach</h5>
-                <ol>
-                  {activeProjectModal.approach.map((step, idx) => (
-                    <li key={idx} className="mb-2">{step}</li>
-                  ))}
-                </ol>
+            {/* Problem & Solution Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-rose-300 uppercase tracking-wider">
+                  The Problem
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {activeProjectModal.problem}
+                </p>
               </div>
 
-              <div>
-                <h5>Measured Production Impact</h5>
-                <ol>
-                  {activeProjectModal.impact.map((imp, idx) => (
-                    <li key={idx} className="mb-2 font-medium text-emerald-300">{imp}</li>
-                  ))}
-                </ol>
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-sky-300 uppercase tracking-wider">
+                  Engineered Solution
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {activeProjectModal.solution}
+                </p>
               </div>
             </div>
 
-            <div className="nx-tags pt-6 border-t border-[var(--line)] mt-6">
+            {/* Contribution & Architecture */}
+            <div className="space-y-3 mt-4">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-amber-300 uppercase tracking-wider">
+                  My Contribution & Scope
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {activeProjectModal.contribution}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-indigo-300 uppercase tracking-wider">
+                  System Architecture Pipeline
+                </div>
+                <p className="text-xs font-mono text-zinc-200 bg-black/40 px-3 py-2 rounded-xl border border-white/5">
+                  {activeProjectModal.architecture}
+                </p>
+              </div>
+            </div>
+
+            {/* Engineering Decisions & Measured Impact */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-purple-300 uppercase tracking-wider">
+                  Critical Engineering Decisions
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {activeProjectModal.decisions}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="text-[11px] font-mono font-semibold text-emerald-300 uppercase tracking-wider">
+                  Verified Production Impact
+                </div>
+                <ul className="space-y-1.5 text-xs text-emerald-200/90 font-mono">
+                  {activeProjectModal.impact.map((imp, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>{imp}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Stack Tags */}
+            <div className="nx-tags pt-4 border-t border-[var(--line)] mt-4">
               {activeProjectModal.stack.map((t, idx) => (
                 <span key={idx} className="nx-chip">{t}</span>
               ))}
             </div>
 
-            <div className="pt-6 flex justify-end gap-3">
+            {/* Actions */}
+            <div className="pt-4 flex flex-wrap justify-end gap-3">
+              {activeProjectModal.demoUrl && (
+                <a
+                  href={activeProjectModal.demoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nx-btn sm ghost flex items-center gap-1.5"
+                >
+                  <span>Launch Live Demo</span>
+                  <ExternalLink size={13} />
+                </a>
+              )}
               <a
                 href={activeProjectModal.href}
                 target="_blank"
                 rel="noreferrer"
-                className="nx-btn primary"
+                className="nx-btn sm primary flex items-center gap-1.5"
               >
-                <span>View Repository on GitHub</span>
-                <ExternalLink size={14} />
+                <span>View on GitHub</span>
+                <Github size={13} />
               </a>
             </div>
           </div>

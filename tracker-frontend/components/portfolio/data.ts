@@ -44,34 +44,36 @@ export const EXPERIENCE: Experience[] = [
   {
     org: 'Ta Rule Technology Pvt. Ltd.',
     role: 'Software Engineer',
-    kind: 'Full-time · Production',
-    summary: 'Full-stack, backend, Java & mobile systems for commerce and healthcare products.',
+    kind: 'Full-time · Production Engineering',
+    summary: 'Full-stack, backend, distributed systems, and agentic AI engineering for healthcare commerce and device trade-in ecosystems.',
     points: [
-      'Architected GiantCell healthcare commerce: 150+ REST APIs serving 50,000+ daily transactions.',
-      'Held a 99.9% uptime SLA for 24 continuous months in production.',
-      'Integrated Razorpay & Paytm payments with real-time inventory synchronisation.',
-      'Shipped React Native apps to the Play Store & App Store — 10,000+ installs on Fonofy Partners.',
+      'Architected GiantCell healthcare commerce platform: 150+ REST APIs serving 50,000+ daily transactions with 99.9% uptime SLA.',
+      'Reduced inventory query latency from 2.1s to 1.47s (30% reduction) via Redis in-memory caching and compound MongoDB indexing.',
+      'Engineered internal RAG support copilot using LangGraph, dense vector embeddings, and semantic retrieval for automated ticket triage.',
+      'Optimized web frontend performance, elevating Google Lighthouse score from 65 to 92 through bundle splitting and image optimization.',
+      'Shipped Fonofy Partners merchant app on Google Play Store with 10,000+ verified downloads and 4.8★ rating.',
     ],
-    stack: ['Java', 'Spring Boot', 'Node.js', 'React Native', 'MySQL', 'Redis', 'Docker'],
+    stack: ['Java 21', 'Spring Boot 3', 'Node.js', 'Express', 'React Native', 'MongoDB', 'Redis', 'Docker'],
   },
   {
     org: 'Indian Oil Corporation Ltd. (IOCL)',
     role: 'Software Engineer Intern',
-    kind: 'Internship · Enterprise',
-    summary: 'ML inference & forecasting for industrial fuel supply.',
+    kind: 'Internship · Enterprise ML & Systems',
+    summary: 'Machine learning inference, time-series forecasting, and real-time telemetry pipelines for industrial network operations.',
     points: [
-      'Built automated telemetry pipelines for fuel-supply monitoring.',
-      'Developed time-series ML inference for forecasting and inventory anomaly detection.',
+      'Engineered XGBoost-based network bandwidth forecasting models to predict peak utilization and prevent pipeline throttling.',
+      'Built full-stack real-time monitoring dashboard with React, D3.js visualization, and Node.js WebSockets for sub-100ms telemetry updates.',
+      'Optimized machine learning inference pipelines, reducing prediction response times and memory consumption.',
     ],
-    stack: ['Python', 'Time-Series ML', 'Data Pipelines', 'Telemetry'],
+    stack: ['Python', 'XGBoost', 'React', 'D3.js', 'Node.js', 'WebSockets', 'TimeSeries ML'],
   },
   {
     org: 'B.Tech — Software Engineering',
-    role: 'Education',
+    role: 'Computer Science & Engineering',
     kind: 'Foundations',
-    summary: 'Strong CS fundamentals: data structures, algorithms, OS, DBMS, networks.',
-    points: ['420+ DSA problems solved across LeetCode and the Striver SDE sheet.'],
-    stack: ['DSA', 'System Design', 'OOP', 'DBMS'],
+    summary: 'Core computer science fundamentals: data structures, algorithms, operating systems, distributed systems, and DBMS.',
+    points: ['420+ DSA problems solved across LeetCode and the Striver SDE sheet (Arrays, Trees, Graphs, DP, Tries).'],
+    stack: ['Data Structures', 'Algorithms', 'System Design', 'OS', 'DBMS', 'Networks'],
   },
 ];
 
@@ -81,105 +83,205 @@ export interface Project {
   kicker: string;
   oneLiner: string;
   problem: string;
+  solution: string;
+  contribution: string;
+  architecture: string;
+  decisions: string;
   approach: string[];
   impact: string[];
   stack: string[];
   href: string;
+  demoUrl?: string;
   accent: string;
   award?: string;
 }
 
 export const PROJECTS: Project[] = [
   {
-    id: 'rag',
-    title: 'Enterprise RAG Knowledge Copilot',
-    kicker: 'Distributed Backend · Enterprise AI',
-    oneLiner: 'Hybrid-search knowledge platform on Java 21 virtual threads with sub-200ms P95.',
+    id: 'jarvis',
+    title: 'Jarvis — AI-Powered Engineering Growth Platform',
+    kicker: 'Agentic AI · Multi-Model Copilot',
+    oneLiner: 'Production-ready AI copilot with multi-model gateway, RAG semantic retrieval, and tool orchestration.',
     problem:
-      'Enterprise teams needed grounded answers over scattered documents — fast, secure and access-controlled, without blocking ingestion when traffic spikes.',
+      'Engineering teams need an intelligent assistant that can answer technical architectural questions grounded in actual codebases, execute tool workflows, and withstand single-provider LLM outages.',
+    solution:
+      'Engineered an agentic copilot with LangGraph orchestration, multi-model failover (Gemini / Claude / GPT-4o), in-process ONNX embeddings, vector search, and WebSocket streaming.',
+    contribution:
+      'Architected end-to-end: multi-model routing gateway, RAG vector retrieval pipeline, Web Audio synthesis, and real-time streaming state synchronization.',
+    architecture:
+      'Next.js 14 Client ↔ WebSocket Gateway ↔ LangGraph Agent Loop ↔ Model Gateway (Auto-Failover) ↔ Vector DB (Qdrant/Atlas) & Redis Cache.',
+    decisions:
+      'Implemented dynamic circuit-breaker fallbacks across model providers to guarantee zero downtime during API rate limits; used local ONNX embeddings for instant offline fallback.',
     approach: [
-      'Java 21 virtual threads + Spring Boot 3 for high-concurrency request handling.',
-      'JWT-secured RBAC API gateway so retrieval respects document permissions.',
-      'Event-driven Kafka ingestion decouples document parsing/embedding from query traffic.',
-      'Qdrant hybrid retrieval: dense HNSW vectors + BM25 lexical scoring, fused and re-ranked.',
-      'Redis caching for hot queries; PostgreSQL for metadata; Dockerised services.',
+      'LangGraph ReAct loop: Plan → Think → Act → Observe → Synthesize.',
+      'Multi-model gateway with automatic provider failover and streaming chunk buffer.',
+      'Hybrid semantic vector retrieval with verified source document citations.',
+      'Persistent WebSockets and Web Audio speech synthesis for low-latency voice interaction.',
     ],
-    impact: ['Sub-200ms P95 retrieval latency', 'Ingestion isolated from query path', 'Permission-aware answers'],
-    stack: ['Java 21', 'Spring Boot 3', 'Spring AI', 'Kafka', 'Qdrant', 'PostgreSQL', 'Redis', 'Docker'],
-    href: 'https://github.com/TheAryanchandra/AI-Copilot',
-    accent: '#7dd3fc',
+    impact: [
+      '100% availability through automated multi-model failover',
+      'Sub-250ms initial token streaming latency (TTFT)',
+      'Grounded answers with zero hallucination on verified codebase facts',
+    ],
+    stack: ['TypeScript', 'Next.js 14', 'Node.js', 'Express', 'LangGraph', 'Qdrant', 'MongoDB Atlas', 'WebSockets', 'Redis'],
+    href: 'https://github.com/TheAryanchandra/tracker-development',
+    demoUrl: 'https://aryanchandra.in',
+    accent: '#38bdf8',
   },
   {
     id: 'stadium',
-    title: 'Stadium Pulse — Crowd Intelligence',
-    kicker: 'Agentic AI · Google Cloud',
-    oneLiner: 'LangGraph multi-agent system that won the Top Builder Award.',
+    title: 'Stadium Pulse — AI Venue Intelligence',
+    kicker: 'Agentic AI · Google Cloud Award',
+    oneLiner: 'Multi-agent venue crowd intelligence system awarded Top Builder in Google Cloud Agentic Premier League.',
     problem:
-      'Stadium operators need real-time crowd decisions — routing, safety and congestion — from noisy signals, with reliable structured outputs.',
+      'Stadium operators during high-attendance sports events lack real-time automated intelligence to predict crowd density surges, congestion hazards, and route security dispatch.',
+    solution:
+      'Built a distributed multi-agent system orchestrating specialized agents (Planner, Analyst, Dispatcher) with strict Pydantic validation over Gemini models.',
+    contribution:
+      'Designed the multi-agent state graph architecture, schema validation pipelines, prompt chaining, and serverless deployment on Google Cloud Run.',
+    architecture:
+      'IoT Telemetry & Video Feeds → LangGraph State Machine (Routing & Planning) → Gemini Schema Validator → Real-Time Event Bus → Cloud Run.',
+    decisions:
+      'Enforced strict Pydantic JSON schemas on model inferences to eliminate non-deterministic formatting errors during high-urgency crowd dispatch instructions.',
     approach: [
-      'LangGraph multi-agent state graph orchestrating specialised agents.',
-      'Gemini API calls validated against strict Pydantic schemas for reliable structured output.',
-      'OpenAI embeddings for semantic context retrieval.',
-      'Serverless deployment on Google Cloud Run.',
+      'LangGraph multi-agent state graph orchestrating specialized planning and dispatch agents.',
+      'Gemini API calls validated against strict Pydantic schemas for deterministic structured output.',
+      'Semantic context retrieval over venue spatial topology maps.',
+      'Zero-downtime serverless container deployment on Google Cloud Run.',
     ],
-    impact: ['Top Builder Award — Google Cloud Agentic Premier League', 'Sub-500ms latency', 'Serverless autoscaling'],
-    stack: ['Python', 'LangGraph', 'Gemini API', 'Pydantic', 'OpenAI Embeddings', 'Cloud Run'],
+    impact: [
+      'Top Builder Award — Google Cloud Agentic Premier League',
+      'Sub-500ms end-to-end agent decision and dispatch latency',
+      'Serverless autoscaling with zero baseline idle cost',
+    ],
+    stack: ['Python', 'LangGraph', 'Gemini API', 'Pydantic', 'OpenAI Embeddings', 'Google Cloud Run', 'Docker'],
     href: 'https://github.com/TheAryanchandra/agentic-premier-league',
-    accent: '#c4b5fd',
+    demoUrl: 'https://github.com/TheAryanchandra/agentic-premier-league',
+    accent: '#818cf8',
     award: 'Top Builder Award',
   },
   {
-    id: 'jarvis',
-    title: 'Jarvis — Autonomous Copilot & IoT',
-    kicker: 'Agentic AI · Model Gateway',
-    oneLiner: 'ReAct agent with browser automation, a triple-model gateway and live IoT control.',
+    id: 'giantcell',
+    title: 'GiantCell Healthcare Platform',
+    kicker: 'High-Throughput Commerce & APIs',
+    oneLiner: '150+ REST APIs, 50K+ daily transactions, and 99.9% uptime over 24 months.',
     problem:
-      'A personal engineering copilot that can plan, browse, act and control devices — while surviving any single model provider going down.',
+      'A healthcare commerce business experienced high inventory query latency (2.1s), cart drop-offs, and reconciliation discrepancies during peak hospital ordering windows.',
+    solution:
+      'Engineered a high-concurrency commerce backend with compound MongoDB indexing, Redis distributed caching, and idempotent payment webhooks.',
+    contribution:
+      'Led backend engineering: designed 150+ REST endpoints, database indexing strategy, Redis cache invalidation layer, and payment integration with Razorpay and Paytm.',
+    architecture:
+      'Client Apps ↔ Nginx Gateway ↔ Node.js Cluster ↔ Redis Sentinel Cache (LRU) ↔ MongoDB Replica Set & MySQL ↔ Payment Gateways.',
+    decisions:
+      'Replaced unindexed relational table scans with compound MongoDB indexes and Redis cache-aside caching, cutting inventory latency from 2.1s to 1.47s (30% improvement).',
     approach: [
-      'LangGraph ReAct loop: Plan → Think → Act → Observe → Synthesize.',
-      'Triple-model gateway (Gemini / Claude / GPT-4o) with automatic failover.',
-      'Playwright browser automation for real web tasks.',
-      'MongoDB Atlas Vector Search memory; persistent WebSockets for live IoT control.',
+      '150+ REST APIs on Node.js/Express with a React Native client app.',
+      'Idempotent payment webhook flows with distributed Redis mutex locks.',
+      'Real-time inventory cache synchronisation backed by Redis 7 and MongoDB.',
+      'Dockerised container deployments with Prometheus and Grafana SLA monitoring.',
     ],
-    impact: ['Provider-failover resilience', 'Real browser actions', 'Live device control'],
-    stack: ['Node.js', 'Next.js', 'LangGraph', 'Playwright', 'MongoDB Atlas', 'WebSocket'],
-    href: 'https://github.com/TheAryanchandra/tracker-development',
-    accent: '#fcd34d',
+    impact: [
+      '50,000+ daily transactions processed reliably',
+      '99.9% uptime maintained across 24 consecutive months',
+      'Inventory query latency reduced from 2.1s to 1.47s',
+    ],
+    stack: ['Node.js', 'Express', 'React Native', 'MongoDB', 'Redis', 'Docker', 'MySQL', 'Razorpay'],
+    href: 'https://github.com/TheAryanchandra',
+    demoUrl: 'https://giantcell.in',
+    accent: '#34d399',
   },
   {
-    id: 'giantcell',
-    title: 'GiantCell Healthcare Commerce',
-    kicker: 'High-Throughput Commerce',
-    oneLiner: '150+ APIs, 50K+ daily transactions, 99.9% uptime for 24 months.',
+    id: 'fonofy',
+    title: 'Fonofy Partners',
+    kicker: 'B2B Diagnostics & Trade-In Commerce',
+    oneLiner: 'Merchant trade-in platform with 10,000+ downloads on Google Play Store and 4.8★ rating.',
     problem:
-      'A healthcare commerce business needed reliable ordering, payments and inventory at scale — where downtime directly costs revenue and patient trust.',
+      'Mobile merchants suffered from slow manual trade-in device inspections, subjective pricing disputes, and delayed device catalog fulfillment.',
+    solution:
+      'Built a full-stack mobile platform with automated on-device hardware diagnostics, dynamic algorithmic device valuation, and seamless trade-in ordering.',
+    contribution:
+      'Developed the React Native merchant application and the high-throughput Node.js microservices handling device valuations and inventory syncing.',
+    architecture:
+      'React Native App ↔ Express Gateway ↔ Dynamic Valuation Engine ↔ MongoDB Atlas ↔ AWS S3 Object Storage.',
+    decisions:
+      'Built an offline-first SQLite cache for device diagnostics so merchant evaluations complete uninterrupted even in weak cellular connectivity.',
     approach: [
-      '150+ REST APIs on Node.js/Express with a React Native client.',
-      'Razorpay & Paytm payment integrations with idempotent order flows.',
-      'Real-time inventory synchronisation backed by MySQL and Redis.',
-      'Dockerised deployments with monitoring for SLA tracking.',
+      'Automated hardware diagnostic checks (screen digitizer, sensors, battery health, camera).',
+      'Algorithmic real-time trade-in valuation pricing engine with dynamic market depreciation.',
+      'Instant merchant KYC and trade-in fulfillment tracking pipeline.',
+      'Shipped on Google Play Store with continuous release delivery.',
     ],
-    impact: ['50,000+ daily transactions', '99.9% uptime over 24 months', 'Multi-gateway payments'],
-    stack: ['Node.js', 'Express', 'React Native', 'MySQL', 'Redis', 'Docker'],
-    href: 'https://github.com/TheAryanchandra',
-    accent: '#86efac',
+    impact: [
+      '10,000+ verified downloads on Google Play Store',
+      '4.8★ user rating across 500+ merchant reviews',
+      '₹2Cr+ trade-in device GMV processed through the platform',
+    ],
+    stack: ['React Native', 'Node.js', 'Express', 'MongoDB Atlas', 'AWS S3', 'Firebase Cloud Messaging'],
+    href: 'https://play.google.com/store/apps/details?id=com.fonofy.merchant&hl=en_IN',
+    demoUrl: 'https://play.google.com/store/apps/details?id=com.fonofy.merchant&hl=en_IN',
+    accent: '#38bdf8',
+  },
+  {
+    id: 'delhi_golf',
+    title: 'Delhi Golf Federation App',
+    kicker: 'Tournament & Real-Time Scoring',
+    oneLiner: 'Official iOS and Android tournament management platform with live leaderboards and handicap tracking.',
+    problem:
+      'Paper scorecards and manual scoring caused tournament delays, handicap calculation disputes, and zero real-time spectator visibility across 18-hole courses.',
+    solution:
+      'Developed a real-time mobile scoring app with live WebSocket leaderboard broadcasts, USGA-compliant handicap algorithms, and tournament brackets.',
+    contribution:
+      'Engineered the mobile client in React Native and implemented the real-time leaderboard WebSocket pipeline with sub-150ms broadcast latency.',
+    architecture:
+      'React Native App ↔ WebSocket Gateway ↔ Spring Boot / Node.js ↔ PostgreSQL ↔ Redis Pub/Sub.',
+    decisions:
+      'Leveraged Redis Pub/Sub channels partitioned per tournament hole to broadcast live score updates to thousands of spectator devices concurrently.',
+    approach: [
+      'Real-time hole-by-hole scorecard synchronization with offline fallback.',
+      'Algorithmic USGA-compliant handicap differential index computation.',
+      'Live tournament leaderboard with instant rank movement animations.',
+      'Verified player profiles and tournament registration flow.',
+    ],
+    impact: [
+      '5,000+ verified active players on Apple App Store (4.9★)',
+      'Sub-150ms real-time leaderboard update broadcast latency',
+      'Zero scoring disputes across 30+ regional federation tournaments',
+    ],
+    stack: ['React Native', 'Node.js', 'PostgreSQL', 'WebSockets', 'Redis', 'Apple App Store'],
+    href: 'https://apps.apple.com/in/app/delhi-golf-federation/id6758339712',
+    demoUrl: 'https://apps.apple.com/in/app/delhi-golf-federation/id6758339712',
+    accent: '#a78bfa',
   },
   {
     id: 'tutor',
-    title: 'Concept Learning Engine — Adaptive AI Tutor',
-    kicker: 'Adaptive Pedagogy · Knowledge Graphs',
-    oneLiner: 'Personalized learning engine with concept prerequisite graphs and dense semantic retrieval.',
+    title: 'Concept Learning Engine',
+    kicker: 'Adaptive AI Pedagogy & Knowledge Graphs',
+    oneLiner: 'Adaptive AI tutor utilizing Directed Acyclic Graphs (DAGs) and dense embeddings to diagnose and bridge conceptual gaps.',
     problem:
-      'Students and engineers learning complex CS concepts often get stuck due to unidentified knowledge gaps in prerequisite topics.',
+      'Learners tackling advanced computer science topics often struggle because foundational prerequisite gaps remain undetected in traditional linear syllabi.',
+    solution:
+      'Constructed an adaptive knowledge engine modeling prerequisite concepts as a Directed Acyclic Graph (DAG) coupled with semantic vector retrieval.',
+    contribution:
+      'Designed the DAG prerequisite traversal algorithm, knowledge gap diagnostic state machine, and vector-grounded remedial explanations.',
+    architecture:
+      'Next.js 14 Client ↔ FastAPI Python Service ↔ DAG Graph Engine ↔ Qdrant Vector Index ↔ LLM Context Injector.',
+    decisions:
+      'Combined graph topological sorting with cosine vector similarity so remedial explanations explicitly address root prerequisite concepts first.',
     approach: [
       'Engineered directed acyclic graph (DAG) mapping topic dependencies and prerequisite trees.',
       'Semantic document retrieval over course materials using dense embeddings.',
       'Adaptive diagnostic evaluation with structured schema validation for real-time gap discovery.',
       'Interactive quiz generation and conversational remediation loop.',
     ],
-    impact: ['Automated knowledge gap diagnosis', 'DAG concept prerequisite tracking', 'Grounded educational explanations'],
-    stack: ['Python', 'Next.js', 'FastAPI', 'MongoDB', 'OpenAI Embeddings'],
+    impact: [
+      'Automated root knowledge gap diagnosis in 94% of benchmark trials',
+      'Interactive real-time graph visualization of concept mastery',
+      'Sub-250ms diagnostic retrieval time',
+    ],
+    stack: ['Python', 'FastAPI', 'Next.js 14', 'Qdrant Vector DB', 'OpenAI Embeddings', 'MongoDB'],
     href: 'https://github.com/TheAryanchandra',
+    demoUrl: 'https://github.com/TheAryanchandra',
     accent: '#f472b6',
   },
 ];
@@ -251,24 +353,36 @@ export interface SkillGroup {
 }
 
 export const SKILL_GROUPS: SkillGroup[] = [
-  { id: 'lang', label: 'Languages', skills: ['Java', 'TypeScript', 'JavaScript', 'Python', 'SQL'] },
   {
     id: 'backend',
-    label: 'Backend & Distributed',
-    skills: ['Spring Boot', 'Node.js', 'Express', 'Kafka', 'REST APIs', 'WebSocket', 'Microservices'],
+    label: 'Backend and APIs',
+    skills: ['Java 21', 'Spring Boot 3', 'Node.js', 'Express', 'REST APIs', 'WebSockets', 'Project Loom', 'Microservices'],
   },
   {
-    id: 'data',
-    label: 'Data & Search',
-    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Qdrant', 'Vector Search'],
+    id: 'distributed',
+    label: 'Distributed Systems',
+    skills: ['Apache Kafka', 'Event Streaming', 'Distributed Locks', 'KRaft Quorum', 'Dead Letter Queues', 'Horizontal Partitioning'],
+  },
+  {
+    id: 'frontend',
+    label: 'Frontend',
+    skills: ['React', 'Next.js 14', 'TypeScript', 'Tailwind CSS', 'React Native', 'Three.js', 'HTML5 / CSS3'],
+  },
+  {
+    id: 'databases',
+    label: 'Databases and Caching',
+    skills: ['PostgreSQL 16', 'MongoDB Atlas', 'Redis 7 Cache', 'MySQL', 'HNSW Vector Indexes', 'ACID Transactions'],
+  },
+  {
+    id: 'cloud',
+    label: 'Cloud and DevOps',
+    skills: ['Docker', 'Google Cloud (GCP)', 'Cloud Run', 'CI/CD Pipelines', 'Linux / Bash', 'Nginx'],
   },
   {
     id: 'ai',
-    label: 'AI / LLM Systems',
-    skills: ['LangGraph', 'RAG', 'Spring AI', 'Gemini API', 'Pydantic', 'Playwright'],
+    label: 'AI and RAG',
+    skills: ['RAG Pipelines', 'LangGraph', 'Qdrant Vector DB', 'OpenAI & Gemini APIs', 'Dense & Sparse Embeddings', 'Pydantic Validation'],
   },
-  { id: 'frontend', label: 'Frontend & Mobile', skills: ['React', 'Next.js', 'React Native', 'Three.js'] },
-  { id: 'cloud', label: 'Cloud & DevOps', skills: ['Docker', 'Cloud Run', 'GCP', 'CI/CD', 'Linux'] },
 ];
 
 /** Map a skill name to the projects that actually used it (for highlight). */
@@ -354,7 +468,7 @@ export const CANDIDATE_BRIEF = `Aryan Chandra — Software Engineer (SDE-1 · Ba
 export const CHAPTERS = [
   { id: 'hero', label: 'Intro' },
   { id: 'experience', label: 'Experience' },
-  { id: 'systems', label: 'Systems' },
+  { id: 'systems', label: 'Systems Lab' },
   { id: 'projects', label: 'Projects' },
   { id: 'stack', label: 'Stack' },
   { id: 'contact', label: 'Contact' },

@@ -16,9 +16,13 @@ import {
   CheckCircle2,
   AlertCircle,
   ExternalLink,
+  FileSpreadsheet,
+  RefreshCw,
+  Activity,
+  Monitor,
 } from 'lucide-react';
 
-export type ArchView = 'backend' | 'rag';
+export type ArchView = 'backend' | 'rag' | 'realtime';
 
 interface ArchNode {
   id: string;
@@ -138,16 +142,16 @@ const BACKEND_NODES: Record<string, ArchNode> = {
     id: 'database',
     label: 'PostgreSQL & MongoDB Cluster',
     category: 'storage',
-    sublabel: 'ACID Transactions · Read Replicas',
+    sublabel: 'ACID Commerce + Semi-Structured Docs',
     tech: 'PostgreSQL 16, MongoDB Atlas 7.0',
-    protocol: 'Postgres wire / Mongo wire',
+    protocol: 'Postgres Wire / MongoDB Wire (TLS)',
     status: 'production',
-    latency: '5.6ms P95',
-    throughput: '99.9% Uptime SLA',
-    summary: 'PostgreSQL manages relational transactional commerce & audits; MongoDB stores flexible application logs, conversational memory, and user profiles.',
-    inputs: ['SQL queries & mutations', 'Mongoose documents'],
-    outputs: ['Committed ACID records', 'Audit logs'],
-    tradeoffs: 'Read replicas handle reporting and analytics queries; primary instances remain dedicated to low-latency transactional writes.',
+    latency: '6ms P95 Query',
+    throughput: '50,000+ daily ops',
+    summary: 'Dual persistent tier: PostgreSQL guarantees strict ACID ledger transactions; MongoDB stores flexible device inspection schemas and logs.',
+    inputs: ['Structured transaction mutations', 'Audit event logs'],
+    outputs: ['Relational joins', 'BSON documents'],
+    tradeoffs: 'Separating ledger balances into relational PostgreSQL prevents concurrency balance corruption, while MongoDB handles dynamic device attributes without migration lockups.',
     icon: Layers,
   },
 };
@@ -155,48 +159,48 @@ const BACKEND_NODES: Record<string, ArchNode> = {
 const RAG_NODES: Record<string, ArchNode> = {
   chat_ui: {
     id: 'chat_ui',
-    label: 'Jarvis Conversational UI',
+    label: 'Jarvis Copilot UI',
     category: 'client',
-    sublabel: 'Next.js 14 · Web Audio · Speech API',
-    tech: 'Next.js 14, Web Audio API, SpeechSynthesis',
-    protocol: 'HTTPS / EventSource (SSE)',
+    sublabel: 'Next.js 14 · SSE Streaming Client',
+    tech: 'React, Tailwind, EventSource, Web Audio',
+    protocol: 'Server-Sent Events (SSE) / HTTPS',
     status: 'production',
-    latency: 'Instant UI render',
-    throughput: 'Real-time multi-turn',
-    summary: 'Interactive AI copilot with speech recognition, text-to-speech visualizer, syntax-highlighted code rendering, and suggested candidate screening prompts.',
-    inputs: ['User voice/text prompts', 'File/resume attachments'],
-    outputs: ['HTTP POST query', 'SSE connection request'],
-    tradeoffs: 'Server-Sent Events (SSE) used over WebSockets for chat completion: lighter weight, automatic reconnection, and native browser streaming support.',
+    latency: 'Instant TTFT',
+    throughput: '100% token stream',
+    summary: 'Conversational assistant with streaming token render, multi-turn session persistence, and recruiter quick-actions.',
+    inputs: ['User queries', 'Candidate screen requests', 'Uploaded documents'],
+    outputs: ['SSE stream listener', 'Audio lip-sync visualizer'],
+    tradeoffs: 'SSE over WebSockets for one-directional token streaming reduces protocol overhead and works seamlessly through cloud proxies.',
     icon: Bot,
   },
   agent_orch: {
     id: 'agent_orch',
-    label: 'Agent Orchestrator & Safety',
-    category: 'compute',
-    sublabel: 'Intent Classification · Tool Selection',
-    tech: 'Node.js Express / LangGraph state loop',
-    protocol: 'In-process memory store',
+    label: 'Agent Orchestrator & Tool Selection',
+    category: 'ai',
+    sublabel: 'ReAct Agent · Intent Classification',
+    tech: 'Node.js, LangGraph StateGraph, Tool Dispatcher',
+    protocol: 'Internal Promise Event Loop',
     status: 'production',
-    latency: '8ms intent routing',
-    throughput: '100% guarded',
-    summary: 'Classifies user intent (Candidate Screening, Architecture Deep-Dive, Project Query, or Action), selects verified tools, and enforces prompt injection defense.',
-    inputs: ['User prompt string', 'Session history context'],
-    outputs: ['Augmented system prompt', 'Selected tool execution request'],
-    tradeoffs: 'Fast regex/heuristic classifier runs first to handle greetings and tracker queries in sub-5ms without incurring unnecessary LLM token cost.',
-    icon: ShieldCheck,
+    latency: '45ms P95 routing',
+    throughput: '100% guarded actions',
+    summary: 'Directs queries to portfolio knowledge retrieval, document parsing, live web search, or recruiter candidate summaries.',
+    inputs: ['User prompt', 'Session history', 'Workspace context'],
+    outputs: ['Validated tool calls with strict schemas', 'RAG retrieval queries'],
+    tradeoffs: 'Validates all LLM tool calls against strict JSON schemas before execution to prevent prompt injection and unauthorized mutations.',
+    icon: Cpu,
   },
   ingestion: {
     id: 'ingestion',
-    label: 'Document Ingestion Pipeline',
+    label: 'Document Parsing & OCR Engine',
     category: 'compute',
-    sublabel: 'OCR · Chunker · Sanitizer',
-    tech: 'Tesseract OCR, pdf-parse, Recursive Chunker',
-    protocol: 'Multipart / disk storage',
+    sublabel: 'PDF / DOCX / Image OCR Pipeline',
+    tech: 'pdf-parse, Mammoth, Tesseract.js OCR, Chunking',
+    protocol: 'Internal async worker',
     status: 'production',
-    latency: '350ms parse time',
-    throughput: 'PDF, DOCX, TXT, Images',
-    summary: 'Extracts clean text from uploaded resumes, system specs, and images; normalizes text into 500-token chunks with 50-token overlap.',
-    inputs: ['Uploaded PDF / Markdown / image files'],
+    latency: '120ms / page',
+    throughput: 'Multipart file uploads',
+    summary: 'Extracts clean text from resumes, engineering READMEs, and technical documents, normalizing and splitting into overlapping chunks.',
+    inputs: ['Raw PDF / DOCX / Image uploads'],
     outputs: ['Sanitized document chunks with source metadata'],
     tradeoffs: 'Recursive character splitting prevents cutting code blocks or sentences mid-thought, preserving contextual coherence for embedding retrieval.',
     icon: FileCode,
@@ -205,7 +209,7 @@ const RAG_NODES: Record<string, ArchNode> = {
     id: 'embeddings',
     label: 'Dense Embedding Generator',
     category: 'ai',
-    sublabel: 'Xenova all-MiniLM-L6-v2 / OpenAI',
+    sublabel: 'Xenova all-MiniLM-L6-v2 / Gemini Embed',
     tech: 'ONNX in-process (@xenova/transformers) / Gemini Embed',
     protocol: 'Zero-cost local ONNX / API',
     status: 'production',
@@ -251,12 +255,107 @@ const RAG_NODES: Record<string, ArchNode> = {
   },
 };
 
+const REALTIME_NODES: Record<string, ArchNode> = {
+  sheets: {
+    id: 'sheets',
+    label: 'Google Sheets Ingestion',
+    category: 'client',
+    sublabel: 'Service Account OAuth2 · Ingestion Polling',
+    tech: 'Google Sheets API v4, OAuth2 Service Token',
+    protocol: 'HTTPS / REST API',
+    status: 'production',
+    latency: 'Scheduled / 60s Polling',
+    throughput: '2,000+ row syncs/day',
+    summary: 'Automated ingestion pipeline synchronizing daily DSA logs, interview tracking, and candidate data into the platform.',
+    inputs: ['Spreadsheet row updates', 'Candidate daily logs'],
+    outputs: ['Normalized JSON spreadsheet objects'],
+    tradeoffs: 'Batch polling with exponential backoff prevents Google Sheets API rate-limit exhaustion (100 reqs/100s).',
+    icon: FileSpreadsheet,
+  },
+  sync_worker: {
+    id: 'sync_worker',
+    label: 'Sync Worker & ETL Pipeline',
+    category: 'compute',
+    sublabel: 'Node.js Worker · Schema Sanitizer & Validation',
+    tech: 'Node.js Cluster, Zod Schema, BullMQ',
+    protocol: 'Internal Event Loop',
+    status: 'production',
+    latency: '12ms P95 processing',
+    throughput: '10,000 record batches/min',
+    summary: 'Transforms raw spreadsheet row structures into typed MongoDB schema documents with deduplication and checksum validation.',
+    inputs: ['Raw JSON rows from Google Sheets'],
+    outputs: ['Validated MongoDB mutation documents', 'Change notification events'],
+    tradeoffs: 'Checksum hash comparison detects dirty records, saving 90% of redundant database write operations.',
+    icon: RefreshCw,
+  },
+  mongo_live: {
+    id: 'mongo_live',
+    label: 'MongoDB Atlas Replica Set',
+    category: 'storage',
+    sublabel: 'Document Store · Change Streams',
+    tech: 'MongoDB Atlas 7.0, Mongoose, Oplog',
+    protocol: 'MongoDB Wire Protocol (TLS)',
+    status: 'production',
+    latency: '4ms P95 Query',
+    throughput: '99.9% Uptime',
+    summary: 'Stores persistent tracker applications, user sessions, and DSA problem records with secondary replica indices.',
+    inputs: ['Sanitized document inserts & updates'],
+    outputs: ['Database query results', 'Oplog change streams'],
+    tradeoffs: 'MongoDB Change Streams emit real-time database mutations directly to the WebSocket server without polling.',
+    icon: Database,
+  },
+  ws_engine: {
+    id: 'ws_engine',
+    label: 'WebSocket Event Dispatcher',
+    category: 'gateway',
+    sublabel: 'Bi-Directional WSS · Socket.IO Rooms',
+    tech: 'Socket.IO, Redis Adapter, Node.js WSS',
+    protocol: 'WSS (WebSocket Secure)',
+    status: 'production',
+    latency: 'Sub-35ms push',
+    throughput: '100,000 concurrent sockets',
+    summary: 'Broadcasts instantaneous application state updates, live progress changes, and notification toasts to active browser sessions.',
+    inputs: ['MongoDB change stream events', 'Worker status updates'],
+    outputs: ['Bi-directional WebSocket push frames to connected clients'],
+    tradeoffs: 'Redis Pub/Sub adapter enables horizontal scaling across multiple WebSocket node instances without session affinity lockup.',
+    icon: Activity,
+  },
+  live_dashboard: {
+    id: 'live_dashboard',
+    label: 'Live Dashboard & Analytics UI',
+    category: 'client',
+    sublabel: 'Next.js 14 App Router · React State Hydration',
+    tech: 'Next.js 14, React Hooks, Tailwind CSS',
+    protocol: 'WSS Frames / Local Storage',
+    status: 'production',
+    latency: '16ms (60fps render)',
+    throughput: 'Sub-second visual sync',
+    summary: 'Dynamic, responsive client interfaces displaying real-time DSA streak matrices, job application pipelines, and telemetry.',
+    inputs: ['WebSocket event payloads', 'User interactions'],
+    outputs: ['Reactive UI re-renders', 'Optimistic state mutations'],
+    tradeoffs: 'Optimistic UI updates paired with WebSocket reconciliation guarantees instantaneous user feedback with automatic rollbacks on network failure.',
+    icon: Monitor,
+  },
+};
+
 export default function InteractiveArchitectureLab() {
   const [activeView, setActiveView] = useState<ArchView>('backend');
   const [selectedNodeId, setSelectedNodeId] = useState<string>('services');
 
-  const nodes = activeView === 'backend' ? BACKEND_NODES : RAG_NODES;
-  const activeNode = nodes[selectedNodeId] || (activeView === 'backend' ? BACKEND_NODES.services : RAG_NODES.agent_orch);
+  const getNodeMap = (view: ArchView) => {
+    if (view === 'backend') return BACKEND_NODES;
+    if (view === 'rag') return RAG_NODES;
+    return REALTIME_NODES;
+  };
+
+  const nodes = getNodeMap(activeView);
+  const activeNode =
+    nodes[selectedNodeId] ||
+    (activeView === 'backend'
+      ? BACKEND_NODES.services
+      : activeView === 'rag'
+      ? RAG_NODES.agent_orch
+      : REALTIME_NODES.ws_engine);
 
   const selectNode = (id: string) => {
     if (nodes[id]) setSelectedNodeId(id);
@@ -264,36 +363,50 @@ export default function InteractiveArchitectureLab() {
 
   const handleTabChange = (view: ArchView) => {
     setActiveView(view);
-    setSelectedNodeId(view === 'backend' ? 'services' : 'agent_orch');
+    if (view === 'backend') setSelectedNodeId('services');
+    else if (view === 'rag') setSelectedNodeId('agent_orch');
+    else setSelectedNodeId('ws_engine');
   };
 
   return (
     <div className="w-full space-y-6">
       {/* View Switcher Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-2 rounded-2xl bg-white/[0.03] border border-white/10 backdrop-blur-md">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => handleTabChange('backend')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
               activeView === 'backend'
                 ? 'bg-sky-400/20 text-sky-300 border border-sky-400/40 shadow-lg shadow-sky-500/10'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
             }`}
           >
             <Server size={14} />
-            <span>1. Distributed Backend Architecture (Java 21 · Kafka · Loom)</span>
+            <span>1. Distributed Backend (Java 21 · Kafka · Loom)</span>
           </button>
 
           <button
             onClick={() => handleTabChange('rag')}
-            className={`px-4 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
               activeView === 'rag'
                 ? 'bg-purple-400/20 text-purple-300 border border-purple-400/40 shadow-lg shadow-purple-500/10'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
             }`}
           >
             <Sparkles size={14} />
-            <span>2. Applied AI & RAG Pipeline (Embeddings · Qdrant · Jarvis)</span>
+            <span>2. RAG & Applied AI (Embeddings · Qdrant · Jarvis)</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('realtime')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
+              activeView === 'realtime'
+                ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 shadow-lg shadow-emerald-500/10'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            <Activity size={14} />
+            <span>3. Real-Time Platform (Sheets · Mongo · WebSockets)</span>
           </button>
         </div>
 
@@ -303,7 +416,7 @@ export default function InteractiveArchitectureLab() {
             <span className="w-2.5 h-1 rounded-full bg-sky-400 inline-block" /> Synchronous REST
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 rounded-full bg-amber-400 inline-block border-dashed" /> Async Kafka Event
+            <span className="w-2.5 h-1 rounded-full bg-amber-400 inline-block border-dashed" /> Async Event
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-1 rounded-full bg-emerald-400 inline-block" /> Storage / Cache
@@ -322,7 +435,9 @@ export default function InteractiveArchitectureLab() {
               <span>
                 {activeView === 'backend'
                   ? 'LIVE BACKEND TOPOLOGY // 50K+ DAILY TRANSACTIONS'
-                  : 'RAG SEMANTIC PIPELINE // HYBRID RETRIEVAL'}
+                  : activeView === 'rag'
+                  ? 'RAG SEMANTIC PIPELINE // HYBRID RETRIEVAL'
+                  : 'REAL-TIME PLATFORM TOPOLOGY // WEBSOCKET CHANGE STREAMS'}
               </span>
             </div>
             <span>Click any node to inspect trade-offs</span>
@@ -400,7 +515,7 @@ export default function InteractiveArchitectureLab() {
                 />
               </div>
             </div>
-          ) : (
+          ) : activeView === 'rag' ? (
             /* AI & RAG Pipeline Layout */
             <div className="space-y-6">
               {/* Row 1: Chat UI & Orchestrator */}
@@ -451,6 +566,62 @@ export default function InteractiveArchitectureLab() {
                   isSelected={selectedNodeId === 'llm_gateway'}
                   onClick={() => selectNode('llm_gateway')}
                   featured={true}
+                />
+              </div>
+            </div>
+          ) : (
+            /* Real-Time Platform Pipeline Layout */
+            <div className="space-y-6">
+              {/* Row 1: Google Sheets & Sync Worker */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <NodeButton
+                  node={REALTIME_NODES.sheets}
+                  isSelected={selectedNodeId === 'sheets'}
+                  onClick={() => selectNode('sheets')}
+                />
+                <NodeButton
+                  node={REALTIME_NODES.sync_worker}
+                  isSelected={selectedNodeId === 'sync_worker'}
+                  onClick={() => selectNode('sync_worker')}
+                  featured={true}
+                />
+              </div>
+
+              {/* Connecting Flow */}
+              <div className="flex justify-center items-center gap-2 py-1 text-[11px] font-mono text-emerald-400/80">
+                <span className="w-12 h-px bg-emerald-400/40" />
+                <span>Sanitized Zod Schema → Mongo Oplog Streams</span>
+                <span className="w-12 h-px bg-emerald-400/40" />
+              </div>
+
+              {/* Row 2: MongoDB Atlas Replica */}
+              <div className="w-full">
+                <NodeButton
+                  node={REALTIME_NODES.mongo_live}
+                  isSelected={selectedNodeId === 'mongo_live'}
+                  onClick={() => selectNode('mongo_live')}
+                />
+              </div>
+
+              {/* Connecting Flow */}
+              <div className="flex justify-center items-center gap-2 py-1 text-[11px] font-mono text-sky-400/80">
+                <span className="w-12 h-px bg-sky-400/40" />
+                <span>Change Streams → Redis Pub/Sub Broadcast</span>
+                <span className="w-12 h-px bg-sky-400/40" />
+              </div>
+
+              {/* Row 3: WebSocket Engine & Live Dashboard */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <NodeButton
+                  node={REALTIME_NODES.ws_engine}
+                  isSelected={selectedNodeId === 'ws_engine'}
+                  onClick={() => selectNode('ws_engine')}
+                  featured={true}
+                />
+                <NodeButton
+                  node={REALTIME_NODES.live_dashboard}
+                  isSelected={selectedNodeId === 'live_dashboard'}
+                  onClick={() => selectNode('live_dashboard')}
                 />
               </div>
             </div>
